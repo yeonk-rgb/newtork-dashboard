@@ -81,6 +81,7 @@
   - **증감 비교는 같은 월끼리**: 현재 기간에 확정 안 된 달(미확정·마감 전)이 있으면 비교 기간도 같은 순서의 달만 집계 (예: 2026 1~8월 ↔ 2025 1~8월, 3분기 7~8월 ↔ 2분기 4~5월). 모든 월이 확정이면 기간 전체 비교. 화면에 "같은 기간 비교 · …" 표시
   - 검산: `npm run metrics:report -- 2026 Q3` (로컬 DB로 계산 결과를 마크다운 표로 출력)
 - 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
+- **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
 
 ## 공통 정책
 
@@ -197,7 +198,7 @@ newtork-dashboard/ (= 이 폴더)
 4. 스키마를 바꿨으면 PR 직전에 마이그레이션 생성 (아래 체크리스트)
 5. 화면 작업이 끝나면 `npm run dev`로 확인할 **주소와 확인 포인트**를 알려주기
    - 화면을 확인할 때는 HTML 응답뿐 아니라 **dev 서버 로그(`.next/dev/logs/next-development.log`)에 에러·경고가 없는지도 반드시 확인** (cacheComponents 검증 에러는 화면 오버레이·로그에만 나옴)
-   - 오늘 날짜·현재 시각이 필요하면 **`getTodayKst()`만 사용** (`new Date()` 직접 사용 금지 — prerender 에러 원인)
+   - 오늘 날짜가 필요하면 **`getTodayKst()`**, 기록용 현재 시각(확정 일시 등)은 **`getNow()`**만 사용 (`new Date()` 직접 사용 금지 — prerender 에러 원인)
 6. 끝나면 PR 생성 후 **CI 결과 보고**. 머지는 사람이 직접
 7. 고객사 확인이 필요한 건 `docs/05-open-questions.md`에 추가
 8. 각 단계가 끝나면 `docs/06-management-checklist.md` 상태 업데이트

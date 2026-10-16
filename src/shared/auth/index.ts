@@ -3,6 +3,6 @@ export { accessiblePages, canAccessAdmin, homePathFor } from "./access";
 export type { NavItem } from "./access";
 export { can } from "./can";
 export { getCurrentUser, isDevSwitchEnabledNow } from "./current-user";
-export { DEV_USERS } from "./dev-users";
+export { DEV_USERS, userDisplayName } from "./dev-users";
 export { roleLabel, TEAM_LABEL } from "./types";
 export type { Action, AppUser, Role, Team } from "./types";
