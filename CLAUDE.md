@@ -74,6 +74,11 @@
 - 분기 목표가 비어 있으면: (연간 − 입력한 분기 합) ÷ 빈 분기 수, 나머지 원 단위는 마지막 빈 분기에 더함. 4개 모두 입력했는데 합계 ≠ 연간이면 저장 시 경고
 - 대시보드 집계는 `status = CONFIRMED`인 달만 사용
 - AI 코멘트 저장 테이블은 AI 기능 구현 시 추가
+- **지표 계산**: `modules/management/metrics/`(순수 함수, DB·화면 모름) + `data/`(DB 조회, server-only). 공개 함수는 `getManagementSummary(period)` (권한: 경영지원 view)
+  - 금액은 BigInt, 비율만 number(0~1). 0으로 나누기·데이터 없음은 `null` + `reason`
+  - 이익 비용 범위는 `metrics/settings.ts`의 `costMode` (05-3번 답변 전 임시: 매입 포함)
+  - 미수금은 기준일 = min(기간 마지막 날, 오늘) 시점 잔액, 경과일은 발생일 기준 (05-17번)
+  - 검산: `npm run metrics:report -- 2026 Q3` (로컬 DB로 계산 결과를 마크다운 표로 출력)
 - 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
 
 ## 공통 정책

@@ -1,4 +1,5 @@
 // 개발용 샘플 데이터 (가짜). 실행: npm run db:seed
+// - 2024-10 ~ 2026-09 (24개월), 마지막 달(2026-09)만 DRAFT
 // - upsert 방식이라 여러 번 실행해도 중복되지 않는다.
 // - 난수는 고정 시드를 써서 실행할 때마다 같은 값이 나온다.
 // - 거래처명은 모두 가상 이름이다.
@@ -63,27 +64,37 @@ async function seedExpenseCategories() {
 }
 
 async function seedAnnualTargets() {
-  // 2025년: 분기별 목표 입력 (합계 = 연간 목표)
-  const target2025 = {
-    revenueTarget: 2_400_000_000n,
-    q1Target: 500_000_000n,
-    q2Target: 600_000_000n,
-    q3Target: 600_000_000n,
-    q4Target: 700_000_000n,
-  };
-  // 2026년: 분기별 목표 비움 → 연간÷4로 계산되는 경우
-  const target2026 = {
-    revenueTarget: 2_800_000_000n,
-    q1Target: null,
-    q2Target: null,
-    q3Target: null,
-    q4Target: null,
-  };
+  const targets = [
+    // 2024년: 4분기만 입력 → 1~3분기는 (연간 − 4분기) ÷ 3, 나머지 원은 마지막 빈 분기(3분기)에
+    {
+      year: 2024,
+      revenueTarget: 2_200_000_000n,
+      q1Target: null,
+      q2Target: null,
+      q3Target: null,
+      q4Target: 600_000_000n,
+    },
+    // 2025년: 분기별 목표 모두 입력 (합계 = 연간 목표)
+    {
+      year: 2025,
+      revenueTarget: 2_400_000_000n,
+      q1Target: 500_000_000n,
+      q2Target: 600_000_000n,
+      q3Target: 600_000_000n,
+      q4Target: 700_000_000n,
+    },
+    // 2026년: 분기별 목표 비움 → 연간 ÷ 4
+    {
+      year: 2026,
+      revenueTarget: 2_800_000_000n,
+      q1Target: null,
+      q2Target: null,
+      q3Target: null,
+      q4Target: null,
+    },
+  ];
 
-  for (const [year, data] of [
-    [2025, target2025],
-    [2026, target2026],
-  ] as const) {
+  for (const { year, ...data } of targets) {
     await prisma.annualTarget.upsert({
       where: { year },
       update: { ...data, updatedById: SEED_USER_ID },
@@ -92,15 +103,18 @@ async function seedAnnualTargets() {
   }
 }
 
-/** 2025-10 ~ 2026-09 (12개월). 마지막 달만 임시저장 */
+/** 2024-10 ~ 2026-09 (24개월). 마지막 달만 임시저장 */
 function recentMonths() {
   const months: { year: number; month: number }[] = [];
-  for (let i = 0; i < 12; i++) {
-    const m = 10 + i; // 10 ~ 21
-    months.push({ year: m > 12 ? 2026 : 2025, month: ((m - 1) % 12) + 1 });
+  for (let i = 0; i < 24; i++) {
+    const index = 2024 * 12 + 9 + i; // 2024-10 부터
+    months.push({ year: Math.floor(index / 12), month: (index % 12) + 1 });
   }
   return months;
 }
+
+/** 성장하는 회사처럼: 연도별 매출·경비 규모 */
+const GROWTH: Record<number, number> = { 2024: 0.82, 2025: 0.9, 2026: 1 };
 
 async function seedMonthlyFinance(
   categories: Awaited<ReturnType<typeof seedExpenseCategories>>,
@@ -116,16 +130,17 @@ async function seedMonthlyFinance(
   const months = recentMonths();
   for (const [index, { year, month }] of months.entries()) {
     const isLast = index === months.length - 1;
-    const productSales = won(150_000_000, 260_000_000);
-    const goodsSales = won(20_000_000, 50_000_000);
+    const g = GROWTH[year];
+    const productSales = won(140_000_000 * g, 220_000_000 * g);
+    const goodsSales = won(18_000_000 * g, 40_000_000 * g);
     const data = {
       productSales,
       goodsSales,
-      serviceSales: won(8_000_000, 30_000_000),
+      serviceSales: won(8_000_000 * g, 25_000_000 * g),
       goodsPurchase: (goodsSales * 70n) / 100n,
       materialPurchase:
         (productSales * BigInt(35 + Math.floor(random() * 11))) / 100n,
-      operatingExpense: won(25_000_000, 40_000_000),
+      operatingExpense: won(25_000_000 * g, 38_000_000 * g),
       status: isLast ? MgmtEntryStatus.DRAFT : MgmtEntryStatus.CONFIRMED,
       // 확정일시: 다음 달 5일
       confirmedAt: isLast ? null : new Date(Date.UTC(year, month, 5)),
