@@ -36,6 +36,7 @@ export type ReceivableInput = {
   isCollected: boolean;
   collectedOn: Date | null;
   dueOn: Date | null;
+  note?: string | null;
 };
 
 // ---------- 출력 공통 ----------
@@ -119,6 +120,8 @@ export type TargetResult = {
    */
   period: (TargetProgress & { kind: TargetKind }) | null;
   quarterTargets: QuarterTargets | null;
+  /** 해당 연도 분기별 확정 매출 (분기별 목표 표용) */
+  quarterActuals: [bigint, bigint, bigint, bigint] | null;
 };
 
 /**
@@ -155,10 +158,27 @@ export type TargetKind =
 
 export type AgingBucket = "0-30" | "31-60" | "61-90" | "90+";
 
+/** 기준일 시점 미수 건 (상세 표용) */
+export type ReceivableItem = {
+  id: string;
+  customerName: string;
+  occurredOn: Date;
+  amount: bigint;
+  dueOn: Date | null;
+  note: string | null;
+  /** 발생일부터 기준일까지 경과일 */
+  ageDays: number;
+  bucket: AgingBucket;
+  /** 수금 예정일이 기준일보다 앞섬 */
+  isOverdue: boolean;
+};
+
 export type ReceivableResult = {
   asOf: Date;
   total: bigint;
   count: number;
+  /** 미수 건 전체 (금액 큰 순) */
+  items: ReceivableItem[];
   byCustomer: { customerName: string; amount: bigint; count: number }[];
   aging: { bucket: AgingBucket; amount: bigint; count: number }[];
   expected: {
@@ -193,6 +213,9 @@ export type Comparison = {
   profit: Change;
   /** 이익률 차이 (%p, 0.05 = +5%p). 비율끼리라 증감률 대신 차이로 비교 */
   margin: MarginChange;
+  /** 항목별 증감률 (key = AmountShare.key) — 상세 표용 */
+  revenueItems: Record<string, Change>;
+  expenseItems: Record<string, Change>;
 };
 
 export type MarginChange = {

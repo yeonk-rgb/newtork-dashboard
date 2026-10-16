@@ -65,7 +65,14 @@ export function computeTargets(
   target: AnnualTargetInput | null,
   yearMonths: FinanceMonth[],
 ): TargetResult {
-  if (!target) return { annual: null, period: null, quarterTargets: null };
+  if (!target) {
+    return {
+      annual: null,
+      period: null,
+      quarterTargets: null,
+      quarterActuals: null,
+    };
+  }
 
   const confirmed = yearMonths.filter(
     (m) => m.status === "CONFIRMED" && m.year === period.year,
@@ -121,7 +128,11 @@ export function computeTargets(
       break;
   }
 
-  return { annual, period: periodTarget, quarterTargets };
+  const quarterActuals = [1, 4, 7, 10].map((first) =>
+    revenueBetween(first, first + 2),
+  ) as [bigint, bigint, bigint, bigint];
+
+  return { annual, period: periodTarget, quarterTargets, quarterActuals };
 }
 
 /**

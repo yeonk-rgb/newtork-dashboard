@@ -56,6 +56,7 @@ export {
 } from "./components/dashboard-top";
 export { DashboardDonuts } from "./components/donuts/dashboard-donuts";
 export { MainBottom } from "./components/bottom/main-bottom";
+export { ManagementDetail } from "./components/detail/management-detail";
 
 // 메인 원형 그래프용 생산팀 데이터 — 통합 전까지 목업 (source: "mock")
 export {

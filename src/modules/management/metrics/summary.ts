@@ -16,6 +16,7 @@ import { computeRevenue } from "./revenue";
 import { DEFAULT_METRICS_SETTINGS, type MetricsSettings } from "./settings";
 import { computeAnnualProgress, computeTargets } from "./targets";
 import type {
+  AmountShare,
   AnnualTargetInput,
   Change,
   Comparison,
@@ -76,7 +77,26 @@ function compare(current: PeriodCore, base: PeriodCore): Comparison {
     expense: rate(current.expenses.total, base.expenses.total),
     profit: rate(current.profit.profit, base.profit.profit),
     margin: marginChange(current, base),
+    revenueItems: itemChanges(current.revenue.items, base.revenue.items, rate),
+    expenseItems: itemChanges(
+      current.expenses.items,
+      base.expenses.items,
+      rate,
+    ),
   };
+}
+
+function itemChanges(
+  current: AmountShare[],
+  base: AmountShare[],
+  rate: (now: bigint, before: bigint) => Change,
+): Record<string, Change> {
+  return Object.fromEntries(
+    current.map((item) => [
+      item.key,
+      rate(item.amount, base.find((b) => b.key === item.key)?.amount ?? 0n),
+    ]),
+  );
 }
 
 function marginChange(current: PeriodCore, base: PeriodCore): MarginChange {

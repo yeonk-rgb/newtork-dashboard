@@ -130,3 +130,34 @@ describe("computeManagementSummary", () => {
     expect(current.receivables.asOf).toBe(today);
   });
 });
+
+describe("상세 표용 값", () => {
+  const months = [
+    financeMonth(2026, 4, { productSales: 200n, goodsSales: 100n }),
+    financeMonth(2026, 7, { productSales: 300n, goodsSales: 0n }),
+  ];
+  const s = computeManagementSummary({
+    period: { unit: "quarter", year: 2026, quarter: 3 },
+    financeMonths: months,
+    annualTarget: {
+      year: 2026,
+      revenueTarget: 4_000n,
+      quarterTargets: [null, null, null, null],
+    },
+    receivables: [],
+    today: date("2026-10-16"),
+  });
+
+  it("항목별 직전 기간 증감률", () => {
+    expect(s.changes.previous.revenueItems.product).toEqual({ rate: 0.5 }); // 300 vs 200
+    expect(s.changes.previous.revenueItems.goods).toEqual({ rate: -1 }); // 0 vs 100
+    expect(s.changes.previous.revenueItems.service).toEqual({
+      rate: null,
+      reason: "zero-base",
+    });
+  });
+
+  it("분기별 확정 실적", () => {
+    expect(s.targets.quarterActuals).toEqual([0n, 300n, 300n, 0n]);
+  });
+});
