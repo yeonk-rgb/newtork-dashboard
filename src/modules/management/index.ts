@@ -2,10 +2,13 @@
 import "server-only";
 
 import { can, getCurrentUser } from "@/shared/auth";
-import type { Period } from "@/shared/period/period";
+import { monthIndex, type Period } from "@/shared/period/period";
 
 import { getTodayKst, loadSummaryInput } from "./data/load-summary-input";
+import { loadFinanceMonths } from "./data/queries";
+import { DEFAULT_METRICS_SETTINGS } from "./metrics/settings";
 import { computeManagementSummary } from "./metrics/summary";
+import { computeTrend, trendRange, type TrendPoint } from "./metrics/trend";
 import type { ManagementSummary } from "./metrics/types";
 
 export class ForbiddenError extends Error {
@@ -26,6 +29,25 @@ export async function getManagementSummary(
   );
 }
 
+/**
+ * 월별 추이 (차트용): 기간 끝에서 거꾸로 12개월, DB 조회 1번.
+ * 미확정 월은 값 + status, 데이터 없는 달은 null. 권한: 경영지원팀 view
+ */
+export async function getManagementTrend(
+  period: Period,
+): Promise<TrendPoint[]> {
+  const user = await getCurrentUser();
+  if (!user || !can(user, "view", "management")) throw new ForbiddenError();
+  const range = trendRange(period).map(monthIndex);
+  const months = await loadFinanceMonths(range[0], range.at(-1)!);
+  return computeTrend(
+    period,
+    months,
+    await getTodayKst(),
+    DEFAULT_METRICS_SETTINGS.costMode,
+  );
+}
+
 // 대시보드 화면 조각 (메인·경영지원 상세 공용)
 export {
   DashboardTop,
@@ -33,6 +55,7 @@ export {
   resolvePeriod,
 } from "./components/dashboard-top";
 export { DashboardDonuts } from "./components/donuts/dashboard-donuts";
+export { MainBottom } from "./components/bottom/main-bottom";
 
 // 메인 원형 그래프용 생산팀 데이터 — 통합 전까지 목업 (source: "mock")
 export {
@@ -48,3 +71,4 @@ export type {
   ReceivableResult,
   TargetResult,
 } from "./metrics/types";
+export type { TrendPoint, TrendStatus } from "./metrics/trend";
