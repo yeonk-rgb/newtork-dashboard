@@ -13,8 +13,8 @@
 ## 2. 설치
 
 ```bash
-npm install
-cp .env.example .env
+npm ci                 # package-lock.json 그대로 설치 (팀원 모두 같은 버전)
+cp .env.example .env   # 아래 3단계에서 DATABASE_URL 수정
 ```
 
 ## 3. DB 준비 — 둘 중 하나 선택
@@ -53,18 +53,30 @@ DATABASE_URL="postgresql://newtork:newtork@localhost:5433/newtork?schema=public"
 npm run db:validate  # prisma.config.ts + prisma/schema/*.prisma 검사
 ```
 
-### 테이블 만들기 + 클라이언트 생성 + 샘플 데이터
+### 처음 받았을 때: 클라이언트 생성 + 테이블 만들기 + 샘플 데이터
 
 ```bash
-npm run db:push      # 스키마를 로컬 DB에 반영 (마이그레이션 파일은 PR 직전에만 생성)
-npm run db:generate  # Prisma Client 생성 → src/shared/db/generated (git 제외, typecheck 전에 필요)
+npm run db:generate  # Prisma Client 생성 → src/shared/db/generated (git 제외 — 이게 없으면 typecheck 실패)
+npm run db:deploy    # prisma/migrations 의 마이그레이션을 순서대로 적용해 테이블 생성
 npm run db:seed      # 최근 12개월 가짜 데이터 (여러 번 실행해도 중복 없음)
 ```
 
-## 4. 실행
+> 이미 `db:push`로 테이블을 만들어 둔 DB라면 `db:deploy` 대신
+> `npx prisma migrate resolve --applied <마이그레이션 폴더명>`으로 "적용됨" 표시만 한다.
+
+### 개발 중 스키마를 바꿨을 때
 
 ```bash
+npm run db:push      # 로컬 DB에만 반영 (마이그레이션 파일은 PR 직전에만 생성 — CLAUDE.md 체크리스트)
+npm run db:generate  # 클라이언트 다시 생성
+```
+
+## 4. 실행 및 확인
+
+```bash
+npm run check        # lint + typecheck(라우트 타입 생성 포함) + test — 여기까지 통과하면 환경 준비 끝
 npm run dev          # http://localhost:3000
+npm run build        # 배포 빌드 확인 (선택)
 ```
 
 ## 5. 자주 쓰는 명령
@@ -78,7 +90,9 @@ npm run dev          # http://localhost:3000
 | `npm run format` | Prettier로 전체 포맷 |
 | `npm run db:validate` | Prisma 스키마 검사 |
 | `npm run db:generate` | Prisma Client 생성 (스키마 변경 후) |
+| `npm run db:deploy` | 마이그레이션 파일을 DB에 적용 (처음 받았을 때, main pull 후) |
 | `npm run db:push` | 스키마를 로컬 DB에 반영 (개발 중) |
+| `npm run check` | lint + typecheck + test (작업 단계마다, PR 전 필수) |
 | `npm run db:seed` | 샘플 데이터 넣기 |
 
 ## 6. 팀 작업 규칙 (요약)
