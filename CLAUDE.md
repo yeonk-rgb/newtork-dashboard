@@ -158,8 +158,14 @@ newtork-dashboard/ (= 이 폴더)
 - **모듈 간 import 금지**: `modules/<팀>`끼리 직접 import하지 않는다. 공통 코드는 `shared/`에만 둔다. (`eslint-plugin-boundaries`로 검사)
 - **연동은 `index.ts` 공개 함수로만**: 메인 대시보드 등에서 다른 팀 데이터가 필요하면 해당 모듈 `index.ts`가 export한 함수(예: `getProductionSummary(period)`)만 사용한다.
 - **기간 처리**: DB에는 **월 단위로만 저장**하고, 분기·연간은 조회할 때 계산한다.
-- **마이그레이션**: `prisma migrate dev`로 마이그레이션 파일은 **main 머지 직전에만** 생성한다. 작업 중에는 로컬에서만 확인한다.
+- **마이그레이션**: 작업 중에는 `npm run db:push`로 로컬 DB에만 반영하고, 마이그레이션 파일은 **PR 올리기 직전에** `npx prisma migrate dev --name <설명>`으로 1개 생성한다. (`prisma/migrations/`는 git에 포함)
 - **권한 확인은 반드시 서버에서**: 페이지·Server Action·조회 함수 모두 서버에서 권한을 확인한다. UI에서 메뉴·버튼을 숨기는 건 보조 수단일 뿐이다.
+
+## PR 올리기 전 체크리스트
+
+- [ ] 스키마(`prisma/schema/*.prisma`)를 바꿨으면 마이그레이션 파일 생성 (`npx prisma migrate dev --name <설명>`) → `npx prisma migrate status`가 "up to date"인지 확인
+- [ ] `npm run check` 통과
+- [ ] **main 머지는 사람이 직접 한다. Claude는 PR 생성까지만** (머지·브랜치 삭제는 사람이 머지했다고 알려준 뒤에만)
 
 ## 코딩 규칙
 
