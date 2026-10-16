@@ -195,6 +195,8 @@ newtork-dashboard/ (= 이 폴더)
 3. 구현은 작은 단위로 나누고, 단위마다 `npm run check` 통과 확인
 4. 스키마를 바꿨으면 PR 직전에 마이그레이션 생성 (아래 체크리스트)
 5. 화면 작업이 끝나면 `npm run dev`로 확인할 **주소와 확인 포인트**를 알려주기
+   - 화면을 확인할 때는 HTML 응답뿐 아니라 **dev 서버 로그(`.next/dev/logs/next-development.log`)에 에러·경고가 없는지도 반드시 확인** (cacheComponents 검증 에러는 화면 오버레이·로그에만 나옴)
+   - 오늘 날짜·현재 시각이 필요하면 **`getTodayKst()`만 사용** (`new Date()` 직접 사용 금지 — prerender 에러 원인)
 6. 끝나면 PR 생성 후 **CI 결과 보고**. 머지는 사람이 직접
 7. 고객사 확인이 필요한 건 `docs/05-open-questions.md`에 추가
 8. 각 단계가 끝나면 `docs/06-management-checklist.md` 상태 업데이트

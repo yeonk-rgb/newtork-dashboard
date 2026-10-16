@@ -32,6 +32,7 @@ export {
   DashboardTopSkeleton,
   resolvePeriod,
 } from "./components/dashboard-top";
+export { DashboardDonuts } from "./components/donuts/dashboard-donuts";
 
 // 메인 원형 그래프용 생산팀 데이터 — 통합 전까지 목업 (source: "mock")
 export {

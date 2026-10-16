@@ -26,21 +26,37 @@ function seededRandom(seed: string) {
   };
 }
 
+/** 목업 매출 규모: 월 2억 안팎 (시드 매출과 비슷하게 — 실제 매출 카드와 동떨어져 보이지 않게) */
+const MONTHLY_TOTAL = 200_000_000;
+const UNIT_PRICE = 3_500_000; // 1대 평균 단가 (수량 계산용)
+
+/**
+ * 기간 총액을 먼저 정하고(두 그래프가 같은 총액), 고정 난수 비중으로 나눈다.
+ * 같은 기간이면 산업분야·시리즈 합계가 같다.
+ */
 function mockShares(
   period: Period,
   categories: readonly { key: string; label: string }[],
   salt: string,
 ): SalesShareResult {
-  const random = seededRandom(`${salt}:${periodLabel(period)}`);
+  const label = periodLabel(period);
   const months = periodMonths(period).length;
+  const totalRandom = seededRandom(`total:${label}`);
+  const total = Math.round(
+    (MONTHLY_TOTAL * months * (0.9 + totalRandom() * 0.2)) / 1000,
+  ); // 천 원 단위
+
+  const random = seededRandom(`${salt}:${label}`);
+  const weights = categories.map(() => 0.3 + random());
+  const weightSum = weights.reduce((a, b) => a + b, 0);
+
   const items: SalesShareItem[] = categories
-    .map(({ key, label }) => {
-      const quantity = Math.round((5 + random() * 40) * months);
-      // 1대당 300만~900만 원, 천 원 단위
-      const unitPrice = 3_000_000 + Math.round(random() * 6_000) * 1_000;
-      return { key, label, quantity, amount: BigInt(quantity * unitPrice) };
+    .map(({ key, label: name }, i) => {
+      const amount =
+        BigInt(Math.round((total * weights[i]) / weightSum)) * 1000n;
+      const quantity = Math.max(1, Math.round(Number(amount) / UNIT_PRICE));
+      return { key, label: name, amount, quantity };
     })
-    .filter((item) => item.quantity > 0)
     .sort((a, b) => (a.amount === b.amount ? 0 : a.amount > b.amount ? -1 : 1));
   return { items, source: "mock" };
 }

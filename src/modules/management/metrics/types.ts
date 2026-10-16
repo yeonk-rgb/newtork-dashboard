@@ -121,6 +121,33 @@ export type TargetResult = {
   quarterTargets: QuarterTargets | null;
 };
 
+/**
+ * 연간 목표 도넛용: 선택한 기간과 무관하게 "그 해 연간 목표 대비 확정 누적 실적"
+ * (docs/06-management-checklist.md 해석)
+ */
+export type AnnualProgress = {
+  year: number;
+  target: bigint;
+  /** 그 해 확정된 모든 달의 매출 합 */
+  actual: bigint;
+  /** 목표 − 실적 (초과 달성이면 0) */
+  remaining: bigint;
+  rate: number | null;
+  /**
+   * 진도 기준 월 = 확정된 마지막 달 (실적과 같은 기준으로 비교하기 위해).
+   * 확정된 달이 없으면 0
+   */
+  basisMonth: number;
+  /** 연간 경과율 = 기준 월 ÷ 12 (진도 기준선 눈금) */
+  elapsedRatio: number;
+  /** 실적에 포함된 확정 월 */
+  confirmedMonths: number[];
+  /** 기준 월 이후 이미 마감됐지만 미확정인 달 → "진도 비교에서 제외" 안내 */
+  excludedMonths: number[];
+  /** 기준 월 이전인데 미확정인 달 → 실적에서 빠져 있음 안내 */
+  gapMonths: number[];
+};
+
 export type TargetKind =
   "quarter" | "quarter-progress" | "annual" | "ytd-prorated";
 
@@ -175,6 +202,8 @@ export type MarginChange = {
 
 export type ManagementSummary = PeriodCore & {
   targets: TargetResult;
+  /** 목표 미설정이면 null */
+  annualProgress: AnnualProgress | null;
   changes: { previous: Comparison; lastYear: Comparison };
   receivables: ReceivableResult;
 };

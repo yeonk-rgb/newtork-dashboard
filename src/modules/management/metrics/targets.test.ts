@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { allocateQuarterTargets, computeTargets } from "./targets";
+import {
+  allocateQuarterTargets,
+  computeAnnualProgress,
+  computeTargets,
+} from "./targets";
 import { financeMonth } from "./test-fixtures";
 import type { AnnualTargetInput } from "./types";
 
@@ -141,5 +145,68 @@ describe("computeTargets", () => {
         withLastYear,
       ).period?.actual,
     ).toBe(200n);
+  });
+});
+
+describe("computeAnnualProgress (연간 목표 도넛)", () => {
+  const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
+  // 1~9월 각 100, 9월 DRAFT
+  const months = Array.from({ length: 9 }, (_, i) =>
+    financeMonth(2026, i + 1, {
+      productSales: 100n,
+      status: i + 1 === 9 ? "DRAFT" : "CONFIRMED",
+    }),
+  );
+  const t = target(2_400n);
+
+  it("경과율 = 확정된 마지막 달 ÷ 12 (실적과 같은 기준), 9월은 진도 비교에서 제외", () => {
+    expect(computeAnnualProgress(2026, t, months, d("2026-10-16"))).toEqual({
+      year: 2026,
+      target: 2_400n,
+      actual: 800n,
+      remaining: 1_600n,
+      rate: 800 / 2400,
+      basisMonth: 8,
+      elapsedRatio: 8 / 12,
+      confirmedMonths: [1, 2, 3, 4, 5, 6, 7, 8],
+      excludedMonths: [9],
+      gapMonths: [],
+    });
+  });
+
+  it("중간에 미확정 달이 있으면 gapMonths 로 알려준다", () => {
+    const withGap = months.map((m) =>
+      m.month === 5 ? { ...m, status: "DRAFT" as const } : m,
+    );
+    const result = computeAnnualProgress(2026, t, withGap, d("2026-10-16"));
+    expect(result?.basisMonth).toBe(8);
+    expect(result?.gapMonths).toEqual([5]);
+    expect(result?.excludedMonths).toEqual([9]);
+  });
+
+  it("확정된 달이 없으면 경과율 0, 지난해 전부 확정이면 100%", () => {
+    expect(computeAnnualProgress(2026, t, [], d("2026-10-16"))).toMatchObject({
+      basisMonth: 0,
+      elapsedRatio: 0,
+      excludedMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    });
+    const full = Array.from({ length: 12 }, (_, i) =>
+      financeMonth(2025, i + 1, { productSales: 100n }),
+    );
+    expect(
+      computeAnnualProgress(2025, { ...t, year: 2025 }, full, d("2026-10-16")),
+    ).toMatchObject({ basisMonth: 12, elapsedRatio: 1, excludedMonths: [] });
+  });
+
+  it("초과 달성이면 남은 금액 0, 목표 없으면 null", () => {
+    const big = Array.from({ length: 12 }, (_, i) =>
+      financeMonth(2026, i + 1, { productSales: 300n }),
+    );
+    expect(
+      computeAnnualProgress(2026, t, big, d("2027-01-05"))?.remaining,
+    ).toBe(0n);
+    expect(
+      computeAnnualProgress(2026, null, months, d("2026-10-16")),
+    ).toBeNull();
   });
 });

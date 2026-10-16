@@ -4,6 +4,7 @@ import { periodMonths, quarterOf, type Period } from "@/shared/period/period";
 import { ratio, sum } from "./math";
 import { monthRevenue } from "./revenue";
 import type {
+  AnnualProgress,
   AnnualTargetInput,
   FinanceMonth,
   QuarterTargets,
@@ -121,4 +122,48 @@ export function computeTargets(
   }
 
   return { annual, period: periodTarget, quarterTargets };
+}
+
+/**
+ * 연간 목표 대비 확정 누적 실적 + 연간 경과율 (선택 기간과 무관)
+ * 경과율은 실적과 같은 기준이 되도록 "확정된 마지막 달 ÷ 12"
+ */
+export function computeAnnualProgress(
+  year: number,
+  target: AnnualTargetInput | null,
+  months: FinanceMonth[],
+  today: Date,
+): AnnualProgress | null {
+  if (!target || target.year !== year) return null;
+
+  const confirmed = months.filter(
+    (m) => m.year === year && m.status === "CONFIRMED",
+  );
+  const confirmedMonths = confirmed.map((m) => m.month).sort((a, b) => a - b);
+  const actual = sum(confirmed.map(monthRevenue));
+  const remaining = target.revenueTarget - actual;
+  const basisMonth = confirmedMonths.at(-1) ?? 0;
+
+  // 이미 마감된 달 (올해: 이번 달 전까지, 지난해: 12월까지, 미래: 없음)
+  const todayYear = today.getUTCFullYear();
+  const closedThrough =
+    year < todayYear ? 12 : year > todayYear ? 0 : today.getUTCMonth();
+  const isConfirmed = new Set(confirmedMonths);
+  const unconfirmedClosed = Array.from(
+    { length: closedThrough },
+    (_, i) => i + 1,
+  ).filter((m) => !isConfirmed.has(m));
+
+  return {
+    year,
+    target: target.revenueTarget,
+    actual,
+    remaining: remaining > 0n ? remaining : 0n,
+    rate: ratio(actual, target.revenueTarget),
+    basisMonth,
+    elapsedRatio: basisMonth / 12,
+    confirmedMonths,
+    excludedMonths: unconfirmedClosed.filter((m) => m > basisMonth),
+    gapMonths: unconfirmedClosed.filter((m) => m < basisMonth),
+  };
 }
