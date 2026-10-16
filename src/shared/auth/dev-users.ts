@@ -47,3 +47,10 @@ export const DEFAULT_DEV_USER_ID: DevUserId = "dev-mgmt-leader";
 export function findDevUser(id: string | undefined): AppUser | undefined {
   return DEV_USERS.find((user) => user.id === id);
 }
+
+/** 작성자·수정자 id → 화면 표시 이름 (실제 로그인으로 교체할 때 사용자 테이블 조회로 바꾼다) */
+export function userDisplayName(id: string | null | undefined): string {
+  if (!id) return "-";
+  if (id === "seed") return "샘플 데이터";
+  return findDevUser(id)?.name ?? id;
+}

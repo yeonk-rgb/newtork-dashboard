@@ -13,7 +13,7 @@
 | 3단계 | 임시 사용자·권한 뼈대 (`shared/auth`의 `can()`) | 완료 |
 | 4단계 | 지표 계산 (기간 집계, 달성률, 분기 목표 계산) | 완료 |
 | 5단계 | 대시보드 (원형 그래프) — PR ① 상단·KPI / ② 원형 그래프 / ③-a 메인 하단(월별 매출·지출·이익률, 미수금 상위 5, AI 자리) / ③-b 경영지원 상세(표·추이·미수금) | 완료 |
-| 6단계 | 입력 폼 · 목표 설정 · 미수금 관리 | 미착수 |
+| 6단계 | 입력 폼 · 목표 설정 · 미수금 관리 — PR ① 월간 입력 / ② 목표·항목 설정 / ③ 미수금 관리 | 진행중 |
 | 7단계 | 엑셀 업로드 | 미착수 |
 | 8단계 | AI 코멘트 | 미착수 |
 | 9단계 | 리포트 · CSV · 자금 예측 · BEP | 미착수 |
@@ -36,14 +36,20 @@
 |---|---|---|---|---|
 | 당월 & 분기 & 연간 기간 전환 | 4, 5 | `/`, `/management` · `PeriodSelector` · `shared/period` | 완료 | 연도 + 월/분기/연간/연초 누적, URL `?period=2026-Q3` 저장, 기본값 = 이미 끝난 분기 중 가장 최근 분기. 미확정 월 안내 배너. 회계연도 미확정 (05-2번) |
 | 연간 목표매출액 설정 | 6 | `/management` · `AnnualTarget` | 진행중 | 2단계 DB·시드 완료. 분기 목표 선택 입력 (05-4번) |
-| 월간 상품 매입액 | 6, 7 | `/management` · `MonthlyFinance.goodsPurchase` | 진행중 | 2단계 DB·시드 완료. 매출원가 처리 미확정 (05-3번) |
-| 월간 원재료 매입액 | 6, 7 | `/management` · `MonthlyFinance.materialPurchase` | 진행중 | 2단계 DB·시드 완료. 매출원가 처리 미확정 (05-3번) |
-| 월간 경비 지출액 | 6, 7 | `/management` · `MonthlyFinance.operatingExpense` | 진행중 | 2단계 DB·시드 완료. 포함 범위 미확정 (05-13번) |
-| 그 외 지출액 (광고선전비, 접대비 등) | 6, 7 | `/management` · `ExpenseCategory` + `OtherExpense` | 진행중 | 2단계 DB·시드 완료 (기본 5개 항목). 항목 추가·비활성화 화면은 6단계 |
-| 월간 제품 매출액 | 6, 7 | `/management` · `MonthlyFinance.productSales` | 진행중 | 2단계 DB·시드 완료. VAT 기준 미확정 (05-1번) |
-| 월간 상품 매출액 | 6, 7 | `/management` · `MonthlyFinance.goodsSales` | 진행중 | 2단계 DB·시드 완료. VAT 기준 미확정 (05-1번) |
-| 월간 용역 매출액 | 6, 7 | `/management` · `MonthlyFinance.serviceSales` | 진행중 | 2단계 DB·시드 완료. VAT 기준 미확정 (05-1번) |
+| 월간 상품 매입액 | 6, 7 | `/management/entry` · `MonthlyFinance.goodsPurchase` | 진행중 | 6단계 PR ① 월간 입력 화면 완료(임시저장·확정·확정 취소, 전월 비교, 자릿수 경고). 2단계 DB·시드 완료. 매출원가 처리 미확정 (05-3번) |
+| 월간 원재료 매입액 | 6, 7 | `/management/entry` · `MonthlyFinance.materialPurchase` | 진행중 | 6단계 PR ① 월간 입력 화면 완료(임시저장·확정·확정 취소, 전월 비교, 자릿수 경고). 2단계 DB·시드 완료. 매출원가 처리 미확정 (05-3번) |
+| 월간 경비 지출액 | 6, 7 | `/management/entry` · `MonthlyFinance.operatingExpense` | 진행중 | 6단계 PR ① 월간 입력 화면 완료(임시저장·확정·확정 취소, 전월 비교, 자릿수 경고). 2단계 DB·시드 완료. 포함 범위 미확정 (05-13번) |
+| 그 외 지출액 (광고선전비, 접대비 등) | 6, 7 | `/management/entry` · `ExpenseCategory` + `OtherExpense` | 진행중 | 6단계 PR ① 월간 입력 화면 완료(임시저장·확정·확정 취소, 전월 비교, 자릿수 경고). 2단계 DB·시드 완료 (기본 5개 항목). 항목 추가·비활성화 화면은 6단계 |
+| 월간 제품 매출액 | 6, 7 | `/management/entry` · `MonthlyFinance.productSales` | 진행중 | 6단계 PR ① 월간 입력 화면 완료(임시저장·확정·확정 취소, 전월 비교, 자릿수 경고). 2단계 DB·시드 완료. VAT 기준 미확정 (05-1번) |
+| 월간 상품 매출액 | 6, 7 | `/management/entry` · `MonthlyFinance.goodsSales` | 진행중 | 6단계 PR ① 월간 입력 화면 완료(임시저장·확정·확정 취소, 전월 비교, 자릿수 경고). 2단계 DB·시드 완료. VAT 기준 미확정 (05-1번) |
+| 월간 용역 매출액 | 6, 7 | `/management/entry` · `MonthlyFinance.serviceSales` | 진행중 | 6단계 PR ① 월간 입력 화면 완료(임시저장·확정·확정 취소, 전월 비교, 자릿수 경고). 2단계 DB·시드 완료. VAT 기준 미확정 (05-1번) |
 | 미수금 통계 | 4, 6, 7, 9 | `/management` · `Receivable` | 진행중 | 2단계 DB·시드, 4단계 통계 계산, 5단계 표시(메인 상위 5, `/management` 거래처 전체·경과일 구간·수금 예정 6개월·건별 정렬 표, 90일 초과 표시) 완료. 입력·관리 화면 6단계, 엑셀 이관 7단계, 자금 예측 9단계. 부분 수금 미확정 (05-11번) |
+
+## 후속 과제
+
+| 과제 | 내용 | 상태 | 비고 |
+|---|---|---|---|
+| 변경 이력(감사 로그) | 누가 언제 어떤 값을 바꿨는지 전체 이력 저장 (지금은 마지막 수정자·시각만 `updatedById`·`updatedAt`) | 미착수 | 6단계 논의에서 "나중에"로 결정 (2026-10-16). 별도 테이블 필요 |
 
 ## 공통 (모든 항목에 해당)
 

@@ -121,7 +121,7 @@ type Period =
 | `src/shared/auth/current-user.ts` | **교체** — `getCurrentUser()` 본문을 실제 세션 조회로 (반환 타입 `AppUser \| null` 유지) |
 | `src/shared/auth/can.ts` | **규칙 교체** — 확정된 권한 정책으로 (`can.test.ts` 기대값도 함께) |
 | `src/proxy.ts` | **교체** — 배포 차단 대신 미로그인 → `/login` 이동 |
-| `src/shared/auth/dev-users.ts` | **삭제** — 임시 사용자 5명 |
+| `src/shared/auth/dev-users.ts` | **삭제** — 임시 사용자 5명. 함께 있는 `userDisplayName(id)`(작성자 id → 표시 이름)은 사용자 테이블 조회로 **교체** |
 | `src/shared/auth/resolve-user.ts` (+ 테스트) | **삭제** — 개발/DEMO_MODE 판정 |
 | `src/shared/auth/dev-switch.ts` | **삭제** — 사용자 전환 Server Action |
 | `src/shared/ui/app-shell/dev-user-switcher.tsx` | **삭제** — DEV 드롭다운 |

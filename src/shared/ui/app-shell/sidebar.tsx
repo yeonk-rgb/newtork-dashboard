@@ -31,6 +31,13 @@ function withPeriod(href: string, period: string | null) {
     : href;
 }
 
+/** 하위 메뉴: "/management"(대시보드)는 정확히 일치, 나머지는 하위 경로 포함 */
+function isSubActive(pathname: string, href: string) {
+  return href === "/management"
+    ? pathname === href
+    : pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function isActive(pathname: string, href: string) {
   return href === "/"
     ? pathname === "/"
@@ -44,22 +51,62 @@ export function Sidebar({ items }: { items: NavItem[] }) {
   const searchParams = useSearchParams();
   const period = KEEP_PERIOD.has(pathname) ? searchParams.get("period") : null;
 
+  const linkClass = (active: boolean, sub = false) =>
+    cn(
+      "flex items-center gap-2.5 rounded-md text-sm transition-colors",
+      sub ? "py-1.5 pl-9 pr-3" : "px-3 py-2",
+      active
+        ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+        : "hover:bg-sidebar-accent/60",
+    );
+
   return (
     <nav aria-label="주 메뉴" className="flex flex-col gap-1 p-3">
-      {items.map(({ href, label }) => {
+      {items.map(({ href, label, children }) => {
         const Icon = ICONS[href] ?? LayoutDashboard;
+        if (children && children.length > 0) {
+          // 하위 메뉴가 있으면 상위는 묶음 제목 (하위 중 하나가 활성이면 굵게)
+          const groupActive = children.some((c) =>
+            isSubActive(pathname, c.href),
+          );
+          return (
+            <div key={href}>
+              <Link
+                href={withPeriod(href, period)}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent/60",
+                  groupActive && "font-semibold",
+                )}
+              >
+                <Icon className="size-4" aria-hidden />
+                {label}
+              </Link>
+              <ul className="mt-0.5 space-y-0.5">
+                {children.map((child) => {
+                  const active = isSubActive(pathname, child.href);
+                  return (
+                    <li key={child.href}>
+                      <Link
+                        href={withPeriod(child.href, period)}
+                        aria-current={active ? "page" : undefined}
+                        className={linkClass(active, true)}
+                      >
+                        {child.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        }
         const active = isActive(pathname, href);
         return (
           <Link
             key={href}
             href={withPeriod(href, period)}
             aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
-              active
-                ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
-                : "hover:bg-sidebar-accent/60",
-            )}
+            className={linkClass(active)}
           >
             <Icon className="size-4" aria-hidden />
             {label}
