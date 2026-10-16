@@ -53,6 +53,14 @@ DATABASE_URL="postgresql://newtork:newtork@localhost:5433/newtork?schema=public"
 npm run db:validate  # prisma.config.ts + prisma/schema/*.prisma 검사
 ```
 
+### 테이블 만들기 + 클라이언트 생성 + 샘플 데이터
+
+```bash
+npm run db:push      # 스키마를 로컬 DB에 반영 (마이그레이션 파일은 PR 직전에만 생성)
+npm run db:generate  # Prisma Client 생성 → src/shared/db/generated (git 제외, typecheck 전에 필요)
+npm run db:seed      # 최근 12개월 가짜 데이터 (여러 번 실행해도 중복 없음)
+```
+
 ## 4. 실행
 
 ```bash
@@ -70,6 +78,8 @@ npm run dev          # http://localhost:3000
 | `npm run format` | Prettier로 전체 포맷 |
 | `npm run db:validate` | Prisma 스키마 검사 |
 | `npm run db:generate` | Prisma Client 생성 (스키마 변경 후) |
+| `npm run db:push` | 스키마를 로컬 DB에 반영 (개발 중) |
+| `npm run db:seed` | 샘플 데이터 넣기 |
 
 ## 6. 팀 작업 규칙 (요약)
 
