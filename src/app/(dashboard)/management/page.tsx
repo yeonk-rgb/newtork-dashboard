@@ -1,22 +1,39 @@
 import { Suspense } from "react";
 
+import {
+  DashboardTop,
+  DashboardTopSkeleton,
+  getManagementSummary,
+  resolvePeriod,
+} from "@/modules/management";
 import { can, getCurrentUser } from "@/shared/auth";
 import { Forbidden } from "@/shared/ui/forbidden";
-import { PlaceholderPage } from "@/shared/ui/placeholder-page";
 
-export default function ManagementPage() {
+// 경영지원 상세 (상세 표·차트는 이후 PR에서 추가)
+export default function ManagementPage({
+  searchParams,
+}: PageProps<"/management">) {
   return (
-    <Suspense fallback={null}>
-      <ManagementContent />
+    <Suspense fallback={<DashboardTopSkeleton />}>
+      <ManagementContent searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function ManagementContent() {
+async function ManagementContent({
+  searchParams,
+}: {
+  searchParams: PageProps<"/management">["searchParams"];
+}) {
   const user = await getCurrentUser();
   if (!user || !can(user, "view", "management")) {
     return <Forbidden user={user} />;
   }
 
-  return <PlaceholderPage title="경영지원팀" />;
+  const { period } = await searchParams;
+  const summary = await getManagementSummary(
+    resolvePeriod(typeof period === "string" ? period : undefined),
+  );
+
+  return <DashboardTop title="경영지원 상세" summary={summary} />;
 }

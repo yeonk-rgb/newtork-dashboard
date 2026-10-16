@@ -84,3 +84,17 @@ export async function loadReceivables(): Promise<ReceivableInput[]> {
     dueOn: r.dueOn,
   }));
 }
+
+/** 기간 선택에 보여줄 연도 범위: 데이터·목표가 있는 첫 해 ~ 올해 */
+export async function loadYearRange(currentYear: number): Promise<number[]> {
+  const [finance, target] = await Promise.all([
+    prisma.monthlyFinance.aggregate({ _min: { year: true } }),
+    prisma.annualTarget.aggregate({ _min: { year: true } }),
+  ]);
+  const first = Math.min(
+    finance._min.year ?? currentYear,
+    target._min.year ?? currentYear,
+    currentYear,
+  );
+  return Array.from({ length: currentYear - first + 1 }, (_, i) => first + i);
+}

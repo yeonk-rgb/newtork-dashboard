@@ -1,0 +1,52 @@
+// 대시보드 상단 공통: 제목 + 기간 선택 + 안내 배너 + KPI 카드 (메인·경영지원 상세 공용)
+import "server-only";
+
+import { lastCompletedQuarter, parsePeriodParam } from "@/shared/period/url";
+
+import { todayKst } from "../data/load-summary-input";
+import { loadYearRange } from "../data/queries";
+import type { ManagementSummary } from "../metrics/types";
+import { ConfirmationBanner } from "./confirmation-banner";
+import { KpiCards } from "./kpi-cards";
+import { PeriodSelector } from "./period-selector";
+
+/** URL 값 → 기간. 없거나 잘못되면 "이미 끝난 분기 중 가장 최근 분기" */
+export function resolvePeriod(param: string | undefined, today = todayKst()) {
+  return parsePeriodParam(param) ?? lastCompletedQuarter(today);
+}
+
+export async function DashboardTop({
+  title,
+  summary,
+}: {
+  title: string;
+  summary: ManagementSummary;
+}) {
+  const range = await loadYearRange(todayKst().getUTCFullYear());
+  // URL로 범위 밖 연도를 골라도 드롭다운에 보이도록
+  const years = [...new Set([...range, summary.period.year])].sort();
+
+  return (
+    <section className="space-y-4" aria-label="기간 요약">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold">{title}</h1>
+        <PeriodSelector period={summary.period} years={years} />
+      </div>
+      <ConfirmationBanner confirmation={summary.confirmation} />
+      <KpiCards summary={summary} />
+    </section>
+  );
+}
+
+export function DashboardTopSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      <div className="h-8 w-64 animate-pulse rounded bg-muted" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-40 animate-pulse rounded-lg bg-muted" />
+        ))}
+      </div>
+    </div>
+  );
+}

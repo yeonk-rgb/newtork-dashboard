@@ -21,6 +21,7 @@ import type {
   Comparison,
   FinanceMonth,
   ManagementSummary,
+  MarginChange,
   PeriodCore,
   ReceivableInput,
 } from "./types";
@@ -74,7 +75,19 @@ function compare(current: PeriodCore, base: PeriodCore): Comparison {
     revenue: rate(current.revenue.total, base.revenue.total),
     expense: rate(current.expenses.total, base.expenses.total),
     profit: rate(current.profit.profit, base.profit.profit),
+    margin: marginChange(current, base),
   };
+}
+
+function marginChange(current: PeriodCore, base: PeriodCore): MarginChange {
+  if (!current.confirmation.hasData)
+    return { diff: null, reason: "no-current-data" };
+  if (!base.confirmation.hasData) return { diff: null, reason: "no-data" };
+  const now = current.profit.margin;
+  const before = base.profit.margin;
+  if (now === null || before === null)
+    return { diff: null, reason: "no-margin" };
+  return { diff: now - before };
 }
 
 export function computeManagementSummary(

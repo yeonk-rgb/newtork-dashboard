@@ -1,0 +1,76 @@
+import { describe, expect, it } from "vitest";
+
+import type { Confirmation } from "../metrics/types";
+import { confirmationNotice, monthsText } from "./confirmation-text";
+
+const ym = (year: number, month: number) => ({ year, month });
+
+describe("monthsText", () => {
+  it("연속 / 띄엄 / 연도 섞임", () => {
+    expect(monthsText([ym(2026, 9)])).toBe("9월");
+    expect(monthsText([ym(2026, 7), ym(2026, 8)])).toBe("7~8월");
+    expect(monthsText([ym(2026, 1), ym(2026, 2), ym(2026, 3)])).toBe("1~3월");
+    expect(monthsText([ym(2026, 7), ym(2026, 9)])).toBe("7·9월");
+    expect(monthsText([ym(2025, 12), ym(2026, 1)])).toBe(
+      "2025년 12월·2026년 1월",
+    );
+  });
+});
+
+const base: Confirmation = {
+  confirmedMonths: [],
+  unconfirmedMonths: [],
+  pendingMonths: [],
+  isPartial: false,
+  hasData: false,
+};
+
+describe("confirmationNotice", () => {
+  it("미확정 월이 있으면 경고 (요청 문구)", () => {
+    expect(
+      confirmationNotice({
+        ...base,
+        confirmedMonths: [ym(2026, 7), ym(2026, 8)],
+        unconfirmedMonths: [{ ...ym(2026, 9), reason: "DRAFT" }],
+        isPartial: true,
+        hasData: true,
+      }),
+    ).toEqual({
+      tone: "warning",
+      message:
+        "9월이 아직 확정되지 않아 7~8월만 집계되었습니다. 비교 수치는 참고용입니다.",
+    });
+  });
+
+  it("확정 데이터가 하나도 없으면", () => {
+    expect(
+      confirmationNotice({
+        ...base,
+        unconfirmedMonths: [{ ...ym(2026, 9), reason: "DRAFT" }],
+        isPartial: true,
+      })?.message,
+    ).toBe("9월이 아직 확정되지 않아 집계할 데이터가 없습니다.");
+  });
+
+  it("마감 전 월만 있으면 안내(info)", () => {
+    expect(
+      confirmationNotice({
+        ...base,
+        pendingMonths: [ym(2026, 10), ym(2026, 11), ym(2026, 12)],
+      }),
+    ).toEqual({
+      tone: "info",
+      message: "10~12월은 아직 마감 전이라 집계할 데이터가 없습니다.",
+    });
+  });
+
+  it("모두 확정이면 안내 없음", () => {
+    expect(
+      confirmationNotice({
+        ...base,
+        confirmedMonths: [ym(2026, 7)],
+        hasData: true,
+      }),
+    ).toBeNull();
+  });
+});

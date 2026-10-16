@@ -59,6 +59,12 @@ describe("computeManagementSummary", () => {
     });
   });
 
+  it("이익률은 %p 차이로 비교", () => {
+    // 이익 = 매출 − 경비(매출/2) → 이익률 50% 로 같음
+    expect(summary.changes.previous.margin).toEqual({ diff: 0 });
+    expect(summary.changes.lastYear.margin).toEqual({ diff: 0 });
+  });
+
   it("현재 기간에 확정 데이터가 없으면 −100%가 아니라 no-current-data", () => {
     const draftOnly = computeManagementSummary({
       period: { unit: "month", year: 2026, month: 9 },
