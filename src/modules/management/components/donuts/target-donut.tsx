@@ -42,12 +42,13 @@ export function TargetDonut({
   const rate = progress.rate ?? 0;
   const filled = Math.min(rate, 1);
   const gap = rate - progress.elapsedRatio; // + 앞섬 / − 뒤처짐
-  const showMarker = progress.elapsedRatio > 0 && progress.elapsedRatio < 1;
+  const showMarker = progress.elapsedRatio > 0 && progress.elapsedRatio < 1; // 진도 기준선 = 확정된 마지막 달
   const inner = pointAt(progress.elapsedRatio, RADIUS - STROKE / 2 - 5);
   const outer = pointAt(progress.elapsedRatio, RADIUS + STROKE / 2 + 5);
-  const confirmedText = monthsText(
-    progress.confirmedMonths.map((month) => ({ year, month })),
-  );
+  const toText = (list: number[]) =>
+    monthsText(list.map((month) => ({ year, month })));
+  const excludedText = toText(progress.excludedMonths);
+  const gapText = toText(progress.gapMonths);
 
   return (
     <ChartCard title={title}>
@@ -133,25 +134,30 @@ export function TargetDonut({
               aria-hidden
               className="mr-1 inline-block h-3 w-0.5 bg-foreground align-middle"
             />
-            연간 경과율 {pct(progress.elapsedRatio)} (
-            {progress.elapsedMonths > 0
-              ? `${progress.elapsedMonths}월까지 마감`
-              : "아직 시작 전"}
-            )
-            {progress.elapsedRatio > 0 && (
+            {progress.basisMonth > 0 ? (
               <>
-                {" · "}
+                연간 경과율 {pct(progress.elapsedRatio)} ({progress.basisMonth}
+                월까지 확정 기준){" · "}
                 <span className="font-medium text-foreground">
-                  진도 대비 {gap >= 0 ? "▲" : "▼"}
-                  {Math.abs(gap * 100).toFixed(1)}%p{" "}
-                  {gap >= 0 ? "앞섬" : "뒤처짐"}
+                  진도 대비 {gap > 0 ? "▲" : gap < 0 ? "▼" : ""}
+                  {Math.abs(gap * 100).toFixed(1)}%p
+                  {gap > 0 ? " 앞섬" : gap < 0 ? " 뒤처짐" : ""}
                 </span>
               </>
+            ) : (
+              "확정된 달이 없어 진도를 비교할 수 없습니다"
             )}
           </p>
-          <p className="text-center text-xs text-muted-foreground">
-            실적은 확정된 달만 ({confirmedText || "확정 월 없음"})
-          </p>
+          {progress.excludedMonths.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground">
+              {excludedText}은 미확정이라 진도 비교에서 제외
+            </p>
+          )}
+          {progress.gapMonths.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground">
+              {gapText}은 미확정이라 누적 실적에서 빠져 있습니다
+            </p>
+          )}
         </figcaption>
       </figure>
     </ChartCard>

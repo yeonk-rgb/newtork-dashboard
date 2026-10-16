@@ -81,6 +81,7 @@ type Period =
 - `getSalesShareByIndustry(period)`, `getSalesShareBySeries(period)` → `{ items, source: "mock" | "production" }`
 - 타입: `src/shared/contracts/production.ts`
 - 합의 전까지 경영지원팀은 같은 형식의 **목업**(`src/modules/management/external/production-mock.ts`)으로 개발합니다. 이름·타입을 바꿀 땐 서로 알려 주세요.
+- 메인 화면은 목업일 때(`source: "mock"`)만 **합계를 그 기간 확정 총매출에 맞추고 비중만 가상으로** 보여줍니다 (`src/modules/management/external/align-mock.ts`, 시연 시 매출 카드와 합계가 다르지 않게). 실제 생산팀 데이터(`source: "production"`)는 그대로 쓰므로, **통합 후에는 이 맞춤이 필요 없습니다** — 목업 파일과 함께 정리해 주세요. 단, 실제 데이터의 판매 합계와 경영지원 매출 합계가 다를 수 있으니(집계 기준일·VAT·용역 포함 여부) 그 차이를 화면에서 어떻게 안내할지는 통합 때 정합니다.
 
 ## 7. 공통 UI
 

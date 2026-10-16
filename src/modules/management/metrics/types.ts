@@ -133,12 +133,19 @@ export type AnnualProgress = {
   /** 목표 − 실적 (초과 달성이면 0) */
   remaining: bigint;
   rate: number | null;
-  /** 마감된 개월 수 (올해: 이번 달 전까지, 지난해: 12, 미래: 0) */
-  elapsedMonths: number;
-  /** 연간 경과율 = 마감 개월 ÷ 12 (진도 기준선) */
+  /**
+   * 진도 기준 월 = 확정된 마지막 달 (실적과 같은 기준으로 비교하기 위해).
+   * 확정된 달이 없으면 0
+   */
+  basisMonth: number;
+  /** 연간 경과율 = 기준 월 ÷ 12 (진도 기준선 눈금) */
   elapsedRatio: number;
   /** 실적에 포함된 확정 월 */
   confirmedMonths: number[];
+  /** 기준 월 이후 이미 마감됐지만 미확정인 달 → "진도 비교에서 제외" 안내 */
+  excludedMonths: number[];
+  /** 기준 월 이전인데 미확정인 달 → 실적에서 빠져 있음 안내 */
+  gapMonths: number[];
 };
 
 export type TargetKind =

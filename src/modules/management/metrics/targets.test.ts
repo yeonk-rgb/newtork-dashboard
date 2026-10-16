@@ -159,28 +159,43 @@ describe("computeAnnualProgress (연간 목표 도넛)", () => {
   );
   const t = target(2_400n);
 
-  it("선택 기간과 무관하게 그 해 확정 월 전부 + 경과율(이번 달 전까지)", () => {
+  it("경과율 = 확정된 마지막 달 ÷ 12 (실적과 같은 기준), 9월은 진도 비교에서 제외", () => {
     expect(computeAnnualProgress(2026, t, months, d("2026-10-16"))).toEqual({
       year: 2026,
       target: 2_400n,
       actual: 800n,
       remaining: 1_600n,
       rate: 800 / 2400,
-      elapsedMonths: 9,
-      elapsedRatio: 0.75,
+      basisMonth: 8,
+      elapsedRatio: 8 / 12,
       confirmedMonths: [1, 2, 3, 4, 5, 6, 7, 8],
+      excludedMonths: [9],
+      gapMonths: [],
     });
   });
 
-  it("지난해는 경과율 100%, 미래 연도는 0%", () => {
-    const lastYear = { ...t, year: 2025 };
+  it("중간에 미확정 달이 있으면 gapMonths 로 알려준다", () => {
+    const withGap = months.map((m) =>
+      m.month === 5 ? { ...m, status: "DRAFT" as const } : m,
+    );
+    const result = computeAnnualProgress(2026, t, withGap, d("2026-10-16"));
+    expect(result?.basisMonth).toBe(8);
+    expect(result?.gapMonths).toEqual([5]);
+    expect(result?.excludedMonths).toEqual([9]);
+  });
+
+  it("확정된 달이 없으면 경과율 0, 지난해 전부 확정이면 100%", () => {
+    expect(computeAnnualProgress(2026, t, [], d("2026-10-16"))).toMatchObject({
+      basisMonth: 0,
+      elapsedRatio: 0,
+      excludedMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    });
+    const full = Array.from({ length: 12 }, (_, i) =>
+      financeMonth(2025, i + 1, { productSales: 100n }),
+    );
     expect(
-      computeAnnualProgress(2025, lastYear, [], d("2026-10-16"))?.elapsedRatio,
-    ).toBe(1);
-    const nextYear = { ...t, year: 2027 };
-    expect(
-      computeAnnualProgress(2027, nextYear, [], d("2026-10-16"))?.elapsedRatio,
-    ).toBe(0);
+      computeAnnualProgress(2025, { ...t, year: 2025 }, full, d("2026-10-16")),
+    ).toMatchObject({ basisMonth: 12, elapsedRatio: 1, excludedMonths: [] });
   });
 
   it("초과 달성이면 남은 금액 0, 목표 없으면 null", () => {

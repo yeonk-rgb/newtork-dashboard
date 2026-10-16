@@ -51,12 +51,17 @@ function TooltipBody({
 export function ShareDonut({
   title,
   badge,
+  note,
+  emptyText = "이 기간에 데이터가 없습니다.",
   items,
   order,
   colors,
 }: {
   title: string;
   badge?: string;
+  /** 카드 아래 작은 안내 (예: 합계는 확정 매출, 비중은 가상) */
+  note?: string;
+  emptyText?: string;
   items: ShareItem[];
   /** 조각 순서 (색 인접 검증 순서) */
   order: string[];
@@ -93,7 +98,7 @@ export function ShareDonut({
     return (
       <ChartCard title={title} badge={badge}>
         <p className="py-16 text-center text-sm text-muted-foreground">
-          이 기간에 데이터가 없습니다.
+          {emptyText}
         </p>
       </ChartCard>
     );
@@ -198,6 +203,7 @@ export function ShareDonut({
           </ul>
         </div>
       )}
+      {note && <p className="mt-3 text-[11px] text-muted-foreground">{note}</p>}
     </ChartCard>
   );
 }
