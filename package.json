@@ -14,10 +14,11 @@
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
     "db:up": "docker compose up -d",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run test",
     "db:seed": "prisma db seed",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

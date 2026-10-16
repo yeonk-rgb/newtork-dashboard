@@ -11,6 +11,9 @@
 | `docs/03-meeting-notes-20261014.md` | 10/14 고객사 미팅 내용 — 기본 사항, 팀별 요청, 권한, 보안 |
 | `docs/04-company-profile.md` | 고객사 소개 — 업종, 사업 영역, 인증, 조직 |
 | `docs/05-open-questions.md` | 고객사 확인 필요 사항 표 (질문·관련 팀·상태) |
+| `docs/06-management-checklist.md` | 경영지원팀 요구사항 추적표 (구현 단계·관련 파일·상태) |
+| `docs/interface-production.md` | 생산팀 → 경영지원팀 데이터 연동 함수 형식 (합의 전 초안) |
+| `docs/integration-notes.md` | 팀별 저장소를 합칠 때 맞출 규칙 (팀원 공유용) |
 
 ## 프로젝트 개요
 
@@ -21,6 +24,18 @@
   - 생산팀
   - 서비스팀
 - **기존 환경**: 다우오피스 그룹웨어, ERP(시각화 기능 없음), 엑셀로 수금 관리 중
+
+## 이 저장소의 범위 (팀 결정, 2026-10-16)
+
+팀별로 각자 저장소에서 개발하고 나중에 합친다. **이 저장소는 경영지원팀(메인 화면 포함) 모듈 개발용**이다.
+
+- **개발 범위**: `modules/management`, `app/(dashboard)/`의 메인(`page.tsx`)·`management/`, `prisma/schema/management.prisma`(`mgmt_*` 테이블), 경영지원팀이 쓰는 `shared/`
+- **손대지 않는 곳**: `production/`, `service/` 폴더(모듈·화면·스키마)는 placeholder 그대로 두고 수정하지 않는다
+- **인증·계정·권한**: 로그인 방식은 **통합 시 팀과 함께 결정**한다. 지금은 **개발용 임시 사용자**로 진행하되, 권한 확인은 **반드시 `shared/auth`의 `can()` 함수를 거친다** → 나중에 `can()`과 임시 사용자 부분만 실제 로그인으로 교체
+- **통합 대비 규칙**
+  - 경영지원팀 코드는 `modules/management`와 `mgmt_` 테이블 안에서만 작성한다
+  - 다른 팀 데이터는 `docs/interface-production.md`의 함수 형식으로만 가져오고, **지금은 목업**을 쓴다 (목업도 같은 함수 이름·타입)
+  - 합칠 때 맞출 규칙은 `docs/integration-notes.md`에 정리하고, 규칙이 바뀌면 함께 갱신한다
 
 ## 내 담당: 경영지원팀
 
@@ -59,6 +74,8 @@
 
 ## 공통 정책
 
+> 권한·계정은 고객사 요구사항 기록용이다. 실제 구현은 통합 시 결정 (위 "이 저장소의 범위" 참고). 지금은 `can()`에 이 표의 규칙을 임시 사용자 기준으로 반영한다.
+
 ### 권한
 | 역할 | 권한 |
 |---|---|
@@ -86,7 +103,7 @@
 | 금액 타입 | Prisma `BigInt` (`Int`는 최대 약 21억 원이라 사용 금지) |
 | 차트 | Recharts (도넛 = `PieChart` + `innerRadius`) |
 | UI | Tailwind + shadcn/ui |
-| 인증 | Better Auth (아이디/비밀번호, admin 기능으로 계정 발급·초기화) |
+| 인증 | **통합 시 결정** (후보: Better Auth). 지금은 개발용 임시 사용자 + `shared/auth`의 `can()` |
 | 검증 | Zod (폼·업로드·Server Action 공통) |
 | 엑셀 | exceljs |
 | PDF | pdfjs-dist (텍스트 PDF) / 스캔본은 Claude API로 추출 |
@@ -100,26 +117,26 @@ newtork-dashboard/ (= 이 폴더)
 ├─ prisma.config.ts           # Prisma 7 설정 (스키마 폴더, 마이그레이션 경로, DB URL)
 ├─ prisma/
 │  ├─ schema/
-│  │  ├─ base.prisma          # datasource, generator, User·Team·Role
-│  │  ├─ management.prisma
-│  │  ├─ production.prisma
-│  │  └─ service.prisma
+│  │  ├─ base.prisma          # datasource, generator (User 등 인증 모델은 통합 시)
+│  │  ├─ management.prisma    # mgmt_* 테이블
+│  │  ├─ production.prisma    # (이 저장소에서는 만들지 않음)
+│  │  └─ service.prisma       # (이 저장소에서는 만들지 않음)
 │  ├─ migrations/
-│  └─ seed.ts                 # 초기 계정·팀 데이터
+│  └─ seed.ts                 # 경영지원팀 샘플 데이터 (가짜)
 ├─ src/
 │  ├─ app/
-│  │  ├─ (auth)/login/
+│  │  ├─ (auth)/login/        # placeholder — 통합 시
 │  │  ├─ (dashboard)/
-│  │  │  ├─ layout.tsx        # 공통 셸: 다우오피스풍 사이드바·헤더, 세션 확인
+│  │  │  ├─ layout.tsx        # 공통 셸: 다우오피스풍 사이드바·헤더
 │  │  │  ├─ page.tsx          # 메인 = 전사 요약 (경영지원팀)
-│  │  │  ├─ admin/            # 계정 발급·초기화, 권한 관리
+│  │  │  ├─ admin/            # placeholder — 통합 시
 │  │  │  ├─ management/
-│  │  │  ├─ production/
-│  │  │  └─ service/
-│  │  ├─ account/password/    # 본인 비밀번호 변경
+│  │  │  ├─ production/       # placeholder — 수정 금지
+│  │  │  └─ service/          # placeholder — 수정 금지
+│  │  ├─ account/password/    # placeholder — 통합 시
 │  │  └─ api/                 # 꼭 필요한 Route Handler만
 │  ├─ modules/
-│  │  ├─ admin/
+│  │  ├─ admin/               # placeholder — 통합 시
 │  │  ├─ management/
 │  │  │  ├─ components/
 │  │  │  ├─ actions.ts        # Server Actions
@@ -127,17 +144,17 @@ newtork-dashboard/ (= 이 폴더)
 │  │  │  ├─ schemas.ts        # Zod 스키마
 │  │  │  ├─ excel-mapping.ts  # 엑셀 열 → 필드 매핑
 │  │  │  └─ index.ts          # 외부 공개 API
-│  │  ├─ production/          # 같은 구조
-│  │  └─ service/             # 같은 구조
+│  │  ├─ production/          # placeholder — 수정 금지
+│  │  └─ service/             # placeholder — 수정 금지
 │  ├─ shared/
-│  │  ├─ auth/                # 세션, can(user, action, team)
+│  │  ├─ auth/                # can(user, action, team) + 개발용 임시 사용자 (통합 시 교체)
 │  │  ├─ db/                  # Prisma client (generated/ 는 git 제외)
 │  │  ├─ ai/                  # Anthropic 호출 (server-only)
 │  │  ├─ upload/              # 엑셀/PDF 파서 공통
 │  │  ├─ format/              # 금액 콤마, BigInt 직렬화, 기간(월/분기/연) 유틸
 │  │  ├─ lib/                 # cn() 등 공통 헬퍼
 │  │  └─ ui/                  # shadcn 컴포넌트, app-shell, DonutChart, KpiCard, PeriodToggle
-│  └─ proxy.ts                # (인증 구현 시) 미로그인 차단, 팀 경로 1차 차단
+│  └─ proxy.ts                # (통합 시) 미로그인 차단, 팀 경로 1차 차단
 ├─ docker-compose.yml         # 로컬 PostgreSQL (Docker 사용 시, 포트 5433)
 ├─ .env.example               # 키 이름만 (값 없음)
 ├─ CODEOWNERS
@@ -148,18 +165,30 @@ newtork-dashboard/ (= 이 폴더)
 
 | 영역 | 담당 |
 |---|---|
-| `admin/`, `shared/`, `prisma/schema/base.prisma`, `management/` | 나 (경영지원팀) |
-| `production/` (+ `production.prisma`) | 생산팀 담당자 |
-| `service/` (+ `service.prisma`) | 서비스팀 담당자 |
+| `management/`, 메인 화면, `shared/`, `prisma/schema/base.prisma`·`management.prisma` | 나 (경영지원팀) — **이 저장소의 개발 범위** |
+| `admin/`, 로그인·계정 | 통합 시 팀과 함께 결정 |
+| `production/` (+ `production.prisma`) | 생산팀 담당자 — 각자 저장소에서 개발, 여기서는 placeholder |
+| `service/` (+ `service.prisma`) | 서비스팀 담당자 — 각자 저장소에서 개발, 여기서는 placeholder |
 
 ## 운영 규칙
 
 - **다른 팀 모듈 폴더 수정 금지**: 내 담당이 아닌 `modules/<팀>`, `app/(dashboard)/<팀>`, `<팀>.prisma`는 수정하지 않는다. 필요한 변경은 해당 담당자에게 요청한다.
 - **모듈 간 import 금지**: `modules/<팀>`끼리 직접 import하지 않는다. 공통 코드는 `shared/`에만 둔다. (`eslint-plugin-boundaries`로 검사)
-- **연동은 `index.ts` 공개 함수로만**: 메인 대시보드 등에서 다른 팀 데이터가 필요하면 해당 모듈 `index.ts`가 export한 함수(예: `getProductionSummary(period)`)만 사용한다.
+- **연동은 `index.ts` 공개 함수로만**: 메인 대시보드 등에서 다른 팀 데이터가 필요하면 해당 모듈 `index.ts`가 export한 함수(예: `getSalesShareByIndustry(period)`)만 사용한다. 통합 전까지는 `docs/interface-production.md` 형식 그대로의 **목업**을 쓴다.
 - **기간 처리**: DB에는 **월 단위로만 저장**하고, 분기·연간은 조회할 때 계산한다.
 - **마이그레이션**: 작업 중에는 `npm run db:push`로 로컬 DB에만 반영하고, 마이그레이션 파일은 **PR 올리기 직전에** `npx prisma migrate dev --name <설명>`으로 1개 생성한다. (`prisma/migrations/`는 git에 포함)
-- **권한 확인은 반드시 서버에서**: 페이지·Server Action·조회 함수 모두 서버에서 권한을 확인한다. UI에서 메뉴·버튼을 숨기는 건 보조 수단일 뿐이다.
+- **권한 확인은 반드시 서버에서, `can()`으로**: 페이지·Server Action·조회 함수 모두 서버에서 `shared/auth`의 `can()`을 호출해 확인한다. 역할 비교를 직접 쓰지 않는다. UI에서 메뉴·버튼을 숨기는 건 보조 수단일 뿐이다.
+
+## 기능 작업 공통 절차
+
+1. `main` 최신화(`git pull`) 후 `feat/<기능명>` 브랜치 생성
+2. 코드 작성 전에 **설계안(화면 구성, 파일 목록, 데이터 흐름)과 질문 목록**을 먼저 보여주고 승인받기
+3. 구현은 작은 단위로 나누고, 단위마다 `npm run check` 통과 확인
+4. 스키마를 바꿨으면 PR 직전에 마이그레이션 생성 (아래 체크리스트)
+5. 화면 작업이 끝나면 `npm run dev`로 확인할 **주소와 확인 포인트**를 알려주기
+6. 끝나면 PR 생성 후 **CI 결과 보고**. 머지는 사람이 직접
+7. 고객사 확인이 필요한 건 `docs/05-open-questions.md`에 추가
+8. 각 단계가 끝나면 `docs/06-management-checklist.md` 상태 업데이트
 
 ## PR 올리기 전 체크리스트
 
