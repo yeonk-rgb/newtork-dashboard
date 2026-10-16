@@ -1,0 +1,125 @@
+// 경영지원팀 스키마 (담당: 경영지원팀)
+// - 금액은 모두 BigInt (원 단위 정수)
+// - *ById 는 지금은 userId 문자열만 저장. 3단계 인증에서 User 관계 연결 예정
+// - 테이블명은 mgmt_ 접두사
+
+/// 입력 상태: 임시저장 / 확정 (대시보드에는 CONFIRMED만 반영)
+enum MgmtEntryStatus {
+  DRAFT
+  CONFIRMED
+}
+
+/// 비용 성격: 고정비 / 변동비 (BEP 계산용)
+enum MgmtCostType {
+  FIXED
+  VARIABLE
+}
+
+/// 연간 목표
+model AnnualTarget {
+  id            String  @id @default(cuid())
+  year          Int     @unique
+  /// 연간 목표매출액
+  revenueTarget BigInt
+  /// 분기별 목표(선택). 비어 있는 분기 = (연간 − 입력한 분기 합) ÷ 빈 분기 수, 나머지는 마지막 빈 분기에 더함
+  q1Target      BigInt?
+  q2Target      BigInt?
+  q3Target      BigInt?
+  q4Target      BigInt?
+
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("mgmt_annual_target")
+}
+
+/// 월별 재무 입력 (연도+월 유일)
+model MonthlyFinance {
+  id    String @id @default(cuid())
+  year  Int
+  /// 1~12 (애플리케이션에서 Zod로 검증)
+  month Int
+
+  /// 제품 매출액
+  productSales     BigInt @default(0)
+  /// 상품 매출액
+  goodsSales       BigInt @default(0)
+  /// 용역 매출액
+  serviceSales     BigInt @default(0)
+  /// 상품 매입액
+  goodsPurchase    BigInt @default(0)
+  /// 원재료 매입액
+  materialPurchase BigInt @default(0)
+  /// 경비 지출액
+  operatingExpense BigInt @default(0)
+
+  status      MgmtEntryStatus @default(DRAFT)
+  confirmedAt DateTime?
+
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  otherExpenses OtherExpense[]
+
+  @@unique([year, month])
+  @@map("mgmt_monthly_finance")
+}
+
+/// "그 외 지출" 항목 (관리자가 추가·비활성화)
+model ExpenseCategory {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  /// 고정비/변동비 — BEP 계산 시 사용, 지금은 비워 둘 수 있음
+  costType  MgmtCostType?
+  /// false면 새 입력 화면에서 숨김 (과거 데이터는 유지)
+  isActive  Boolean       @default(true)
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  otherExpenses OtherExpense[]
+
+  @@map("mgmt_expense_category")
+}
+
+/// 월별 "그 외 지출" 금액
+model OtherExpense {
+  id               String          @id @default(cuid())
+  monthlyFinanceId String
+  monthlyFinance   MonthlyFinance  @relation(fields: [monthlyFinanceId], references: [id], onDelete: Cascade)
+  categoryId       String
+  /// 사용 중인 항목은 삭제 불가 (비활성화만 가능)
+  category         ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  amount           BigInt
+
+  @@unique([monthlyFinanceId, categoryId])
+  @@index([categoryId])
+  @@map("mgmt_other_expense")
+}
+
+/// 미수금 (거래 건별)
+model Receivable {
+  id           String    @id @default(cuid())
+  customerName String
+  /// 발생일
+  occurredOn   DateTime  @db.Date
+  amount       BigInt
+  isCollected  Boolean   @default(false)
+  /// 수금일
+  collectedOn  DateTime? @db.Date
+  /// 수금 예정일 (자금수지 예측용)
+  dueOn        DateTime? @db.Date
+  note         String?
+
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isCollected, occurredOn])
+  @@map("mgmt_receivable")
+}
