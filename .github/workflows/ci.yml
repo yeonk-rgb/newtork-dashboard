@@ -1,0 +1,76 @@
+# PR 자동 검사: lint·typecheck·test, 스키마↔마이그레이션 일치, 빌드
+# - main 으로 향하는 PR에서만 실행 (main push 시에는 실행 안 함)
+# - 비공개 저장소 Free 플랜은 브랜치 보호가 없어 실패해도 머지가 막히지 않는다 → ✓ 확인 후 머지
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+# 같은 PR에 새 커밋이 오면 이전 실행 취소 (Actions 사용 시간 절약)
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: newtork_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # CI 실행 중에만 존재하는 임시 DB — 비밀값 아님
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/newtork_ci?schema=public
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: Prisma 스키마 검사 + 클라이언트 생성
+        run: |
+          npx prisma validate
+          npx prisma generate
+
+      - name: lint · typecheck · test
+        run: npm run check
+
+      - name: 스키마 ↔ 마이그레이션 일치 검사
+        run: |
+          npx prisma migrate deploy
+          set +e
+          npx prisma migrate diff --from-config-datasource --to-schema prisma/schema --exit-code
+          code=$?
+          set -e
+          if [ "$code" -eq 2 ]; then
+            echo "::error::prisma/schema 와 prisma/migrations 가 다릅니다. 로컬에서 'npx prisma migrate dev --name <설명>' 으로 마이그레이션 파일을 만들어 커밋하세요."
+            exit 1
+          fi
+          exit "$code"
+
+      - name: 빌드
+        run: npm run build
