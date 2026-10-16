@@ -1,0 +1,89 @@
+# NEWTORK 경영 대시보드 (newtork-dashboard)
+
+뉴토크코리아 사내 경영 대시보드 PoC. 프로젝트 개요·규칙은 [CLAUDE.md](CLAUDE.md) 참고.
+
+## 1. 필수 설치
+
+| 도구 | 버전 | 비고 |
+|---|---|---|
+| Node.js | 22 이상 (LTS) | `node -v`로 확인 |
+| PostgreSQL | 16 | **Postgres.app** 또는 **Docker** 중 하나 |
+| Git | — | |
+
+## 2. 설치
+
+```bash
+npm install
+cp .env.example .env
+```
+
+## 3. DB 준비 — 둘 중 하나 선택
+
+### A. Postgres.app 사용 시 (포트 5432)
+
+[Postgres.app](https://postgresapp.com)을 실행한 상태에서 DB를 만든다.
+
+```bash
+createdb newtork
+```
+
+`.env` 예시 (비밀번호 없음, `macbook` 자리에 본인 맥 사용자명):
+
+```env
+DATABASE_URL="postgresql://macbook@localhost:5432/newtork?schema=public"
+```
+
+### B. Docker 사용 시 (포트 5433)
+
+```bash
+npm run db:up        # = docker compose up -d
+```
+
+`.env` 예시 (docker-compose.yml의 계정):
+
+```env
+DATABASE_URL="postgresql://newtork:newtork@localhost:5433/newtork?schema=public"
+```
+
+> Docker는 5433을 쓴다. Postgres.app과 같은 맥에서 동시에 돌려도 포트가 겹치지 않는다.
+
+### DB 설정 확인
+
+```bash
+npm run db:validate  # prisma.config.ts + prisma/schema/*.prisma 검사
+```
+
+## 4. 실행
+
+```bash
+npm run dev          # http://localhost:3000
+```
+
+## 5. 자주 쓰는 명령
+
+| 명령 | 설명 |
+|---|---|
+| `npm run dev` | 개발 서버 (Turbopack) |
+| `npm run test` | 테스트 1회 실행 (Vitest) |
+| `npm run test:watch` | 테스트 감시 모드 — 필요할 때만 |
+| `npm run lint` | ESLint (팀 모듈 경계 검사 포함) |
+| `npm run format` | Prettier로 전체 포맷 |
+| `npm run db:validate` | Prisma 스키마 검사 |
+| `npm run db:generate` | Prisma Client 생성 (스키마 변경 후) |
+
+## 6. 팀 작업 규칙 (요약)
+
+- 각자 담당 폴더(`src/modules/<팀>`, `src/app/(dashboard)/<팀>`, `prisma/schema/<팀>.prisma`)만 수정한다. 담당자는 [CODEOWNERS](CODEOWNERS) 참고.
+- 팀 모듈끼리 직접 import 금지. 다른 팀 데이터는 그 모듈의 `index.ts`가 export한 함수로만 가져온다. → `npm run lint`가 잡아낸다.
+- 마이그레이션 파일은 main 머지 직전에만 생성한다.
+- 비밀키는 `.env`에만. `.env`는 git에 올라가지 않는다(`.env.example`만 커밋).
+
+## 7. 저사양 PC 팁
+
+- 개발 서버는 Turbopack이 기본이다. `next dev`와 `next build`를 동시에 돌리지 않는다.
+- 테스트는 `npm run test`(1회 실행)를 기본으로 쓰고, 감시 모드는 필요할 때만 켠다.
+- `.vscode/settings.json`에서 `node_modules`, `.next`를 파일 감시·검색에서 제외해 두었다.
+- macOS에서는 터미널을 "개발자 도구"로 등록하면 Gatekeeper 검사가 줄어 빌드가 빨라진다 (Next.js 공식 가이드, 관리자 비밀번호 필요):
+  1. 터미널에서 `sudo spctl developer-mode enable-terminal`
+  2. 시스템 설정 → 개인정보 보호 및 보안 → 개발자 도구 → 사용하는 터미널(VS Code 포함) 켜기
+  3. 터미널 재시작

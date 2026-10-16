@@ -1,0 +1,167 @@
+# CLAUDE.md
+
+## 요구사항 문서
+
+요구사항 원문은 `docs/` 참고. (고객사 미팅·기획 자료 원문이므로 내용을 임의로 바꾸지 않는다)
+
+| 파일 | 내용 |
+|---|---|
+| `docs/01-project-overview.md` | 프로젝트 기획서 요약 — 배경, PoC 목표, 주요 기능, 기대효과, 산출물 |
+| `docs/02-team-requirements.md` | 팀별 대시보드 항목 — 메인(경영지원)·경영지원·생산·서비스팀 입력/표시 항목 |
+| `docs/03-meeting-notes-20261014.md` | 10/14 고객사 미팅 내용 — 기본 사항, 팀별 요청, 권한, 보안 |
+| `docs/04-company-profile.md` | 고객사 소개 — 업종, 사업 영역, 인증, 조직 |
+| `docs/05-open-questions.md` | 고객사 확인 필요 사항 표 (질문·관련 팀·상태) |
+
+## 프로젝트 개요
+
+- **고객사**: 뉴토크코리아(NEWTORK) — 전동밸브조작기 제조사, 직원 12명
+- **목적**: 대표가 현장에 상주하지 않아도 **월말 5분 입력 + 엑셀 업로드**만으로 전사 원가·이익률·자금 수지 등 핵심 지표를 한눈에 보는 경영 대시보드 웹앱 (PoC)
+- **팀 구성** (각 팀은 다른 개발자가 담당)
+  - 경영지원팀 — 메인 화면, **내 담당**
+  - 생산팀
+  - 서비스팀
+- **기존 환경**: 다우오피스 그룹웨어, ERP(시각화 기능 없음), 엑셀로 수금 관리 중
+
+## 내 담당: 경영지원팀
+
+### 입력 항목
+숫자, 월 단위, 원 단위
+
+| 구분 | 항목 |
+|---|---|
+| 목표 | 연간 목표매출액 |
+| 매입 | 상품 매입액, 원재료 매입액 |
+| 지출 | 경비 지출액, 그 외 지출액 (광고선전비·접대비 등 세부 항목 추가 가능) |
+| 매출 | 제품 매출액, 상품 매출액, 용역 매출액 |
+| 채권 | 미수금 |
+
+### 기간 기준
+- 기본: **분기** (4분기)
+- 월별 / 분기 / 연간 전환 가능
+
+### 시각화
+원형(도넛) 그래프 선호
+- 목표매출 달성률
+- 판매처 산업분야별 비중: 상하수도, 발전소, 가스, 오일, 석유, 민간 플랜트, 기타
+- 제품 시리즈별 비중
+
+### AI 분석 코멘트
+- 이번 분기 부족한 점 · 매출 상황 요약
+- 다음 분기 개선점
+
+## 공통 정책
+
+### 권한
+| 역할 | 권한 |
+|---|---|
+| 대표 · 관리자 · 경영지원팀 | 전체 권한 |
+| 생산팀 · 서비스팀 | 자기 팀만 열람 |
+| 각 팀장 | 자기 팀 데이터 수정 가능 |
+| 팀원 | 열람만 가능 |
+
+### 계정
+- 관리자가 일괄 발급 → 개인이 비밀번호 변경
+- 분실 시 관리자가 초기화
+
+### UI
+- 다우오피스 스타일 참고
+- 한국어
+- 금액은 천 단위 콤마 표시 (예: 1,234,000)
+
+## 기술 스택
+
+| 영역 | 선택 |
+|---|---|
+| 프레임워크 | Next.js 16 (App Router, Turbopack) + TypeScript — `middleware.ts`는 `proxy.ts`로 이름 변경됨, 코드 작성 전 `node_modules/next/dist/docs/` 확인 |
+| DB / ORM | Prisma 7.10.1 (정확히 고정) + PostgreSQL 16 — 로컬 PostgreSQL 16 (docker compose 또는 Postgres.app), SQLite 사용 안 함 |
+| Prisma 7 변경점 | 접속 URL은 `prisma.config.ts`에서 지정(스키마엔 `provider`만), `.env`는 `dotenv/config`로 로드, 클라이언트는 `@prisma/adapter-pg` 어댑터 필수, generator는 `prisma-client` + `output`(`src/shared/db/generated`) |
+| 금액 타입 | Prisma `BigInt` (`Int`는 최대 약 21억 원이라 사용 금지) |
+| 차트 | Recharts (도넛 = `PieChart` + `innerRadius`) |
+| UI | Tailwind + shadcn/ui |
+| 인증 | Better Auth (아이디/비밀번호, admin 기능으로 계정 발급·초기화) |
+| 검증 | Zod (폼·업로드·Server Action 공통) |
+| 엑셀 | exceljs |
+| PDF | pdfjs-dist (텍스트 PDF) / 스캔본은 Claude API로 추출 |
+| AI | Anthropic SDK — **server-only**, 클라이언트에서 호출 금지 |
+
+## 폴더 구조
+
+```
+newtork-dashboard/ (= 이 폴더)
+├─ docs/                      # 기획·회의 문서
+├─ prisma.config.ts           # Prisma 7 설정 (스키마 폴더, 마이그레이션 경로, DB URL)
+├─ prisma/
+│  ├─ schema/
+│  │  ├─ base.prisma          # datasource, generator, User·Team·Role
+│  │  ├─ management.prisma
+│  │  ├─ production.prisma
+│  │  └─ service.prisma
+│  ├─ migrations/
+│  └─ seed.ts                 # 초기 계정·팀 데이터
+├─ src/
+│  ├─ app/
+│  │  ├─ (auth)/login/
+│  │  ├─ (dashboard)/
+│  │  │  ├─ layout.tsx        # 공통 셸: 다우오피스풍 사이드바·헤더, 세션 확인
+│  │  │  ├─ page.tsx          # 메인 = 전사 요약 (경영지원팀)
+│  │  │  ├─ admin/            # 계정 발급·초기화, 권한 관리
+│  │  │  ├─ management/
+│  │  │  ├─ production/
+│  │  │  └─ service/
+│  │  ├─ account/password/    # 본인 비밀번호 변경
+│  │  └─ api/                 # 꼭 필요한 Route Handler만
+│  ├─ modules/
+│  │  ├─ admin/
+│  │  ├─ management/
+│  │  │  ├─ components/
+│  │  │  ├─ actions.ts        # Server Actions
+│  │  │  ├─ queries.ts        # 조회 + 월→분기/연 집계
+│  │  │  ├─ schemas.ts        # Zod 스키마
+│  │  │  ├─ excel-mapping.ts  # 엑셀 열 → 필드 매핑
+│  │  │  └─ index.ts          # 외부 공개 API
+│  │  ├─ production/          # 같은 구조
+│  │  └─ service/             # 같은 구조
+│  ├─ shared/
+│  │  ├─ auth/                # 세션, can(user, action, team)
+│  │  ├─ db/                  # Prisma client (generated/ 는 git 제외)
+│  │  ├─ ai/                  # Anthropic 호출 (server-only)
+│  │  ├─ upload/              # 엑셀/PDF 파서 공통
+│  │  ├─ format/              # 금액 콤마, BigInt 직렬화, 기간(월/분기/연) 유틸
+│  │  ├─ lib/                 # cn() 등 공통 헬퍼
+│  │  └─ ui/                  # shadcn 컴포넌트, app-shell, DonutChart, KpiCard, PeriodToggle
+│  └─ proxy.ts                # (인증 구현 시) 미로그인 차단, 팀 경로 1차 차단
+├─ docker-compose.yml         # 로컬 PostgreSQL (Docker 사용 시, 포트 5433)
+├─ .env.example               # 키 이름만 (값 없음)
+├─ CODEOWNERS
+└─ CLAUDE.md
+```
+
+## 담당
+
+| 영역 | 담당 |
+|---|---|
+| `admin/`, `shared/`, `prisma/schema/base.prisma`, `management/` | 나 (경영지원팀) |
+| `production/` (+ `production.prisma`) | 생산팀 담당자 |
+| `service/` (+ `service.prisma`) | 서비스팀 담당자 |
+
+## 운영 규칙
+
+- **다른 팀 모듈 폴더 수정 금지**: 내 담당이 아닌 `modules/<팀>`, `app/(dashboard)/<팀>`, `<팀>.prisma`는 수정하지 않는다. 필요한 변경은 해당 담당자에게 요청한다.
+- **모듈 간 import 금지**: `modules/<팀>`끼리 직접 import하지 않는다. 공통 코드는 `shared/`에만 둔다. (`eslint-plugin-boundaries`로 검사)
+- **연동은 `index.ts` 공개 함수로만**: 메인 대시보드 등에서 다른 팀 데이터가 필요하면 해당 모듈 `index.ts`가 export한 함수(예: `getProductionSummary(period)`)만 사용한다.
+- **기간 처리**: DB에는 **월 단위로만 저장**하고, 분기·연간은 조회할 때 계산한다.
+- **마이그레이션**: `prisma migrate dev`로 마이그레이션 파일은 **main 머지 직전에만** 생성한다. 작업 중에는 로컬에서만 확인한다.
+- **권한 확인은 반드시 서버에서**: 페이지·Server Action·조회 함수 모두 서버에서 권한을 확인한다. UI에서 메뉴·버튼을 숨기는 건 보조 수단일 뿐이다.
+
+## 코딩 규칙
+
+- 금액은 **정수(원)**로 저장(`BigInt`), 소수 계산은 표시 단계에서만
+- `BigInt`는 서버→클라이언트 전달 시 `shared/format/bigint.ts`의 `serializeBigInt`로 정수 문자열로 변환, 표시는 `shared/format/money.ts`
+- 비밀키는 `.env`에만 보관, 클라이언트로 **절대 노출 금지**
+- **작업 전 계획을 먼저 보여주고 승인 후 코드 작성**
+- **작업 단계가 끝날 때마다 `npm run check` 통과 확인** (lint + typecheck + test)
+- **고객사 확인이 필요한 질문이 생기면 `docs/05-open-questions.md` 표에 추가**
+
+## 미정 사항 (확정 전까지 가정하지 말고 확인할 것)
+
+`docs/05-open-questions.md` 표 참고 — 상태가 "미확인"인 항목은 임의로 가정하지 않는다.

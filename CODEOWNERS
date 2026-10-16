@@ -1,0 +1,25 @@
+# 폴더별 담당자 — PR 리뷰어 자동 지정
+# TODO: @production-dev / @service-dev 를 실제 GitHub 아이디로 교체
+# (뒤에 오는 규칙이 앞의 규칙보다 우선한다)
+
+# 기본 및 공통 영역: 경영지원팀
+*                                   @yeonk-rgb
+/src/shared/                        @yeonk-rgb
+/src/modules/admin/                 @yeonk-rgb
+/src/app/(dashboard)/admin/         @yeonk-rgb
+/prisma/schema/base.prisma          @yeonk-rgb
+
+# 경영지원팀
+/src/modules/management/            @yeonk-rgb
+/src/app/(dashboard)/management/    @yeonk-rgb
+/prisma/schema/management.prisma    @yeonk-rgb
+
+# 생산팀
+/src/modules/production/            @production-dev
+/src/app/(dashboard)/production/    @production-dev
+/prisma/schema/production.prisma    @production-dev
+
+# 서비스팀
+/src/modules/service/               @service-dev
+/src/app/(dashboard)/service/       @service-dev
+/prisma/schema/service.prisma       @service-dev

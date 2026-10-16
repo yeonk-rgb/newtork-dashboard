@@ -1,0 +1,12 @@
+// 공통 스키마 (담당: 경영지원팀)
+// 팀별 모델은 같은 폴더의 management.prisma / production.prisma / service.prisma 에 작성한다.
+// 접속 URL은 prisma.config.ts 에서 지정한다.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/shared/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}

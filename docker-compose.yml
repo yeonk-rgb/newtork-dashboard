@@ -1,0 +1,18 @@
+# 로컬 개발용 PostgreSQL (Docker 사용 시)
+# Postgres.app 등 로컬 PostgreSQL이 5432를 쓰는 경우가 있어 호스트 포트는 5433으로 둔다.
+services:
+  db:
+    image: postgres:16
+    container_name: newtork-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: newtork
+      POSTGRES_PASSWORD: newtork
+      POSTGRES_DB: newtork
+    ports:
+      - "5433:5432"
+    volumes:
+      - newtork-db-data:/var/lib/postgresql/data
+
+volumes:
+  newtork-db-data:
