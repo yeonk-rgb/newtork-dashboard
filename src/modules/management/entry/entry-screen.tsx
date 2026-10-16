@@ -58,6 +58,7 @@ export async function EntryScreen({
   return (
     <EntryForm
       key={`${ym.year}-${ym.month}`}
+      userId={user.id}
       data={data}
       abilities={entryAbilities(user, data.status, state)}
       years={years}

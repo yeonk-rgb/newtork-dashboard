@@ -72,7 +72,12 @@ export async function saveMonthlyEntry(
   const categories = await prisma.expenseCategory.findMany({
     where: { id: { in: input.otherExpenses.map((e) => e.categoryId) } },
   });
-  const usedHere = new Set(existing?.otherExpenses.map((e) => e.categoryId));
+  // 비활성 항목은 이 달에 0원이 아닌 값이 있을 때만 (화면에도 그 경우에만 보인다)
+  const usedHere = new Set(
+    existing?.otherExpenses
+      .filter((e) => e.amount !== 0n)
+      .map((e) => e.categoryId),
+  );
   for (const e of input.otherExpenses) {
     const category = categories.find((c) => c.id === e.categoryId);
     if (!category || (!category.isActive && !usedHere.has(category.id))) {

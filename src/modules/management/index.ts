@@ -60,6 +60,7 @@ export { ManagementDetail } from "./components/detail/management-detail";
 
 // 6단계 입력 화면
 export { EntryScreen } from "./entry/entry-screen";
+export { SettingsScreen } from "./settings/settings-screen";
 
 // 메인 원형 그래프용 생산팀 데이터 — 통합 전까지 목업 (source: "mock")
 export {

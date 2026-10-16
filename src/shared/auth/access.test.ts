@@ -50,15 +50,14 @@ describe("경영지원 하위 메뉴", () => {
       .find((p) => p.href === "/management")
       ?.children?.map((c) => c.label);
 
-  it("팀장·팀원·관리자·대표: 대시보드 + 월간 입력", () => {
-    for (const id of [
-      "dev-mgmt-leader",
-      "dev-mgmt-member",
-      "dev-admin",
-      "dev-ceo",
-    ]) {
-      expect(children(id)).toEqual(["대시보드", "월간 입력"]);
+  it("팀장·관리자·대표: 대시보드 + 월간 입력 + 목표·항목 설정", () => {
+    for (const id of ["dev-mgmt-leader", "dev-admin", "dev-ceo"]) {
+      expect(children(id)).toEqual(["대시보드", "월간 입력", "목표·항목 설정"]);
     }
+  });
+
+  it("팀원: 목표·항목 설정은 보이지 않음 (confirm 권한 없음)", () => {
+    expect(children("dev-mgmt-member")).toEqual(["대시보드", "월간 입력"]);
   });
 
   it("생산 팀원은 경영지원 메뉴 자체가 없음", () => {
