@@ -18,18 +18,22 @@
 
 ```ts
 // src/modules/production/index.ts 에서 export (서버 전용)
-export async function getSalesShareByIndustry(period: Period): Promise<SalesShareItem[]>;
-export async function getSalesShareBySeries(period: Period): Promise<SalesShareItem[]>;
+export async function getSalesShareByIndustry(period: Period): Promise<SalesShareResult>;
+export async function getSalesShareBySeries(period: Period): Promise<SalesShareResult>;
 ```
 
-### 공통 타입 (위치: `src/shared/` — 경영지원팀이 작성)
+### 공통 타입 (경영지원팀이 작성)
+
+- `Period`: `src/shared/period/period.ts` (기간 계산 유틸 포함 — `periodMonths`, `previousPeriod` 등)
+- `SalesShareItem`, `SalesShareResult`, 산업분야 코드 `INDUSTRIES`: `src/shared/contracts/production.ts`
 
 ```ts
-/** 조회 기간. 월/분기/연간 */
+/** 조회 기간. 월 / 분기 / 연간 / 연초 누적(YTD) */
 export type Period =
   | { unit: "month"; year: number; month: number }      // month: 1~12
   | { unit: "quarter"; year: number; quarter: 1 | 2 | 3 | 4 }
-  | { unit: "year"; year: number };
+  | { unit: "year"; year: number }
+  | { unit: "ytd"; year: number; month: number };       // 1월 ~ month 누적
 
 /** 원형 그래프 한 조각 */
 export type SalesShareItem = {
@@ -38,7 +42,15 @@ export type SalesShareItem = {
   amount: bigint;     // 판매 금액 합계 (원, 정수)
   quantity: number;   // 판매 수량 합계 (대)
 };
+
+export type SalesShareResult = {
+  items: SalesShareItem[];
+  source: "mock" | "production";  // 생산팀 실제 구현은 "production"
+};
 ```
+
+> 변경 이력: 2026-10-16 — 반환 타입을 `SalesShareItem[]` → `SalesShareResult`(목업 여부 표시)로, `Period`에 `ytd` 추가.
+> 경영지원팀 목업: `src/modules/management/external/production-mock.ts` (같은 이름·타입, 통합 시 생산팀 함수로 교체)
 
 ## 3. 반환 규칙
 

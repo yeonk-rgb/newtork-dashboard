@@ -1,0 +1,50 @@
+// 확정(CONFIRMED)된 달만 집계하고, 미확정 월 목록을 함께 돌려준다.
+import {
+  monthIndex,
+  periodMonths,
+  type Period,
+  type YearMonth,
+} from "@/shared/period/period";
+
+import type { Confirmation, FinanceMonth, UnconfirmedMonth } from "./types";
+
+/**
+ * @param today 오늘 날짜 — 오늘이 속한 달과 그 이후는 아직 마감 전(pending)으로 본다
+ */
+export function selectConfirmed(
+  period: Period,
+  months: FinanceMonth[],
+  today: Date,
+): { confirmed: FinanceMonth[]; confirmation: Confirmation } {
+  const currentIndex = monthIndex({
+    year: today.getUTCFullYear(),
+    month: today.getUTCMonth() + 1,
+  });
+  const byIndex = new Map(months.map((m) => [monthIndex(m), m]));
+
+  const confirmed: FinanceMonth[] = [];
+  const unconfirmedMonths: UnconfirmedMonth[] = [];
+  const pendingMonths: YearMonth[] = [];
+
+  for (const ym of periodMonths(period)) {
+    const row = byIndex.get(monthIndex(ym));
+    if (row?.status === "CONFIRMED") {
+      confirmed.push(row);
+    } else if (monthIndex(ym) >= currentIndex) {
+      pendingMonths.push(ym);
+    } else {
+      unconfirmedMonths.push({ ...ym, reason: row ? "DRAFT" : "MISSING" });
+    }
+  }
+
+  return {
+    confirmed,
+    confirmation: {
+      confirmedMonths: confirmed.map(({ year, month }) => ({ year, month })),
+      unconfirmedMonths,
+      pendingMonths,
+      isPartial: unconfirmedMonths.length > 0,
+      hasData: confirmed.length > 0,
+    },
+  };
+}

@@ -58,14 +58,18 @@ src/shared/                   공통 (금액 포맷, UI, 인증 등)
 
 ## 5. 기간(Period) 형식
 
-DB에는 **월 단위로만** 저장하고, 분기·연간은 조회할 때 계산합니다. 함수에 기간을 넘길 때는 이 타입을 씁니다.
+DB에는 **월 단위로만** 저장하고, 분기·연간은 조회할 때 계산합니다. 함수에 기간을 넘길 때는 이 타입을 씁니다 (`src/shared/period/period.ts`).
 
 ```ts
 type Period =
   | { unit: "month"; year: number; month: number }   // month: 1~12
   | { unit: "quarter"; year: number; quarter: 1 | 2 | 3 | 4 }
-  | { unit: "year"; year: number };
+  | { unit: "year"; year: number }
+  | { unit: "ytd"; year: number; month: number };    // 연초 누적 (1월 ~ month)
 ```
+
+- 같은 파일에 `periodMonths()`(기간의 월 목록), `previousPeriod()`(직전 기간), `samePeriodLastYear()`(전년 동기), `periodLabel()`이 있습니다. 각 팀이 따로 만들지 말고 이걸 써 주세요.
+- 집계는 **확정된 달만** 하고, 미확정 월은 따로 안내합니다 (경영지원팀 기준 — 팀별로 맞추면 좋습니다).
 
 - 기본 보기는 **분기**, 월·연간으로 전환 가능 (고객 요구)
 - 회계연도가 1~12월인지는 고객사 확인 중 (`docs/05-open-questions.md` 2번)
@@ -74,8 +78,9 @@ type Period =
 
 메인 화면이 생산팀 데이터를 가져가는 형식: **`docs/interface-production.md`** (합의 전 초안)
 
-- `getSalesShareByIndustry(period)`, `getSalesShareBySeries(period)`
-- 합의 전까지 경영지원팀은 같은 형식의 **목업**으로 개발합니다. 이름·타입을 바꿀 땐 서로 알려 주세요.
+- `getSalesShareByIndustry(period)`, `getSalesShareBySeries(period)` → `{ items, source: "mock" | "production" }`
+- 타입: `src/shared/contracts/production.ts`
+- 합의 전까지 경영지원팀은 같은 형식의 **목업**(`src/modules/management/external/production-mock.ts`)으로 개발합니다. 이름·타입을 바꿀 땐 서로 알려 주세요.
 
 ## 7. 공통 UI
 
