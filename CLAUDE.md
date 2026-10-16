@@ -32,6 +32,10 @@
 - **개발 범위**: `modules/management`, `app/(dashboard)/`의 메인(`page.tsx`)·`management/`, `prisma/schema/management.prisma`(`mgmt_*` 테이블), 경영지원팀이 쓰는 `shared/`
 - **손대지 않는 곳**: `production/`, `service/` 폴더(모듈·화면·스키마)는 placeholder 그대로 두고 수정하지 않는다
 - **인증·계정·권한**: 로그인 방식은 **통합 시 팀과 함께 결정**한다. 지금은 **개발용 임시 사용자**로 진행하되, 권한 확인은 **반드시 `shared/auth`의 `can()` 함수를 거친다** → 나중에 `can()`과 임시 사용자 부분만 실제 로그인으로 교체
+  - 현재 사용자: `getCurrentUser()` (cookies를 읽으므로 **`<Suspense>` 안 컴포넌트에서** 호출 — cacheComponents)
+  - 동작: `view` / `edit`(입력·임시저장) / `confirm`(확정·설정 변경). 저장 시 `createdById`/`updatedById` = `getCurrentUser().id`
+  - 배포 빌드는 `src/proxy.ts`가 기본 차단, `DEMO_MODE=true`일 때만 경영지원 팀장 고정. **실제 로그인 전 외부 공개 배포 금지**
+  - 교체할 파일 목록: `docs/integration-notes.md` 8번
 - **통합 대비 규칙**
   - 경영지원팀 코드는 `modules/management`와 `mgmt_` 테이블 안에서만 작성한다
   - 다른 팀 데이터는 `docs/interface-production.md`의 함수 형식으로만 가져오고, **지금은 목업**을 쓴다 (목업도 같은 함수 이름·타입)
@@ -154,7 +158,7 @@ newtork-dashboard/ (= 이 폴더)
 │  │  ├─ format/              # 금액 콤마, BigInt 직렬화, 기간(월/분기/연) 유틸
 │  │  ├─ lib/                 # cn() 등 공통 헬퍼
 │  │  └─ ui/                  # shadcn 컴포넌트, app-shell, DonutChart, KpiCard, PeriodToggle
-│  └─ proxy.ts                # (통합 시) 미로그인 차단, 팀 경로 1차 차단
+│  └─ proxy.ts                # 배포 빌드 차단 (DEMO_MODE=true 일 때만 통과) → 통합 시 미로그인 차단으로 교체
 ├─ docker-compose.yml         # 로컬 PostgreSQL (Docker 사용 시, 포트 5433)
 ├─ .env.example               # 키 이름만 (값 없음)
 ├─ CODEOWNERS
