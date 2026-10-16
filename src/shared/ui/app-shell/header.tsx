@@ -1,28 +1,48 @@
 import Link from "next/link";
-import { LogOut, UserRound } from "lucide-react";
+import { Suspense } from "react";
+import { UserRound } from "lucide-react";
 
-// TODO(인증 구현 시): 사용자명은 세션에서, 로그아웃은 Better Auth signOut으로 연결
+import {
+  DEV_USERS,
+  getCurrentUser,
+  isDevSwitchEnabledNow,
+  roleLabel,
+} from "@/shared/auth";
+
+import { DevUserSwitcher } from "./dev-user-switcher";
+
 export function Header() {
   return (
     <header className="flex h-12 shrink-0 items-center justify-between bg-header px-4 text-header-foreground">
       <Link href="/" className="text-sm font-bold tracking-tight">
         NEWTORK <span className="font-normal opacity-80">경영 대시보드</span>
       </Link>
-      <div className="flex items-center gap-3 text-sm">
-        <span className="flex items-center gap-1.5">
-          <UserRound className="size-4" aria-hidden />
-          사용자명
-        </span>
-        <button
-          type="button"
-          disabled
-          title="인증 구현 후 사용 가능"
-          className="flex items-center gap-1 rounded px-2 py-1 opacity-70"
-        >
-          <LogOut className="size-4" aria-hidden />
-          로그아웃
-        </button>
-      </div>
+      {/* cacheComponents: 사용자 정보는 요청 시점에 읽으므로 Suspense 안에서 */}
+      <Suspense fallback={<span className="text-sm opacity-70">…</span>}>
+        <HeaderUser />
+      </Suspense>
     </header>
+  );
+}
+
+async function HeaderUser() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <span className="flex items-center gap-1.5">
+        <UserRound className="size-4" aria-hidden />
+        {user.name}
+        <span className="opacity-70">· {roleLabel(user)}</span>
+      </span>
+      {/* 개발 환경에서만 렌더링 — 배포 빌드에는 드롭다운 자체가 없다 */}
+      {isDevSwitchEnabledNow() && (
+        <DevUserSwitcher
+          currentId={user.id}
+          users={DEV_USERS.map(({ id, name }) => ({ id, name }))}
+        />
+      )}
+    </div>
   );
 }
