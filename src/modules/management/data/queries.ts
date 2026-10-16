@@ -80,6 +80,7 @@ export async function loadReceivables(): Promise<ReceivableInput[]> {
     occurredOn: r.occurredOn,
     amount: r.amount,
     isCollected: r.isCollected,
+    note: r.note,
     collectedOn: r.collectedOn,
     dueOn: r.dueOn,
   }));

@@ -87,11 +87,29 @@ export function computeReceivables(
   });
   const lastIndex = monthIndex(addMonths(asOfYm, horizonMonths - 1));
 
+  const items = open
+    .map((r) => {
+      const ageDays = daysBetween(r.occurredOn, asOf);
+      return {
+        id: r.id,
+        customerName: r.customerName,
+        occurredOn: r.occurredOn,
+        amount: r.amount,
+        dueOn: r.dueOn,
+        note: r.note ?? null,
+        ageDays,
+        bucket: agingBucket(ageDays),
+        isOverdue: r.dueOn !== null && r.dueOn.getTime() < asOf.getTime(),
+      };
+    })
+    .sort((a, b) => (a.amount === b.amount ? 0 : a.amount > b.amount ? -1 : 1));
+
   const openTotal = total(open);
   return {
     asOf,
     total: openTotal.amount,
     count: openTotal.count,
+    items,
     byCustomer,
     aging,
     expected: {

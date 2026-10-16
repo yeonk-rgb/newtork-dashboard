@@ -78,6 +78,7 @@ describe("computeTargets", () => {
       annual: null,
       period: null,
       quarterTargets: null,
+      quarterActuals: null,
     });
   });
 

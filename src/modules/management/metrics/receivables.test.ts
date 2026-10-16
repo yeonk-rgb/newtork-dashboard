@@ -133,3 +133,33 @@ describe("computeReceivables", () => {
     expect(empty.aging.every((a) => a.amount === 0n)).toBe(true);
   });
 });
+
+describe("미수 건별 목록 (상세 표)", () => {
+  const asOf = date("2026-09-30");
+  const result = computeReceivables(
+    [
+      receivable("old", {
+        occurredOn: date("2026-03-01"),
+        amount: 100n,
+        dueOn: date("2026-04-30"),
+        note: "독촉",
+      }),
+      receivable("new", {
+        occurredOn: date("2026-09-20"),
+        amount: 300n,
+        dueOn: date("2026-10-31"),
+      }),
+    ],
+    asOf,
+    6,
+  );
+
+  it("금액 큰 순, 경과일·구간·예정일 지남 여부 포함", () => {
+    expect(
+      result.items.map((i) => [i.id, i.ageDays, i.bucket, i.isOverdue, i.note]),
+    ).toEqual([
+      ["new", 10, "0-30", false, null],
+      ["old", 213, "90+", true, "독촉"],
+    ]);
+  });
+});
