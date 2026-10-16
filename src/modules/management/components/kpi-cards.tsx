@@ -141,6 +141,14 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
   const hasData = summary.confirmation.hasData;
   const over90 = receivables.aging.find((a) => a.bucket === "90+");
   const asOf = receivables.asOf;
+  // "*" 가 실제로 붙은 값(미확정 포함 + 계산된 값)이 있을 때만 주석 표시
+  const shownComparisons =
+    period.unit === "month" || period.unit === "quarter"
+      ? [changes.previous, changes.lastYear]
+      : [changes.previous];
+  const hasPartialMark = shownComparisons.some(
+    (c) => c.isPartial && (c.revenue.rate !== null || c.margin.diff !== null),
+  );
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -238,13 +246,12 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
         </dl>
       </Card>
 
-      {(changes.previous.isPartial || changes.lastYear.isPartial) &&
-        hasData && (
-          <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-4">
-            * 미확정 월이 포함된 비교입니다. 확정된 달만 집계하므로 기간 길이가
-            달라 참고용으로만 보세요.
-          </p>
-        )}
+      {hasPartialMark && (
+        <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-4">
+          * 미확정 월이 포함된 비교입니다. 확정된 달만 집계하므로 기간 길이가
+          달라 참고용으로만 보세요.
+        </p>
+      )}
     </div>
   );
 }

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { allocateQuarterTargets, computeTargets } from "./targets";
+import {
+  allocateQuarterTargets,
+  computeAnnualProgress,
+  computeTargets,
+} from "./targets";
 import { financeMonth } from "./test-fixtures";
 import type { AnnualTargetInput } from "./types";
 
@@ -141,5 +145,53 @@ describe("computeTargets", () => {
         withLastYear,
       ).period?.actual,
     ).toBe(200n);
+  });
+});
+
+describe("computeAnnualProgress (연간 목표 도넛)", () => {
+  const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
+  // 1~9월 각 100, 9월 DRAFT
+  const months = Array.from({ length: 9 }, (_, i) =>
+    financeMonth(2026, i + 1, {
+      productSales: 100n,
+      status: i + 1 === 9 ? "DRAFT" : "CONFIRMED",
+    }),
+  );
+  const t = target(2_400n);
+
+  it("선택 기간과 무관하게 그 해 확정 월 전부 + 경과율(이번 달 전까지)", () => {
+    expect(computeAnnualProgress(2026, t, months, d("2026-10-16"))).toEqual({
+      year: 2026,
+      target: 2_400n,
+      actual: 800n,
+      remaining: 1_600n,
+      rate: 800 / 2400,
+      elapsedMonths: 9,
+      elapsedRatio: 0.75,
+      confirmedMonths: [1, 2, 3, 4, 5, 6, 7, 8],
+    });
+  });
+
+  it("지난해는 경과율 100%, 미래 연도는 0%", () => {
+    const lastYear = { ...t, year: 2025 };
+    expect(
+      computeAnnualProgress(2025, lastYear, [], d("2026-10-16"))?.elapsedRatio,
+    ).toBe(1);
+    const nextYear = { ...t, year: 2027 };
+    expect(
+      computeAnnualProgress(2027, nextYear, [], d("2026-10-16"))?.elapsedRatio,
+    ).toBe(0);
+  });
+
+  it("초과 달성이면 남은 금액 0, 목표 없으면 null", () => {
+    const big = Array.from({ length: 12 }, (_, i) =>
+      financeMonth(2026, i + 1, { productSales: 300n }),
+    );
+    expect(
+      computeAnnualProgress(2026, t, big, d("2027-01-05"))?.remaining,
+    ).toBe(0n);
+    expect(
+      computeAnnualProgress(2026, null, months, d("2026-10-16")),
+    ).toBeNull();
   });
 });

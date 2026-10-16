@@ -18,11 +18,11 @@ import {
   loadReceivables,
 } from "./queries";
 
-/** 기간 + 직전 기간 + 전년 동기 + 해당 연도 1월부터 (목표 누적용) */
+/** 기간 + 직전 기간 + 전년 동기 + 해당 연도 1~12월 (목표 누적·연간 도넛용) */
 export function requiredMonthRange(period: Period) {
   const all = [period, previousPeriod(period), samePeriodLastYear(period)]
     .flatMap(periodMonths)
-    .concat({ year: period.year, month: 1 })
+    .concat({ year: period.year, month: 1 }, { year: period.year, month: 12 })
     .map(monthIndex);
   return { from: Math.min(...all), to: Math.max(...all) };
 }

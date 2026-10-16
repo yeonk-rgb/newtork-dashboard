@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import {
+  DashboardDonuts,
   DashboardTop,
   DashboardTopSkeleton,
   getManagementSummary,
@@ -34,5 +35,10 @@ async function MainContent({
     await resolvePeriod(typeof period === "string" ? period : undefined),
   );
 
-  return <DashboardTop title="경영 대시보드" summary={summary} />;
+  return (
+    <div className="space-y-4">
+      <DashboardTop title="경영 대시보드" summary={summary} />
+      <DashboardDonuts summary={summary} />
+    </div>
+  );
 }

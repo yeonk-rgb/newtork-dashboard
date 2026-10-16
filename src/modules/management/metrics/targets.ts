@@ -4,6 +4,7 @@ import { periodMonths, quarterOf, type Period } from "@/shared/period/period";
 import { ratio, sum } from "./math";
 import { monthRevenue } from "./revenue";
 import type {
+  AnnualProgress,
   AnnualTargetInput,
   FinanceMonth,
   QuarterTargets,
@@ -121,4 +122,35 @@ export function computeTargets(
   }
 
   return { annual, period: periodTarget, quarterTargets };
+}
+
+/** 연간 목표 대비 확정 누적 실적 + 연간 경과율 (선택 기간과 무관) */
+export function computeAnnualProgress(
+  year: number,
+  target: AnnualTargetInput | null,
+  months: FinanceMonth[],
+  today: Date,
+): AnnualProgress | null {
+  if (!target || target.year !== year) return null;
+
+  const confirmed = months.filter(
+    (m) => m.year === year && m.status === "CONFIRMED",
+  );
+  const actual = sum(confirmed.map(monthRevenue));
+  const remaining = target.revenueTarget - actual;
+
+  const todayYear = today.getUTCFullYear();
+  const elapsedMonths =
+    year < todayYear ? 12 : year > todayYear ? 0 : today.getUTCMonth(); // 이번 달 전까지 마감
+
+  return {
+    year,
+    target: target.revenueTarget,
+    actual,
+    remaining: remaining > 0n ? remaining : 0n,
+    rate: ratio(actual, target.revenueTarget),
+    elapsedMonths,
+    elapsedRatio: elapsedMonths / 12,
+    confirmedMonths: confirmed.map((m) => m.month).sort((a, b) => a - b),
+  };
 }

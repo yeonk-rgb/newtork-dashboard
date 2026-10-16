@@ -33,3 +33,17 @@ describe("생산팀 목업", () => {
     );
   });
 });
+
+describe("목업 규모", () => {
+  it("같은 기간이면 산업분야·시리즈 합계가 비슷하다 (천 원 반올림 차이만)", async () => {
+    const sumOf = (items: { amount: bigint }[]) =>
+      items.reduce((acc, i) => acc + i.amount, 0n);
+    const industry = await getSalesShareByIndustry(q3);
+    const series = await getSalesShareBySeries(q3);
+    const diff = sumOf(industry.items) - sumOf(series.items);
+    expect(diff < 0n ? -diff : diff).toBeLessThan(10_000n);
+    // 분기 = 3개월 × 월 2억 ± 10%
+    expect(sumOf(industry.items)).toBeGreaterThan(540_000_000n);
+    expect(sumOf(industry.items)).toBeLessThan(660_000_000n);
+  });
+});

@@ -14,7 +14,7 @@ import { computeProfit } from "./profit";
 import { computeReceivables } from "./receivables";
 import { computeRevenue } from "./revenue";
 import { DEFAULT_METRICS_SETTINGS, type MetricsSettings } from "./settings";
-import { computeTargets } from "./targets";
+import { computeAnnualProgress, computeTargets } from "./targets";
 import type {
   AnnualTargetInput,
   Change,
@@ -117,6 +117,12 @@ export function computeManagementSummary(
   return {
     ...core,
     targets: computeTargets(period, input.annualTarget, financeMonths),
+    annualProgress: computeAnnualProgress(
+      period.year,
+      input.annualTarget,
+      financeMonths,
+      today,
+    ),
     changes: {
       previous: compare(core, previous),
       lastYear: compare(core, lastYear),
