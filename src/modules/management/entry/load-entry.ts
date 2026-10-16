@@ -63,7 +63,12 @@ export async function loadEntry(ym: YearMonth): Promise<EntryData> {
     }),
   ]);
 
-  const usedHere = new Set((row?.otherExpenses ?? []).map((e) => e.categoryId));
+  // "값이 있다" = 0원이 아닌 금액 (월간 저장 시 0원 행도 만들어지므로 행 존재만으로 판단하지 않음)
+  const usedHere = new Set(
+    (row?.otherExpenses ?? [])
+      .filter((e) => e.amount !== 0n)
+      .map((e) => e.categoryId),
+  );
   return {
     year: ym.year,
     month: ym.month,

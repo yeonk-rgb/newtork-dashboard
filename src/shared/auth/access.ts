@@ -21,6 +21,11 @@ const NAV_RULES: NavRule[] = [
     children: [
       { href: "/management", label: "대시보드", action: "view" },
       { href: "/management/entry", label: "월간 입력", action: "edit" },
+      {
+        href: "/management/targets",
+        label: "목표·항목 설정",
+        action: "confirm",
+      },
     ],
   },
   { href: "/production", label: "생산", team: "production" },

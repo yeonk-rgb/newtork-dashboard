@@ -6,9 +6,9 @@ import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
 } from "react";
 
@@ -20,16 +20,22 @@ import {
   type EntryActionResult,
 } from "./actions";
 import { ConfirmDialog, type ConfirmRequest } from "./confirm-dialog";
+import {
+  browserStorage,
+  draftKey,
+  parseDraft,
+  readRawDraft,
+  removeDraft,
+  subscribeStorage,
+  writeDraft,
+} from "./draft-storage";
 import { FIELD_HELP, FIELD_LABEL, OTHER_EXPENSE_HELP } from "./field-help";
 import type { EntryData } from "./load-entry";
-import {
-  caretAfterFormat,
-  digitsOnly,
-  digitsToBigInt,
-  formatDigits,
-} from "./money-input";
+import { digitsToBigInt, formatDigits } from "./money-input";
+import { MoneyTextInput } from "./money-text-input";
 import { isDigitAnomaly, type EntryAbilities } from "./rules";
 import type { EntryField } from "./schemas";
+import { LEAVE_MESSAGE, useUnsavedGuard } from "./use-unsaved-guard";
 
 const SECTIONS: { title: string; fields: EntryField[] }[] = [
   { title: "매출", fields: ["productSales", "goodsSales", "serviceSales"] },
@@ -97,23 +103,12 @@ function AmountInput({
   inactive?: boolean;
   onChange: (digits: string) => void;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
-  const caret = useRef<number | null>(null);
-  const formatted = formatDigits(digits);
   const anomaly =
     digits !== "" &&
     isDigitAnomaly(
       digitsToBigInt(digits),
       previous === null ? null : digitsToBigInt(previous),
     );
-
-  // 콤마를 다시 넣은 뒤 커서를 입력하던 숫자 뒤로
-  useLayoutEffect(() => {
-    if (caret.current !== null && ref.current === document.activeElement) {
-      ref.current?.setSelectionRange(caret.current, caret.current);
-      caret.current = null;
-    }
-  });
 
   return (
     <div className="grid grid-cols-[minmax(7rem,9rem)_1fr] items-start gap-x-3 gap-y-1 py-1.5 sm:grid-cols-[9rem_14rem_1fr] sm:items-center">
@@ -127,41 +122,14 @@ function AmountInput({
         )}
         <HelpTip id={`${id}-help`} text={help} />
       </label>
-      <div className="relative">
-        <input
-          ref={ref}
-          id={id}
-          data-entry-input
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          readOnly={readOnly}
-          value={formatted}
-          placeholder="0"
-          aria-describedby={anomaly ? `${id}-warn` : undefined}
-          onChange={(e) => {
-            const el = e.target;
-            const before = el.value.slice(
-              0,
-              el.selectionStart ?? el.value.length,
-            );
-            const next = digitsOnly(el.value);
-            caret.current = caretAfterFormat(
-              formatDigits(next),
-              Math.min(before.replace(/\D/g, "").length, next.length),
-            );
-            onChange(next);
-          }}
-          className={cn(
-            "h-9 w-full rounded-md border border-input bg-background pr-7 pl-2 text-right tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-            readOnly && "bg-muted/50 text-muted-foreground",
-            anomaly && "border-amber-400",
-          )}
-        />
-        <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground">
-          원
-        </span>
-      </div>
+      <MoneyTextInput
+        id={id}
+        digits={digits}
+        onChange={onChange}
+        readOnly={readOnly}
+        invalid={anomaly}
+        describedBy={anomaly ? `${id}-warn` : undefined}
+      />
       <div className="col-start-2 text-xs text-muted-foreground sm:col-start-3">
         전월 {previous === null ? "데이터 없음" : won(digitsToBigInt(previous))}
         {anomaly && (
@@ -179,11 +147,14 @@ function AmountInput({
 }
 
 export function EntryForm({
+  userId,
   data,
   abilities,
   years,
   maxMonthIndex,
 }: {
+  /** 임시 보관 키에 사용 (사용자 전환 시 섞이지 않게) */
+  userId: string;
   data: EntryData;
   abilities: EntryAbilities;
   years: number[];
@@ -216,36 +187,70 @@ export function EntryForm({
   const dirty = JSON.stringify({ values, other }) !== baseline;
   const readOnly = abilities.readOnly;
 
-  // 저장하지 않고 나가기 경고: 새로고침·창 닫기 + 앱 안의 링크 이동
+  useUnsavedGuard(dirty);
+
+  // ---- 브라우저 임시 보관 (뒤로 가기로 나가도 입력이 사라지지 않게) ----
+  const draftStorageKey = draftKey(userId, data.year, data.month);
+  // 서버 렌더에서는 "보관값 없음", 브라우저에서 localStorage 값 — 하이드레이션 불일치 없이 읽는다
+  const rawDraft = useSyncExternalStore(
+    subscribeStorage,
+    () => readRawDraft(browserStorage, draftStorageKey),
+    () => null,
+  );
+  const [draftDecided, setDraftDecided] = useState(false);
+  const wroteDraft = useRef(false);
+  const storedDraft = abilities.readOnly ? null : parseDraft(rawDraft);
+  const currentContent = JSON.stringify({ values, other });
+  // 복구 안내: 보관값이 있고, 지금 화면 값과 다르고, 아직 복구/버리기를 고르지 않았을 때
+  const pendingDraft =
+    !draftDecided &&
+    storedDraft !== null &&
+    JSON.stringify({ values: storedDraft.values, other: storedDraft.other }) !==
+      currentContent
+      ? storedDraft
+      : null;
+
+  // 입력이 바뀌면 보관, 다시 원래 값과 같아지면 삭제 (복구 안내에 답하기 전에는 기존 보관값을 건드리지 않음)
   useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
-    const onClick = (e: MouseEvent) => {
-      const anchor = (e.target as HTMLElement).closest(
-        "a[href]",
-      ) as HTMLAnchorElement | null;
-      if (
-        !anchor ||
-        anchor.target === "_blank" ||
-        anchor.origin !== window.location.origin
-      )
-        return;
-      if (
-        !window.confirm("저장하지 않은 입력이 있습니다. 이 화면을 떠날까요?")
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    document.addEventListener("click", onClick, true);
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      document.removeEventListener("click", onClick, true);
-    };
-  }, [dirty]);
+    if (abilities.readOnly || pendingDraft) return;
+    if (dirty) {
+      wroteDraft.current = writeDraft(browserStorage, draftStorageKey, {
+        v: 1,
+        values,
+        other,
+        baseUpdatedAt: data.updatedAt,
+        savedAt: new Date().toISOString(),
+      });
+    } else if (wroteDraft.current) {
+      removeDraft(browserStorage, draftStorageKey);
+      wroteDraft.current = false;
+    }
+  }, [
+    abilities.readOnly,
+    pendingDraft,
+    dirty,
+    values,
+    other,
+    data.updatedAt,
+    draftStorageKey,
+  ]);
+
+  const restoreDraft = () => {
+    if (!pendingDraft) return;
+    const known = new Set(data.categories.map((c) => c.id));
+    setValues(pendingDraft.values);
+    setOther((current) => ({
+      ...current,
+      ...Object.fromEntries(
+        Object.entries(pendingDraft.other).filter(([id]) => known.has(id)),
+      ),
+    }));
+    setDraftDecided(true);
+  };
+  const discardDraft = () => {
+    removeDraft(browserStorage, draftStorageKey);
+    setDraftDecided(true);
+  };
 
   // Enter = 다음 칸 (마지막 칸이면 그대로 — 저장은 버튼으로만)
   const onKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
@@ -258,11 +263,7 @@ export function EntryForm({
   };
 
   const goMonth = (year: number, month: number) => {
-    if (
-      dirty &&
-      !window.confirm("저장하지 않은 입력이 있습니다. 다른 달로 이동할까요?")
-    )
-      return;
+    if (dirty && !window.confirm(LEAVE_MESSAGE)) return;
     router.push(
       `/management/entry?month=${year}-${String(month).padStart(2, "0")}`,
     );
@@ -305,7 +306,11 @@ export function EntryForm({
       const res = await action();
       setResult(res);
       // 성공하면 Server Action 의 refresh() 로 새 값(updatedAt)이 내려와 위에서 폼이 맞춰진다
-      if (res.ok) router.refresh();
+      if (res.ok) {
+        removeDraft(browserStorage, draftStorageKey);
+        wroteDraft.current = false;
+        router.refresh();
+      }
     });
   };
 
@@ -452,6 +457,39 @@ export function EntryForm({
             </span>
           )}
         </p>
+
+        {pendingDraft && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-primary/40 bg-sidebar-accent/40 px-3 py-2 text-sm"
+          >
+            <Info className="size-4 shrink-0" aria-hidden />
+            <span className="flex-1">
+              저장하지 않은 입력이 있습니다 ({kst(pendingDraft.savedAt)} 보관).
+              복구할까요?
+              {pendingDraft.baseUpdatedAt !== data.updatedAt && (
+                <span className="block text-xs text-muted-foreground">
+                  보관 이후 이 달이 다시 저장되었습니다. 복구하면 그 내용을
+                  덮어쓸 수 있으니 값을 확인한 뒤 저장하세요.
+                </span>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={restoreDraft}
+              className="rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground hover:bg-primary/90"
+            >
+              복구
+            </button>
+            <button
+              type="button"
+              onClick={discardDraft}
+              className="rounded-md border px-3 py-1 text-sm hover:bg-muted"
+            >
+              버리기
+            </button>
+          </div>
+        )}
 
         {abilities.notice && (
           <p
