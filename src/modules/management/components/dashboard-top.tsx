@@ -3,7 +3,7 @@ import "server-only";
 
 import { lastCompletedQuarter, parsePeriodParam } from "@/shared/period/url";
 
-import { todayKst } from "../data/load-summary-input";
+import { getTodayKst } from "../data/load-summary-input";
 import { loadYearRange } from "../data/queries";
 import type { ManagementSummary } from "../metrics/types";
 import { ConfirmationBanner } from "./confirmation-banner";
@@ -11,8 +11,8 @@ import { KpiCards } from "./kpi-cards";
 import { PeriodSelector } from "./period-selector";
 
 /** URL 값 → 기간. 없거나 잘못되면 "이미 끝난 분기 중 가장 최근 분기" */
-export function resolvePeriod(param: string | undefined, today = todayKst()) {
-  return parsePeriodParam(param) ?? lastCompletedQuarter(today);
+export async function resolvePeriod(param: string | undefined) {
+  return parsePeriodParam(param) ?? lastCompletedQuarter(await getTodayKst());
 }
 
 export async function DashboardTop({
@@ -22,7 +22,7 @@ export async function DashboardTop({
   title: string;
   summary: ManagementSummary;
 }) {
-  const range = await loadYearRange(todayKst().getUTCFullYear());
+  const range = await loadYearRange((await getTodayKst()).getUTCFullYear());
   // URL로 범위 밖 연도를 골라도 드롭다운에 보이도록
   const years = [...new Set([...range, summary.period.year])].sort();
 

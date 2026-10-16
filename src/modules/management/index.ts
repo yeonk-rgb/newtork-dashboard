@@ -4,7 +4,7 @@ import "server-only";
 import { can, getCurrentUser } from "@/shared/auth";
 import type { Period } from "@/shared/period/period";
 
-import { loadSummaryInput } from "./data/load-summary-input";
+import { getTodayKst, loadSummaryInput } from "./data/load-summary-input";
 import { computeManagementSummary } from "./metrics/summary";
 import type { ManagementSummary } from "./metrics/types";
 
@@ -21,7 +21,9 @@ export async function getManagementSummary(
 ): Promise<ManagementSummary> {
   const user = await getCurrentUser();
   if (!user || !can(user, "view", "management")) throw new ForbiddenError();
-  return computeManagementSummary(await loadSummaryInput(period));
+  return computeManagementSummary(
+    await loadSummaryInput(period, await getTodayKst()),
+  );
 }
 
 // 대시보드 화면 조각 (메인·경영지원 상세 공용)

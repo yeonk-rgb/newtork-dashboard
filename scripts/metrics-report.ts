@@ -5,7 +5,10 @@
 //       npm run metrics:report -- 2026 ytd9    (1~9월 누적)
 import "dotenv/config";
 
-import { loadSummaryInput } from "@/modules/management/data/load-summary-input";
+import {
+  loadSummaryInput,
+  todayKst,
+} from "@/modules/management/data/load-summary-input";
 import { computeManagementSummary } from "@/modules/management/metrics/summary";
 import type { Change, FinanceMonth } from "@/modules/management/metrics/types";
 import { prisma } from "@/shared/db/client";
@@ -86,7 +89,8 @@ function rawTable(months: FinanceMonth[]) {
 
 async function main() {
   const period = parsePeriod(process.argv.slice(2));
-  const input = await loadSummaryInput(period);
+  // Next 요청 밖(스크립트)이라 connection() 없이 현재 시각을 직접 넘긴다
+  const input = await loadSummaryInput(period, todayKst(new Date()));
   const s = computeManagementSummary(input);
 
   // 원 데이터: 기간 + 직전 + 전년 동기 월만

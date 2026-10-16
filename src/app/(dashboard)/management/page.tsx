@@ -32,7 +32,7 @@ async function ManagementContent({
 
   const { period } = await searchParams;
   const summary = await getManagementSummary(
-    resolvePeriod(typeof period === "string" ? period : undefined),
+    await resolvePeriod(typeof period === "string" ? period : undefined),
   );
 
   return <DashboardTop title="경영지원 상세" summary={summary} />;
