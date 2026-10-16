@@ -1,5 +1,7 @@
 // KPI 카드 4개: 매출 / (기간) 목표 달성률 / 이익률 / 미수금 총액
 import { Won } from "@/shared/ui/won";
+
+import { comparisonNote } from "./confirmation-text";
 import { periodMonths, quarterOf, type Period } from "@/shared/period/period";
 
 import type {
@@ -146,6 +148,7 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
     period.unit === "month" || period.unit === "quarter"
       ? [changes.previous, changes.lastYear]
       : [changes.previous];
+  const note = hasData ? comparisonNote(period, changes) : null;
   const hasPartialMark = shownComparisons.some(
     (c) => c.isPartial && (c.revenue.rate !== null || c.margin.diff !== null),
   );
@@ -246,10 +249,14 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
         </dl>
       </Card>
 
+      {note && (
+        <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-4">
+          {note}
+        </p>
+      )}
       {hasPartialMark && (
         <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-4">
-          * 미확정 월이 포함된 비교입니다. 확정된 달만 집계하므로 기간 길이가
-          달라 참고용으로만 보세요.
+          * 비교 기간에 미확정 월이 섞여 있어 참고용으로만 보세요.
         </p>
       )}
     </div>

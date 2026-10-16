@@ -10,11 +10,13 @@ import type { Confirmation, FinanceMonth, UnconfirmedMonth } from "./types";
 
 /**
  * @param today 오늘 날짜 — 오늘이 속한 달과 그 이후는 아직 마감 전(pending)으로 본다
+ * @param onlyMonths 지정하면 기간 전체 대신 이 월들만 본다 (같은 월끼리 비교용)
  */
 export function selectConfirmed(
   period: Period,
   months: FinanceMonth[],
   today: Date,
+  onlyMonths?: YearMonth[],
 ): { confirmed: FinanceMonth[]; confirmation: Confirmation } {
   const currentIndex = monthIndex({
     year: today.getUTCFullYear(),
@@ -26,7 +28,7 @@ export function selectConfirmed(
   const unconfirmedMonths: UnconfirmedMonth[] = [];
   const pendingMonths: YearMonth[] = [];
 
-  for (const ym of periodMonths(period)) {
+  for (const ym of onlyMonths ?? periodMonths(period)) {
     const row = byIndex.get(monthIndex(ym));
     if (row?.status === "CONFIRMED") {
       confirmed.push(row);

@@ -4,6 +4,7 @@ import { CircleAlert } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 import type { ManagementSummary } from "../../metrics/types";
+import { comparisonNote } from "../confirmation-text";
 import {
   Amount,
   ChangeText,
@@ -21,11 +22,22 @@ import {
 export function RevenueTable({ summary }: { summary: ManagementSummary }) {
   const { period, revenue, changes } = summary;
   const withLastYear = showLastYear(period);
+  const note = comparisonNote(period, changes);
 
   return (
     <Section
       title="매출 구성"
-      description={`${summary.label} · 확정된 달만 집계`}
+      description={
+        <>
+          {summary.label} · 확정된 달만 집계
+          {note && (
+            <>
+              <br />
+              {note}
+            </>
+          )}
+        </>
+      }
     >
       <table className={tableClass}>
         <caption className="sr-only">매출 구성</caption>
