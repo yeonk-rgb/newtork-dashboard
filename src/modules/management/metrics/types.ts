@@ -164,6 +164,13 @@ export type Comparison = {
   revenue: Change;
   expense: Change;
   profit: Change;
+  /** 이익률 차이 (%p, 0.05 = +5%p). 비율끼리라 증감률 대신 차이로 비교 */
+  margin: MarginChange;
+};
+
+export type MarginChange = {
+  diff: number | null;
+  reason?: "no-current-data" | "no-data" | "no-margin";
 };
 
 export type ManagementSummary = PeriodCore & {

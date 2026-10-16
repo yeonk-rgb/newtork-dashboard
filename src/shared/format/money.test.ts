@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatAmount, formatWon } from "./money";
+import { formatAmount, formatWon, formatWonCompact } from "./money";
 
 describe("formatAmount", () => {
   it("천 단위 콤마를 넣는다", () => {
@@ -28,6 +28,34 @@ describe("formatAmount", () => {
     expect(() => formatAmount("12.5")).toThrow(TypeError);
     expect(() => formatAmount("1,000")).toThrow(TypeError);
     expect(() => formatAmount(Number.NaN)).toThrow(TypeError);
+  });
+});
+
+describe("formatWonCompact", () => {
+  it("1억 이상: 소수 첫째 자리 (0이면 생략)", () => {
+    expect(formatWonCompact(250_000_000n)).toBe("2.5억");
+    expect(formatWonCompact(2_800_000_000n)).toBe("28억");
+    expect(formatWonCompact(481_773_000n)).toBe("4.8억");
+    expect(formatWonCompact(616_000_000n)).toBe("6.2억");
+    expect(formatWonCompact(123_456_789_000n)).toBe("1,234.6억");
+  });
+
+  it("1만 이상 1억 미만: 만 단위", () => {
+    expect(formatWonCompact(48_170_000n)).toBe("4,817만");
+    expect(formatWonCompact(48_174_999n)).toBe("4,817만");
+    expect(formatWonCompact(10_000n)).toBe("1만");
+  });
+
+  it("만 단위 반올림으로 1억이 되면 억으로", () => {
+    expect(formatWonCompact(99_995_000n)).toBe("1억");
+  });
+
+  it("1만 미만, 0, 음수, 문자열·number 입력", () => {
+    expect(formatWonCompact(9_500n)).toBe("9,500");
+    expect(formatWonCompact(0n)).toBe("0");
+    expect(formatWonCompact(-250_000_000n)).toBe("-2.5억");
+    expect(formatWonCompact("48170000")).toBe("4,817만");
+    expect(formatWonCompact(250_000_000)).toBe("2.5억");
   });
 });
 

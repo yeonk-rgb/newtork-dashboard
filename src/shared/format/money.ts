@@ -31,3 +31,39 @@ export function formatAmount(value: AmountInput): string {
 export function formatWon(value: AmountInput): string {
   return `${formatAmount(value)}원`;
 }
+
+const EOK = 100_000_000n; // 억
+const MAN = 10_000n; // 만
+
+function toBigInt(value: AmountInput): bigint {
+  const v = toFormattable(value);
+  return typeof v === "bigint" ? v : BigInt(Math.round(v));
+}
+
+/** a ÷ b 반올림 (a ≥ 0) */
+function roundDiv(a: bigint, b: bigint): bigint {
+  return (a + b / 2n) / b;
+}
+
+/**
+ * 큰 금액 축약 (단위 "원"은 붙이지 않음)
+ * - 1억 이상: 소수 첫째 자리까지 "2.5억", "28억"
+ * - 1만 이상: "4,817만" (만 단위 반올림)
+ * - 그 미만: "9,500"
+ * 전체 금액은 formatWon()으로 함께 보여준다 (마우스 오버 등)
+ */
+export function formatWonCompact(value: AmountInput): string {
+  const v = toBigInt(value);
+  const sign = v < 0n ? "-" : "";
+  const abs = v < 0n ? -v : v;
+
+  const man = roundDiv(abs, MAN);
+  if (abs >= EOK || man >= 10_000n) {
+    const tenths = roundDiv(abs, EOK / 10n); // 0.1억 단위
+    const whole = tenths / 10n;
+    const decimal = tenths % 10n;
+    return `${sign}${wonFormatter.format(whole)}${decimal === 0n ? "" : `.${decimal}`}억`;
+  }
+  if (abs >= MAN) return `${sign}${wonFormatter.format(man)}만`;
+  return `${sign}${wonFormatter.format(abs)}`;
+}
