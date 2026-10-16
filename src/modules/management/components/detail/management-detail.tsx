@@ -5,6 +5,7 @@ import { serializeBigInt } from "@/shared/format/bigint";
 
 import type { TrendPoint } from "../../metrics/trend";
 import type { ManagementSummary } from "../../metrics/types";
+import { comparisonNote } from "../confirmation-text";
 import { ExpenseTable } from "./expense-table";
 import { ReceivablesSection } from "./receivables-section";
 import { RevenueMixChart } from "./revenue-mix-chart";
@@ -31,6 +32,7 @@ export function ManagementDetail({
         <RevenueTable summary={summary} />
         <ExpenseTable
           label={summary.label}
+          comparisonNote={comparisonNote(period, changes)}
           {...serializeBigInt({
             total: expenses.total,
             items: expenses.items,

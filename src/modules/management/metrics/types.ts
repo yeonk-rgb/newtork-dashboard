@@ -213,6 +213,12 @@ export type Comparison = {
   profit: Change;
   /** 이익률 차이 (%p, 0.05 = +5%p). 비율끼리라 증감률 대신 차이로 비교 */
   margin: MarginChange;
+  /**
+   * 같은 월끼리 비교한 범위. 현재 기간에 확정 안 된 달이 있으면
+   * 현재의 확정 월과 같은 순서의 달만 비교 기간에서 뽑아 비교한다 (예: 2026 1~8월 vs 2025 1~8월).
+   * 모든 월이 확정이면 null (기간 전체 비교)
+   */
+  aligned: { current: YearMonth[]; base: YearMonth[] } | null;
   /** 항목별 증감률 (key = AmountShare.key) — 상세 표용 */
   revenueItems: Record<string, Change>;
   expenseItems: Record<string, Change>;

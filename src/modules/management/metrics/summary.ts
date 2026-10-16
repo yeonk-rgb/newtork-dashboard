@@ -1,10 +1,13 @@
 // 기간 하나에 대한 경영지원 지표 종합 (순수 함수)
 import {
+  monthIndex,
   periodEndDate,
   periodLabel,
+  periodMonths,
   previousPeriod,
   samePeriodLastYear,
   type Period,
+  type YearMonth,
 } from "@/shared/period/period";
 
 import { selectConfirmed } from "./confirmation";
@@ -44,11 +47,13 @@ export function computePeriodCore(
   financeMonths: FinanceMonth[],
   today: Date,
   settings: MetricsSettings,
+  onlyMonths?: YearMonth[],
 ): PeriodCore {
   const { confirmed, confirmation } = selectConfirmed(
     period,
     financeMonths,
     today,
+    onlyMonths,
   );
   const revenue = computeRevenue(confirmed);
   const expenses = computeExpenses(confirmed);
@@ -62,7 +67,56 @@ export function computePeriodCore(
   };
 }
 
-function compare(current: PeriodCore, base: PeriodCore): Comparison {
+/**
+ * 비교 기간 계산. 현재 기간에 확정 안 된 달(미확정·마감 전)이 있으면
+ * 현재의 확정 월과 "같은 순서"의 달만 비교 기간에서 집계한다.
+ *   2026 3분기(7·8월 확정) vs 2분기 → 4·5월 / 2026 연간(1~8월) vs 2025 → 1~8월
+ */
+function baseCore(
+  current: PeriodCore,
+  basePeriod: Period,
+  financeMonths: FinanceMonth[],
+  today: Date,
+  settings: MetricsSettings,
+): { core: PeriodCore; aligned: Comparison["aligned"] } {
+  const currentMonths = periodMonths(current.period);
+  const confirmed = new Set(
+    current.confirmation.confirmedMonths.map(monthIndex),
+  );
+  const allConfirmed = currentMonths.every((m) => confirmed.has(monthIndex(m)));
+
+  if (allConfirmed || confirmed.size === 0) {
+    return {
+      core: computePeriodCore(basePeriod, financeMonths, today, settings),
+      aligned: null,
+    };
+  }
+
+  const baseMonths = periodMonths(basePeriod);
+  const positions = currentMonths
+    .map((m, i) => (confirmed.has(monthIndex(m)) ? i : -1))
+    .filter((i) => i >= 0);
+  const alignedBase = positions.map((i) => baseMonths[i]);
+  return {
+    core: computePeriodCore(
+      basePeriod,
+      financeMonths,
+      today,
+      settings,
+      alignedBase,
+    ),
+    aligned: {
+      current: positions.map((i) => currentMonths[i]),
+      base: alignedBase,
+    },
+  };
+}
+
+function compare(
+  current: PeriodCore,
+  base: PeriodCore,
+  aligned: Comparison["aligned"],
+): Comparison {
   const rate = (now: bigint, before: bigint): Change => {
     if (!current.confirmation.hasData) {
       return { rate: null, reason: "no-current-data" };
@@ -72,7 +126,11 @@ function compare(current: PeriodCore, base: PeriodCore): Comparison {
   return {
     period: base.period,
     label: base.label,
-    isPartial: current.confirmation.isPartial || base.confirmation.isPartial,
+    // 같은 월끼리 맞춰 비교하면 현재 쪽 미확정은 비교에 영향 없음 → 비교 기간 쪽 미확정만 남는다
+    isPartial: aligned
+      ? base.confirmation.isPartial
+      : current.confirmation.isPartial || base.confirmation.isPartial,
+    aligned,
     revenue: rate(current.revenue.total, base.revenue.total),
     expense: rate(current.expenses.total, base.expenses.total),
     profit: rate(current.profit.profit, base.profit.profit),
@@ -117,13 +175,15 @@ export function computeManagementSummary(
   const { period, financeMonths, today } = input;
 
   const core = computePeriodCore(period, financeMonths, today, settings);
-  const previous = computePeriodCore(
+  const previous = baseCore(
+    core,
     previousPeriod(period),
     financeMonths,
     today,
     settings,
   );
-  const lastYear = computePeriodCore(
+  const lastYear = baseCore(
+    core,
     samePeriodLastYear(period),
     financeMonths,
     today,
@@ -144,8 +204,8 @@ export function computeManagementSummary(
       today,
     ),
     changes: {
-      previous: compare(core, previous),
-      lastYear: compare(core, lastYear),
+      previous: compare(core, previous.core, previous.aligned),
+      lastYear: compare(core, lastYear.core, lastYear.aligned),
     },
     receivables: computeReceivables(
       input.receivables,

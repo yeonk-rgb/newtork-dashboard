@@ -30,6 +30,7 @@ function ChangeText({ change }: { change?: ChangeLite }) {
 
 export function ExpenseTable({
   label,
+  comparisonNote,
   total,
   items,
   otherItems,
@@ -40,6 +41,8 @@ export function ExpenseTable({
   totalLastYear,
 }: {
   label: string;
+  /** 같은 기간 비교 안내 (없으면 null) */
+  comparisonNote: string | null;
   total: string;
   items: Share[];
   otherItems: Share[];
@@ -59,6 +62,12 @@ export function ExpenseTable({
         <h2 className="text-sm font-semibold">지출 항목</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           {label} · 확정된 달만 집계
+          {comparisonNote && (
+            <>
+              <br />
+              {comparisonNote}
+            </>
+          )}
         </p>
       </header>
       <table className="w-full text-sm">

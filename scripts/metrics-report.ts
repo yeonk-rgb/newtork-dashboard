@@ -182,9 +182,19 @@ async function main() {
   const c = s.changes;
   out.push(
     `\n## 증감률\n\n${table(
-      ["비교 대상", "매출", "지출", "이익", "미확정 포함"],
+      [
+        "비교 대상",
+        "비교 범위",
+        "매출",
+        "지출",
+        "이익",
+        "비교 기간 미확정 포함",
+      ],
       [c.previous, c.lastYear].map((x) => [
         x.label,
+        x.aligned
+          ? `${x.aligned.current.map(yearMonthLabel).join(",")} ↔ ${x.aligned.base.map(yearMonthLabel).join(",")}`
+          : "기간 전체",
         change(x.revenue),
         change(x.expense),
         change(x.profit),

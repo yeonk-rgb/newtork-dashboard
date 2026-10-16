@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { Confirmation } from "../metrics/types";
-import { confirmationNotice, monthsText } from "./confirmation-text";
+import {
+  alignedText,
+  comparisonNote,
+  confirmationNotice,
+  monthsText,
+} from "./confirmation-text";
 
 const ym = (year: number, month: number) => ({ year, month });
 
@@ -38,7 +43,7 @@ describe("confirmationNotice", () => {
     ).toEqual({
       tone: "warning",
       message:
-        "9월이 아직 확정되지 않아 7~8월만 집계되었습니다. 비교 수치는 참고용입니다.",
+        "9월이 아직 확정되지 않아 7~8월만 집계되었습니다. 증감은 비교 기간도 같은 월끼리 맞춰 계산했습니다.",
     });
   });
 
@@ -71,6 +76,96 @@ describe("confirmationNotice", () => {
         confirmedMonths: [ym(2026, 7)],
         hasData: true,
       }),
+    ).toBeNull();
+  });
+});
+
+describe("같은 기간 비교 안내", () => {
+  const aligned = (cur: [number, number][], base: [number, number][]) => ({
+    current: cur.map(([year, month]) => ({ year, month })),
+    base: base.map(([year, month]) => ({ year, month })),
+  });
+  const cmp = (a: ReturnType<typeof aligned> | null) =>
+    ({ aligned: a }) as unknown as Parameters<
+      typeof comparisonNote
+    >[1]["previous"];
+
+  it("월 번호가 같으면 '끼리', 다르면 ↔", () => {
+    expect(
+      alignedText(
+        aligned(
+          [
+            [2026, 1],
+            [2026, 8],
+          ],
+          [
+            [2025, 1],
+            [2025, 8],
+          ],
+        ),
+      ),
+    ).toBe("1·8월끼리");
+    expect(
+      alignedText(
+        aligned(
+          [
+            [2026, 7],
+            [2026, 8],
+          ],
+          [
+            [2026, 4],
+            [2026, 5],
+          ],
+        ),
+      ),
+    ).toBe("7~8월↔4~5월");
+  });
+
+  it("분기: 전분기·전년 동기 함께, 연간: 전년만, 전체 비교면 null", () => {
+    const q3 = { unit: "quarter", year: 2026, quarter: 3 } as const;
+    expect(
+      comparisonNote(q3, {
+        previous: cmp(
+          aligned(
+            [
+              [2026, 7],
+              [2026, 8],
+            ],
+            [
+              [2026, 4],
+              [2026, 5],
+            ],
+          ),
+        ),
+        lastYear: cmp(
+          aligned(
+            [
+              [2026, 7],
+              [2026, 8],
+            ],
+            [
+              [2025, 7],
+              [2025, 8],
+            ],
+          ),
+        ),
+      }),
+    ).toBe("같은 기간 비교 · 전분기 7~8월↔4~5월 · 전년 동기 7~8월끼리");
+
+    const months18 = Array.from({ length: 8 }, (_, i) => i + 1);
+    const y = aligned(
+      months18.map((m) => [2026, m] as [number, number]),
+      months18.map((m) => [2025, m] as [number, number]),
+    );
+    expect(
+      comparisonNote(
+        { unit: "year", year: 2026 },
+        { previous: cmp(y), lastYear: cmp(y) },
+      ),
+    ).toBe("같은 기간 비교 · 전년 1~8월끼리");
+
+    expect(
+      comparisonNote(q3, { previous: cmp(null), lastYear: cmp(null) }),
     ).toBeNull();
   });
 });

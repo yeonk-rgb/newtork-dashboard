@@ -47,16 +47,100 @@ describe("computeManagementSummary", () => {
     expect(summary.confirmation.isPartial).toBe(true);
   });
 
-  it("직전 분기·전년 동기 대비 (미확정 포함이면 isPartial)", () => {
+  it("미확정 월이 있으면 같은 월끼리 비교 (3분기 7·8월 ↔ 2분기 4·5월, 전년 7·8월)", () => {
     expect(summary.changes.previous).toMatchObject({
       label: "2026년 2분기",
-      isPartial: true,
-      revenue: { rate: 0 }, // 600 vs 600
+      isPartial: false, // 비교 기간(4·5월)은 모두 확정
+      aligned: {
+        current: [
+          { year: 2026, month: 7 },
+          { year: 2026, month: 8 },
+        ],
+        base: [
+          { year: 2026, month: 4 },
+          { year: 2026, month: 5 },
+        ],
+      },
+      revenue: { rate: 0.5 }, // 600 vs 400 (전체 600 이 아니라 4·5월만)
     });
     expect(summary.changes.lastYear).toMatchObject({
       label: "2025년 3분기",
-      revenue: { rate: 1 }, // 600 vs 300 → +100%
+      aligned: {
+        base: [
+          { year: 2025, month: 7 },
+          { year: 2025, month: 8 },
+        ],
+      },
+      revenue: { rate: 2 }, // 600 vs 200
     });
+  });
+
+  it("모든 월이 확정된 기간은 전체 비교 (aligned 없음)", () => {
+    const q2 = computeManagementSummary({
+      period: { unit: "quarter", year: 2026, quarter: 2 },
+      financeMonths: months,
+      annualTarget: null,
+      receivables: [],
+      today,
+    });
+    expect(q2.changes.lastYear.aligned).toBeNull();
+  });
+
+  it("연간: 2026 1~8월 확정 → 2025도 1~8월만", () => {
+    const year = Array.from({ length: 12 }, (_, i) =>
+      financeMonth(2025, i + 1, sales(100n)),
+    ).concat(
+      Array.from({ length: 9 }, (_, i) =>
+        financeMonth(2026, i + 1, {
+          ...sales(100n),
+          status: i + 1 === 9 ? "DRAFT" : "CONFIRMED",
+        }),
+      ),
+    );
+    const s2026 = computeManagementSummary({
+      period: { unit: "year", year: 2026 },
+      financeMonths: year,
+      annualTarget: null,
+      receivables: [],
+      today,
+    });
+    expect(s2026.changes.lastYear.aligned?.base.map((m) => m.month)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8,
+    ]);
+    expect(s2026.changes.lastYear.revenue).toEqual({ rate: 0 }); // 800 vs 800 (전체 1,200 아님)
+  });
+
+  it("마감 전 달만 남은 진행 중 분기도 같은 월끼리", () => {
+    const q4 = computeManagementSummary({
+      period: { unit: "quarter", year: 2026, quarter: 4 },
+      financeMonths: [
+        financeMonth(2026, 7, sales(100n)),
+        financeMonth(2026, 8, sales(100n)),
+        financeMonth(2026, 9, sales(100n)),
+        financeMonth(2026, 10, sales(150n)),
+      ],
+      annualTarget: null,
+      receivables: [],
+      today: date("2026-11-20"), // 10월 마감, 11·12월 마감 전
+    });
+    expect(q4.changes.previous.aligned?.base).toEqual([
+      { year: 2026, month: 7 },
+    ]);
+    expect(q4.changes.previous.revenue).toEqual({ rate: 0.5 }); // 10월 150 vs 7월 100
+  });
+
+  it("비교 기간 쪽 같은 월이 미확정이면 isPartial 유지", () => {
+    const draftBase = months.map((m) =>
+      m.year === 2026 && m.month === 5 ? { ...m, status: "DRAFT" as const } : m,
+    );
+    const s = computeManagementSummary({
+      period: { unit: "quarter", year: 2026, quarter: 3 },
+      financeMonths: draftBase,
+      annualTarget: null,
+      receivables: [],
+      today,
+    });
+    expect(s.changes.previous.isPartial).toBe(true);
   });
 
   it("이익률은 %p 차이로 비교", () => {
