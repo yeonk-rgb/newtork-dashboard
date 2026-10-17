@@ -73,7 +73,13 @@
 - 월별 금액은 임시저장 시 빈 칸을 **0으로 저장**한다 → 입력 폼에서 **"확정" 시 0원 항목이 있으면 확인창**을 띄운다
 - 분기 목표가 비어 있으면: (연간 − 입력한 분기 합) ÷ 빈 분기 수, 나머지 원 단위는 마지막 빈 분기에 더함. 4개 모두 입력했는데 합계 ≠ 연간이면 저장 시 경고
 - 대시보드 집계는 `status = CONFIRMED`인 달만 사용
-- AI 코멘트 저장 테이블은 AI 기능 구현 시 추가
+- **AI 분석 코멘트(8단계)**: `modules/management/ai/` + `shared/ai/`(server-only 클라이언트, `generateJson()`), 테이블 `mgmt_ai_comment`(다시 분석하면 행 추가, 화면은 최신 1건)
+  - ⚠️ **고객사 답변(05-19번) 전까지 샘플 시드 데이터로만 사용** — 실제 재무 데이터를 넣은 DB에서 [분석하기]를 누르지 않는다
+  - 입력은 `buildAiInput(summary)` 집계값만 (거래처명·건별 내역·비고·생산팀 목업 제외), 해시가 달라지면 "최신이 아님" 안내. 화면을 열 때는 AI를 호출하지 않는다
+  - 끝난 분기만, confirm 권한만 생성 (`ai/rules.ts`의 `aiAbilities()` — 화면·Server Action 공용). 월 보기 = 그 달의 분기, 연간·누적 = 확정 월이 있는 마지막 분기
+  - 모델 `claude-opus-5-5`(`shared/ai/client.ts`), SDK `@anthropic-ai/sdk` 버전 정확히 고정, 구조화 출력 + 거절 시 서버 fallback + Zod 재검증. 프롬프트를 바꾸면 `ai/prompt.ts`의 `PROMPT_VERSION`을 올린다
+  - 테스트는 가짜 `create`를 주입 (Vitest에서 `getAnthropicClient()`는 항상 에러 → CI 실제 호출 불가). 로컬 화면은 `.env`의 `AI_MOCK=true`(실패 연습 `fail`) — `next dev`에서만 동작
+  - 키 입력: `npm run env:set-key` (값 출력 금지, 길이만)
 - **지표 계산**: `modules/management/metrics/`(순수 함수, DB·화면 모름) + `data/`(DB 조회, server-only). 공개 함수는 `getManagementSummary(period)` (권한: 경영지원 view)
   - 금액은 BigInt, 비율만 number(0~1). 0으로 나누기·데이터 없음은 `null` + `reason`
   - 이익 비용 범위는 `metrics/settings.ts`의 `costMode` (05-3번 답변 전 임시: 매입 포함)
