@@ -22,6 +22,11 @@ const NAV_RULES: NavRule[] = [
       { href: "/management", label: "대시보드", action: "view" },
       { href: "/management/entry", label: "월간 입력", action: "edit" },
       {
+        href: "/management/receivables",
+        label: "미수금 관리",
+        action: "view",
+      },
+      {
         href: "/management/targets",
         label: "목표·항목 설정",
         action: "confirm",

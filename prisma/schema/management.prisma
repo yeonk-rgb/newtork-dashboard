@@ -115,11 +115,16 @@ model Receivable {
   dueOn        DateTime? @db.Date
   note         String?
 
+  /// 숨김(삭제 대신) 일시 — 값이 있으면 목록·대시보드·통계에서 모두 제외, 팀장이 복구 가능
+  deletedAt   DateTime?
+  deletedById String?
+
   createdById String
   updatedById String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([isCollected, occurredOn])
+  @@index([deletedAt])
   @@map("mgmt_receivable")
 }

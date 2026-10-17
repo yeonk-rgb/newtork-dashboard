@@ -47,6 +47,7 @@ src/shared/                   공통 (금액 포맷, UI, 인증 등)
 - Prisma 모델에 `@@map("<접두사>_테이블명")`을 붙입니다.
 - **enum 이름도 접두사**를 붙입니다 (예: `MgmtEntryStatus`). Prisma는 enum 이름이 전체에서 하나여야 해서 겹치면 합칠 때 에러가 납니다.
 - 모델 이름도 겹치지 않게 해 주세요 (예: 둘 다 `Sales`를 만들면 충돌).
+- 삭제 대신 숨김(소프트 삭제)을 쓸 때는 열 이름을 `deletedAt`(DateTime?)·`deletedById`(String?)로 맞추면 합칠 때 편합니다 (제안). 경영지원 `mgmt_receivable`이 이 방식이며, 숨긴 행은 조회 시 `deletedAt: null`로 제외합니다.
 - 마이그레이션은 합칠 때 다시 정리하므로, 각자 저장소의 마이그레이션 파일은 참고용입니다.
 
 ## 4. 금액 규칙

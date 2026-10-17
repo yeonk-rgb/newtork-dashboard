@@ -70,8 +70,10 @@ export async function loadAnnualTarget(
   };
 }
 
+/** 지표 계산용 미수금 — 숨긴 건(deletedAt)은 대시보드·통계에서 모두 제외 */
 export async function loadReceivables(): Promise<ReceivableInput[]> {
   const rows = await prisma.receivable.findMany({
+    where: { deletedAt: null },
     orderBy: { occurredOn: "asc" },
   });
   return rows.map((r) => ({

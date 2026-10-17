@@ -1,6 +1,7 @@
 // 미수금 상세 (id="receivables" — 메인 "전체 보기 →" 도착 지점)
 // 거래처별 전체 표 / 경과일 구간 / 수금 예정 6개월 / 건별 전체 표(정렬)
 import { TriangleAlert } from "lucide-react";
+import Link from "next/link";
 
 import { serializeBigInt } from "@/shared/format/bigint";
 import { yearMonthLabel } from "@/shared/period/period";
@@ -43,12 +44,20 @@ export function ReceivablesSection({
 
   return (
     <div id="receivables" className="scroll-mt-4 space-y-3">
-      <h2 className="text-base font-semibold">
-        미수금{" "}
-        <span className="text-sm font-normal text-muted-foreground">
-          ({isoDate(asOf)} 기준 · 경과일은 발생일부터, 고객사 확인 중 05-17번)
-        </span>
-      </h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-base font-semibold">
+          미수금{" "}
+          <span className="text-sm font-normal text-muted-foreground">
+            ({isoDate(asOf)} 기준 · 경과일은 발생일부터, 고객사 확인 중 05-17번)
+          </span>
+        </h2>
+        <Link
+          href="/management/receivables"
+          className="shrink-0 text-xs text-primary hover:underline"
+        >
+          미수금 관리(등록·수금 처리) →
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
         <Section title="거래처별 미수금" className="xl:col-span-1">

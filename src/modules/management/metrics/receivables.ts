@@ -8,7 +8,7 @@ import type { AgingBucket, ReceivableInput, ReceivableResult } from "./types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function daysBetween(from: Date, to: Date): number {
+export function daysBetween(from: Date, to: Date): number {
   return Math.floor((to.getTime() - from.getTime()) / DAY_MS);
 }
 
