@@ -77,6 +77,9 @@
   - ⚠️ **고객사 답변(05-19번) 전까지 샘플 시드 데이터로만 사용** — 실제 재무 데이터를 넣은 DB에서 [분석하기]를 누르지 않는다
   - 입력은 `buildAiInput(summary)` 집계값만 (거래처명·건별 내역·비고·생산팀 목업 제외), 해시가 달라지면 "최신이 아님" 안내. 화면을 열 때는 AI를 호출하지 않는다
   - 끝난 분기만, confirm 권한만 생성 (`ai/rules.ts`의 `aiAbilities()` — 화면·Server Action 공용). 월 보기 = 그 달의 분기, 연간·누적 = 확정 월이 있는 마지막 분기
+  - 응답 형식(프롬프트 v2): `{ summary[2~3], shortfalls[0~3], improvements[1~3] }`. 프롬프트는 문장 60자, 저장 검증은 80자 — 넘는 문장·3개 초과는 `normalizeAiComment()`가 잘라서 살리고(로그 경고) 요약이 없을 때만 실패. 옛 형식(`summary` 문자열 + `weaknesses`)은 `readStoredComment()`로 **화면 읽기만** 지원, 새로 저장하는 건 새 형식만
+  - AI가 계산하지 않도록 입력에 미리 넣는다: 금액 `formatWonKorean()`("1억 2,300만 원"), 목표 차이 `achievementText()`("82.4%로 17.6%p 부족/초과"), 연간 진도 `progressText()`. 산업분야·제품 시리즈 비중은 생산팀 연동 전까지 입력에서 제외 (`build-input.ts`의 TODO 위치에 `is_sample`과 함께 추가)
+  - 저장된 코멘트의 `promptVersion`이 현재와 다르면 "분석 기준이 바뀌어…", 입력 해시가 다르면 "데이터가 변경되어…" 안내
   - 모델 `claude-opus-5-5`(`shared/ai/client.ts`), SDK `@anthropic-ai/sdk` 버전 정확히 고정, 구조화 출력 + 거절 시 서버 fallback + Zod 재검증. 프롬프트를 바꾸면 `ai/prompt.ts`의 `PROMPT_VERSION`을 올린다
   - 테스트는 가짜 `create`를 주입 (Vitest에서 `getAnthropicClient()`는 항상 에러 → CI 실제 호출 불가). 로컬 화면은 `.env`의 `AI_MOCK=true`(실패 연습 `fail`) — `next dev`에서만 동작
   - 키 입력: `npm run env:set-key` (값 출력 금지, 길이만)

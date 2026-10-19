@@ -1,19 +1,99 @@
-// AI 분석 코멘트: 응답 형식(Zod) + 생성 요청 검증
+// AI 분석 코멘트: 응답 형식(Zod) + 저장 형식 + 옛 형식 읽기 + 생성 요청 검증
 import { z } from "zod";
 
-export const SUMMARY_MAX = 400;
-export const ITEM_MAX = 200;
+/** 프롬프트는 문장당 60자, 검증은 80자 — 넘으면 실패시키지 않고 그 문장만 잘라 표시 */
+export const SENTENCE_PROMPT_MAX = 60;
+export const SENTENCE_MAX = 80;
+const ELLIPSIS = "…";
 
-/** AI 응답 — 구조화 출력의 JSON 스키마로도 쓰고, 받은 뒤 한 번 더 검증한다 */
+/**
+ * AI 응답(구조화 출력의 JSON 스키마). 개수·길이 제한은 넣지 않고
+ * 받은 뒤 normalizeAiComment 에서 정리한다 (61~80자·4번째 문장 때문에 분석 전체가 실패하지 않게)
+ */
+export const aiCommentResponseSchema = z.object({
+  /** 매출 현황 2~3문장 — 첫 문장 분기 목표 달성률, 둘째 문장 연간 진도 */
+  summary: z.array(z.string()),
+  /** 부족한 점 0~3개, 중요한 순서 */
+  shortfalls: z.array(z.string()),
+  /** 다음 분기 개선 제안 1~3개, shortfalls 와 짝 */
+  improvements: z.array(z.string()),
+});
+export type AiCommentResponse = z.infer<typeof aiCommentResponseSchema>;
+
+const sentence = z.string().min(1).max(SENTENCE_MAX);
+
+/** DB 에 저장하는 형식 (새로 저장하는 것은 항상 이 형식) */
 export const aiCommentResultSchema = z.object({
-  /** 이번 분기 매출 현황 요약 2~3문장 */
-  summary: z.string().trim().min(1).max(SUMMARY_MAX),
-  /** 부족한 점 (최대 3개, 각 1문장) */
-  weaknesses: z.array(z.string().trim().min(1).max(ITEM_MAX)).max(3),
-  /** 다음 분기 개선 제안 (최대 3개, 각 1문장) */
-  improvements: z.array(z.string().trim().min(1).max(ITEM_MAX)).max(3),
+  summary: z.array(sentence).min(1).max(3),
+  shortfalls: z.array(sentence).max(3),
+  improvements: z.array(sentence).max(3),
 });
 export type AiCommentResult = z.infer<typeof aiCommentResultSchema>;
+
+export type NormalizeReport = {
+  /** 80자를 넘어 잘린 문장 수 */
+  truncated: number;
+  /** 3개를 넘어 버린 문장 수 */
+  dropped: number;
+};
+
+/** 문장 다듬기: 공백 정리, 빈 문장 제거, 80자 초과는 79자 + "…" */
+function cleanSentences(list: string[], report: NormalizeReport): string[] {
+  const cleaned = list
+    .map((s) => s.replace(/\s+/g, " ").trim())
+    .filter((s) => s !== "")
+    .map((s) => {
+      // 한글 등 조합 문자가 깨지지 않게 코드 포인트 단위로 자른다
+      const chars = [...s];
+      if (chars.length <= SENTENCE_MAX) return s;
+      report.truncated += 1;
+      return `${chars.slice(0, SENTENCE_MAX - 1).join("")}${ELLIPSIS}`;
+    });
+  if (cleaned.length > 3) report.dropped += cleaned.length - 3;
+  return cleaned.slice(0, 3);
+}
+
+/**
+ * AI 응답 → 저장 형식. 매출 현황 문장이 하나도 없을 때만 실패(null).
+ * 길이·개수 초과는 잘라서 살린다 (잘린 수는 report 로 알려 로그에 남긴다)
+ */
+export function normalizeAiComment(
+  response: AiCommentResponse,
+): { result: AiCommentResult; report: NormalizeReport } | null {
+  const report: NormalizeReport = { truncated: 0, dropped: 0 };
+  const result = {
+    summary: cleanSentences(response.summary, report),
+    shortfalls: cleanSentences(response.shortfalls, report),
+    improvements: cleanSentences(response.improvements, report),
+  };
+  const parsed = aiCommentResultSchema.safeParse(result);
+  return parsed.success ? { result: parsed.data, report } : null;
+}
+
+/** 8단계 첫 버전(PROMPT_VERSION 2026-10-17.1)의 저장 형식 — 화면 읽기만 지원 */
+const legacyResultSchema = z.object({
+  summary: z.string().min(1),
+  weaknesses: z.array(z.string()),
+  improvements: z.array(z.string()),
+});
+
+/** 화면 표시용: 새 형식 그대로, 옛 형식은 새 모양으로 바꿔 읽는다 (DB 는 바꾸지 않음) */
+export type AiCommentDisplay = AiCommentResult & { legacy: boolean };
+
+export function readStoredComment(json: unknown): AiCommentDisplay | null {
+  const current = aiCommentResultSchema.safeParse(json);
+  if (current.success) return { ...current.data, legacy: false };
+  const legacy = legacyResultSchema.safeParse(json);
+  if (legacy.success) {
+    return {
+      summary: [legacy.data.summary],
+      shortfalls: legacy.data.weaknesses,
+      improvements: legacy.data.improvements,
+      legacy: true,
+    };
+  }
+  return null;
+}
 
 export const generateAiCommentSchema = z.object({
   year: z.number().int().min(2000).max(2100),

@@ -23,8 +23,10 @@ import { MOCK_MODEL, mockAiComment } from "./mock-comment";
 import { buildUserMessage, PROMPT_VERSION, SYSTEM_PROMPT } from "./prompt";
 import { aiAbilities, quarterKey, type QuarterPeriod } from "./rules";
 import {
-  aiCommentResultSchema,
+  aiCommentResponseSchema,
   generateAiCommentSchema,
+  normalizeAiComment,
+  type AiCommentResponse,
   type AiCommentResult,
 } from "./schemas";
 
@@ -49,15 +51,14 @@ const inFlight = new Set<string>();
 
 class ConflictError extends Error {}
 
-async function callAi(input: AiInput): Promise<{
-  result: AiCommentResult;
-  model: string;
-}> {
+async function requestAi(
+  input: AiInput,
+): Promise<{ response: AiCommentResponse; model: string }> {
   const mock = aiMockMode();
   if (mock === "success") {
     // 생성 중 표시를 확인할 수 있게 잠깐 기다린다
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    return { result: mockAiComment(input), model: MOCK_MODEL };
+    return { response: mockAiComment(input), model: MOCK_MODEL };
   }
   if (mock === "fail") {
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -69,10 +70,29 @@ async function callAi(input: AiInput): Promise<{
     model: AI_MODEL,
     system: SYSTEM_PROMPT,
     user: buildUserMessage(input),
-    schema: aiCommentResultSchema,
+    schema: aiCommentResponseSchema,
     effort: "medium",
   });
-  return { result: data, model };
+  return { response: data, model };
+}
+
+/** AI 응답(모의 포함) → 저장 형식. 80자 초과 문장은 잘라서 살리고, 요약이 없을 때만 실패 */
+async function callAi(
+  input: AiInput,
+  key: string,
+): Promise<{ result: AiCommentResult; model: string }> {
+  const { response, model } = await requestAi(input);
+  const normalized = normalizeAiComment(response);
+  if (!normalized) {
+    throw new AiError("invalid-output", "매출 현황 문장이 없음");
+  }
+  const { truncated, dropped } = normalized.report;
+  if (truncated > 0 || dropped > 0) {
+    console.warn(
+      `[ai-comment] ${key} 응답 정리: ${truncated}문장 80자에서 자름, ${dropped}문장 3개 초과로 버림`,
+    );
+  }
+  return { result: normalized.result, model };
 }
 
 export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
@@ -122,7 +142,7 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
   try {
     const input = buildAiInput(summary, period);
     const inputHash = hashAiInput(input);
-    const { result, model } = await callAi(input);
+    const { result, model } = await callAi(input, key);
 
     await prisma.$transaction(async (tx) => {
       // AI 응답을 기다리는 사이 다른 사람이 저장했으면 버린다
