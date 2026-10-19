@@ -11,23 +11,31 @@ import type { ManagementSummary } from "../metrics/types";
 import { buildAiInput } from "./build-input";
 import { hashAiInput } from "./hash";
 import { MOCK_MODEL } from "./mock-comment";
+import { PROMPT_VERSION } from "./prompt";
 import { aiAbilities, type AiAbilities, type QuarterPeriod } from "./rules";
-import { aiCommentResultSchema, type AiCommentResult } from "./schemas";
+import { readStoredComment, type AiCommentDisplay } from "./schemas";
 
 export type AiCommentView = {
   year: number;
   quarter: QuarterPeriod["quarter"];
   quarterLabel: string;
+  /** 가장 최근 저장된 코멘트 id — 내용을 읽지 못해도 동시 생성 확인에 쓴다 */
+  latestId: string | null;
   latest: {
     id: string;
-    result: AiCommentResult;
+    /** 옛 형식(legacy)도 새 모양으로 바꿔 읽은 것 */
+    result: AiCommentDisplay;
     /** "2026-10-17 14:32" (한국 시간) */
     createdAtLabel: string;
     createdBy: string;
     isMock: boolean;
   } | null;
-  /** 저장된 코멘트 이후 데이터가 바뀜 */
-  isStale: boolean;
+  /**
+   * 최신이 아닌 이유 (최신이면 null)
+   * - prompt: 분석 기준(프롬프트·입력 형식)이 바뀌기 전에 저장된 코멘트
+   * - data: 저장 후 데이터가 바뀜 (입력 해시가 다름)
+   */
+  staleReason: "prompt" | "data" | null;
   abilities: AiAbilities;
 };
 
@@ -59,24 +67,31 @@ export async function loadAiCommentView(
   today: Date,
 ): Promise<AiCommentView> {
   const row = await loadLatestAiComment(quarter.year, quarter.quarter);
-  const parsed = row ? aiCommentResultSchema.safeParse(row.result) : null;
+  const display = row ? readStoredComment(row.result) : null;
   const currentHash = hashAiInput(buildAiInput(summary, quarter));
 
   return {
     year: quarter.year,
     quarter: quarter.quarter,
     quarterLabel: periodLabel(quarter),
+    latestId: row?.id ?? null,
     latest:
-      row && parsed?.success
+      row && display
         ? {
             id: row.id,
-            result: parsed.data,
+            result: display,
             createdAtLabel: dateTimeLabel(row.createdAt),
             createdBy: userDisplayName(row.createdById),
             isMock: row.model === MOCK_MODEL,
           }
         : null,
-    isStale: row !== null && row.inputHash !== currentHash,
+    staleReason: !row
+      ? null
+      : row.promptVersion !== PROMPT_VERSION
+        ? "prompt"
+        : row.inputHash !== currentHash
+          ? "data"
+          : null,
     abilities: aiAbilities(user, quarter, today, summary.confirmation.hasData),
   };
 }

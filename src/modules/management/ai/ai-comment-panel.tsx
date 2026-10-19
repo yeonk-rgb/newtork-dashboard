@@ -21,7 +21,7 @@ export function AiCommentPanel({
   const [pending, startTransition] = useTransition();
   const [failure, setFailure] = useState<Failure | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const { latest, abilities, isStale } = view;
+  const { latest, abilities, staleReason } = view;
 
   const generate = () => {
     setFailure(null);
@@ -30,7 +30,7 @@ export function AiCommentPanel({
       const result = await generateAiComment({
         year: view.year,
         quarter: view.quarter,
-        expectedLatestId: latest?.id ?? null,
+        expectedLatestId: view.latestId,
       });
       if (result.ok) setDone(result.message);
       else setFailure(result);
@@ -43,11 +43,13 @@ export function AiCommentPanel({
         <p className="text-xs text-muted-foreground">{basisNote}</p>
       )}
 
-      {isStale && !pending && (
+      {staleReason && !pending && (
         <p className="flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
           <span>
-            데이터가 변경되어 분석이 최신이 아닙니다.{" "}
+            {staleReason === "prompt"
+              ? "분석 기준이 바뀌어 이전 기준으로 만든 분석입니다."
+              : "데이터가 변경되어 분석이 최신이 아닙니다."}{" "}
             {abilities.canGenerate
               ? "[다시 분석]을 누르면 지금 데이터로 다시 분석합니다."
               : "팀장이 다시 분석하면 갱신됩니다."}
@@ -94,9 +96,13 @@ export function AiCommentPanel({
             <h3 className="mb-1 text-xs font-semibold text-muted-foreground">
               매출 현황
             </h3>
-            <p className="leading-relaxed">{latest.result.summary}</p>
+            {latest.result.summary.map((sentence, i) => (
+              <p key={i} className="leading-relaxed">
+                {sentence}
+              </p>
+            ))}
           </section>
-          <CommentList title="부족한 점" items={latest.result.weaknesses} />
+          <CommentList title="부족한 점" items={latest.result.shortfalls} />
           <CommentList
             title="다음 분기 개선 제안"
             items={latest.result.improvements}
@@ -122,6 +128,7 @@ export function AiCommentPanel({
             <>
               AI가 생성한 참고용 분석입니다 · {latest.createdAtLabel} 생성
               {latest.isMock && " · 모의 응답"}
+              {latest.result.legacy && " · 이전 형식"}
             </>
           ) : (
             "AI가 생성한 참고용 분석을 보여줍니다"

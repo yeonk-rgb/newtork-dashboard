@@ -67,3 +67,25 @@ export function formatWonCompact(value: AmountInput): string {
   if (abs >= MAN) return `${sign}${wonFormatter.format(man)}만`;
   return `${sign}${wonFormatter.format(abs)}`;
 }
+
+/**
+ * 보고서용 한글 단위 금액 (AI 분석 입력 등): "1억 2,300만 원"
+ * - 1만 원 미만: 원 단위 그대로 "9,500원", 0 은 "0원"
+ * - 1만 원 이상: 만 원 단위로 반올림 "4,817만 원", "1억 원", "28억 50만 원"
+ * - 음수: 앞에 "-" ("-1억 2,300만 원")
+ */
+export function formatWonKorean(value: AmountInput): string {
+  const v = toBigInt(value);
+  const sign = v < 0n ? "-" : "";
+  const abs = v < 0n ? -v : v;
+
+  if (abs < MAN) return `${sign}${wonFormatter.format(abs)}원`;
+  const man = roundDiv(abs, MAN); // 만 원 단위 (반올림으로 1억이 될 수 있음)
+  const eok = man / 10_000n;
+  const restMan = man % 10_000n;
+  const parts = [
+    eok > 0n ? `${wonFormatter.format(eok)}억` : "",
+    restMan > 0n ? `${wonFormatter.format(restMan)}만` : "",
+  ].filter(Boolean);
+  return `${sign}${parts.join(" ")} 원`;
+}
