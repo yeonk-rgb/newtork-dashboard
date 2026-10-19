@@ -135,4 +135,9 @@ type Period =
 ## 9. 기타
 
 - 비밀키는 `.env`에만 (`.env.example`에 키 이름만). AI 키 등은 클라이언트로 보내지 않습니다.
+- **AI 호출 공통**: `src/shared/ai/` — `getAnthropicClient()`(server-only, 키 없으면 `AiError("not-configured")`), `generateJson({ create, model, system, user, schema })`(JSON 출력 + Zod 검증 + 오류 종류 분류), `AiError`·`aiErrorMessage()`(화면 안내 문구). 다른 팀도 AI를 쓰면 이 함수를 재사용해 주세요. SDK 버전은 `package.json`에 정확히 고정(`@anthropic-ai/sdk` 0.131.0).
+  - 테스트에서는 `create`에 가짜 함수를 넣습니다. Vitest 실행 중에는 `getAnthropicClient()`가 항상 에러를 내므로 CI가 실제 API를 부를 수 없습니다.
+  - 개발 화면 확인용 `AI_MOCK=true`(실패 연습 `AI_MOCK=fail`)는 `next dev`에서만 동작합니다.
+  - 키는 `npm run env:set-key`로 넣습니다 (입력 숨김, 길이만 표시).
+  - ⚠️ 외부 AI로 재무 집계값을 보내는 것은 고객사 확인 전입니다 (05-19번). 답변 전까지 **샘플 시드 데이터로만** 사용하고, 실제 데이터를 넣은 DB에서는 AI 분석을 실행하지 않습니다.
 - `npm run check` (lint + typecheck + test)가 통과하는 상태로 합칩니다.

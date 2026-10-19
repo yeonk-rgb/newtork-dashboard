@@ -1,13 +1,14 @@
-// 메인 하단: 월별 매출·지출 + 이익률 / 미수금 상위 거래처 5 / AI 분석 코멘트(준비 중)
+// 메인 하단: 월별 매출·지출 + 이익률 / 미수금 상위 거래처 5 / AI 분석 코멘트
 import "server-only";
 
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { Suspense } from "react";
 
 import { serializeBigInt } from "@/shared/format/bigint";
 import { toPeriodParam } from "@/shared/period/url";
 import { Won } from "@/shared/ui/won";
 
+import { AiCommentCard, AiCommentCardSkeleton } from "../../ai/ai-comment-card";
 import type { TrendPoint } from "../../metrics/trend";
 import type { ManagementSummary } from "../../metrics/types";
 import { ChartCard } from "../donuts/chart-card";
@@ -71,21 +72,6 @@ function ReceivablesTop({ summary }: { summary: ManagementSummary }) {
   );
 }
 
-function AiCommentPlaceholder() {
-  return (
-    <ChartCard title="AI 분석 코멘트" badge="준비 중">
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
-        <Sparkles className="size-6" aria-hidden />
-        <p>
-          이번 분기 부족한 점·매출 상황 요약과
-          <br />
-          다음 분기 개선점을 보여줄 자리입니다. (8단계)
-        </p>
-      </div>
-    </ChartCard>
-  );
-}
-
 export function MainBottom({
   summary,
   trend,
@@ -112,7 +98,9 @@ export function MainBottom({
       />
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <ReceivablesTop summary={summary} />
-        <AiCommentPlaceholder />
+        <Suspense fallback={<AiCommentCardSkeleton />}>
+          <AiCommentCard period={summary.period} summary={summary} />
+        </Suspense>
       </div>
     </section>
   );

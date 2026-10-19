@@ -128,3 +128,26 @@ model Receivable {
   @@index([deletedAt])
   @@map("mgmt_receivable")
 }
+
+/// AI 분석 코멘트 (분기별). 다시 분석하면 행을 추가하고 화면은 최신 1건만 보여준다
+model AiComment {
+  id            String @id @default(cuid())
+  year          Int
+  /// 1~4 (애플리케이션에서 Zod로 검증)
+  quarter       Int
+  /// AI에 보낸 집계값 (거래처명·건별 내역 없음)
+  inputSummary  Json
+  /// { summary, weaknesses[], improvements[] }
+  result        Json
+  /// inputSummary 의 SHA-256 — 지금 데이터로 만든 값과 다르면 "최신 아님" 안내
+  inputHash     String
+  /// 실제 응답한 모델 (fallback 시 다른 모델일 수 있음, 모의 응답은 "mock")
+  model         String
+  promptVersion String
+
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@index([year, quarter, createdAt])
+  @@map("mgmt_ai_comment")
+}
