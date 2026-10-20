@@ -49,7 +49,8 @@ export function methodOf(model: string): AiCommentMethod {
   return "ai";
 }
 
-const dateTimeLabel = (date: Date) =>
+/** UTC 로 저장된 시각 → 한국 시간 "2026-10-19 14:13:35" */
+export const dateTimeLabel = (date: Date) =>
   new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",
