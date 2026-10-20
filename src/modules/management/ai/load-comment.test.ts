@@ -1,0 +1,86 @@
+// 메인(/)·경영지원 상세(/management)가 같은 분기의 같은 기록을 보는지 — DB 는 가짜(findFirst 호출 확인)
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { Period } from "@/shared/period/period";
+
+import { computeManagementSummary } from "../metrics/summary";
+import { date, financeMonth } from "../metrics/test-fixtures";
+
+vi.mock("server-only", () => ({}));
+vi.mock("@/shared/auth", () => ({ userDisplayName: (id: string) => id }));
+const findFirst = vi.fn();
+vi.mock("@/shared/db/client", () => ({
+  prisma: {
+    aiComment: { findFirst: (...args: unknown[]) => findFirst(...args) },
+  },
+}));
+
+const { loadAiCommentView } = await import("./load-comment");
+const { PROMPT_VERSION } = await import("./prompt");
+const { aiTargetQuarter } = await import("./rules");
+const { DEV_USERS } = await import("@/shared/auth/dev-users");
+
+const leader = DEV_USERS.find((u) => u.id === "dev-mgmt-leader")!;
+const today = date("2026-10-20");
+const months = [7, 8].map((m) =>
+  financeMonth(2026, m, { productSales: 100_000_000n }),
+);
+
+/** 화면이 하는 일과 같은 순서: 선택 기간 → 분석 분기 → 그 분기 지표 → 카드 데이터 */
+async function cardFor(period: Period) {
+  const selected = computeManagementSummary({
+    period,
+    financeMonths: months,
+    annualTarget: null,
+    receivables: [],
+    today,
+  });
+  const quarter = aiTargetQuarter(
+    period,
+    selected.confirmation.confirmedMonths,
+  )!;
+  const quarterSummary = computeManagementSummary({
+    period: quarter,
+    financeMonths: months,
+    annualTarget: null,
+    receivables: [],
+    today,
+  });
+  return loadAiCommentView(leader, quarter, quarterSummary, today);
+}
+
+describe("두 화면이 같은 분기 기록을 공유", () => {
+  beforeEach(() => {
+    findFirst.mockReset();
+    findFirst.mockResolvedValue({
+      id: "shared-q3",
+      year: 2026,
+      quarter: 3,
+      result: { summary: ["요약"], shortfalls: [], improvements: ["제안"] },
+      inputHash: "x",
+      model: "mock",
+      promptVersion: PROMPT_VERSION,
+      createdById: "dev-mgmt-leader",
+      createdAt: new Date("2026-10-20T01:00:00Z"),
+    });
+  });
+
+  it("메인(8월 보기)·상세(3분기 보기)·연간 보기 모두 (2026, 3분기) 하나로만 조회", async () => {
+    const views = await Promise.all([
+      cardFor({ unit: "month", year: 2026, month: 8 }), // 메인에서 8월 선택
+      cardFor({ unit: "quarter", year: 2026, quarter: 3 }), // /management 기본
+      cardFor({ unit: "year", year: 2026 }), // 연간 보기
+    ]);
+    for (const view of views) {
+      expect(view.latestId).toBe("shared-q3");
+      expect(view.quarterLabel).toBe("2026년 3분기");
+    }
+    // 조회 조건에 화면 구분이 없다 → 어느 화면에서 저장해도 같은 기록
+    for (const [args] of findFirst.mock.calls) {
+      expect(args).toEqual({
+        where: { year: 2026, quarter: 3 },
+        orderBy: { createdAt: "desc" },
+      });
+    }
+  });
+});

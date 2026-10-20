@@ -1,14 +1,12 @@
-// 메인 하단: 월별 매출·지출 + 이익률 / 미수금 상위 거래처 5 / AI 분석 코멘트
+// 메인 하단: 월별 매출·지출 + 이익률 / 미수금 상위 거래처 5 (AI 분석 코멘트는 KPI 아래로 이동)
 import "server-only";
 
 import Link from "next/link";
-import { Suspense } from "react";
 
 import { serializeBigInt } from "@/shared/format/bigint";
 import { toPeriodParam } from "@/shared/period/url";
 import { Won } from "@/shared/ui/won";
 
-import { AiCommentCard, AiCommentCardSkeleton } from "../../ai/ai-comment-card";
 import type { TrendPoint } from "../../metrics/trend";
 import type { ManagementSummary } from "../../metrics/types";
 import { ChartCard } from "../donuts/chart-card";
@@ -96,12 +94,7 @@ export function MainBottom({
           ),
         )}
       />
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <ReceivablesTop summary={summary} />
-        <Suspense fallback={<AiCommentCardSkeleton />}>
-          <AiCommentCard period={summary.period} summary={summary} />
-        </Suspense>
-      </div>
+      <ReceivablesTop summary={summary} />
     </section>
   );
 }

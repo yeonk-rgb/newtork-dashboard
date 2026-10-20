@@ -90,8 +90,14 @@ export function AiCommentPanel({
         </p>
       )}
 
+      {/* 페이지 상단 전체 폭 카드: 넓은 화면에서 매출 현황 | 부족한 점 | 개선 제안 3단 */}
       {latest ? (
-        <div className={cn("space-y-3", pending && "opacity-50")}>
+        <div
+          className={cn(
+            "grid grid-cols-1 gap-4 md:grid-cols-3",
+            pending && "opacity-50",
+          )}
+        >
           <section>
             <h3 className="mb-1 text-xs font-semibold text-muted-foreground">
               매출 현황

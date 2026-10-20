@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
 import {
+  AiCommentSection,
   DashboardTop,
   DashboardTopSkeleton,
   getManagementSummary,
@@ -11,7 +12,7 @@ import {
 import { can, getCurrentUser } from "@/shared/auth";
 import { Forbidden } from "@/shared/ui/forbidden";
 
-// 경영지원 상세: 상단(기간·KPI) + 표·수치 위주 상세 (금액은 원 단위 전체)
+// 경영지원 상세: 상단(기간·AI 분석·KPI) + 표·수치 위주 상세 (금액은 원 단위 전체)
 export default function ManagementPage({
   searchParams,
 }: PageProps<"/management">) {
@@ -43,7 +44,11 @@ async function ManagementContent({
 
   return (
     <div className="space-y-4">
-      <DashboardTop title="경영지원 상세" summary={summary} />
+      <DashboardTop
+        title="경영지원 상세"
+        summary={summary}
+        aboveKpis={<AiCommentSection summary={summary} />}
+      />
       <ManagementDetail summary={summary} trend={trend} />
     </div>
   );
