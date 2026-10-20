@@ -3,7 +3,7 @@ import "server-only";
 
 import { Download } from "lucide-react";
 
-import { getCurrentUser, userDisplayName } from "@/shared/auth";
+import { getCurrentUser, loadUserNames } from "@/shared/auth";
 import { Forbidden } from "@/shared/ui/forbidden";
 
 import { getTodayKst } from "../data/load-summary-input";
@@ -26,6 +26,7 @@ export async function UploadScreen() {
   const today = await getTodayKst();
   const thisYear = today.getUTCFullYear();
   const uploads = await loadRecentUploads();
+  const nameOf = await loadUserNames(uploads.map((u) => u.createdById));
 
   return (
     <div className="space-y-4">
@@ -92,7 +93,7 @@ export async function UploadScreen() {
                   <td className="py-1.5 tabular-nums">
                     {dateTimeLabel(u.createdAt)}
                   </td>
-                  <td className="py-1.5">{userDisplayName(u.createdById)}</td>
+                  <td className="py-1.5">{nameOf(u.createdById)}</td>
                   <td className="py-1.5">
                     {(u.fileNames as string[]).join(", ")}
                   </td>

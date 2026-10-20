@@ -1,87 +1,60 @@
 import { describe, expect, it } from "vitest";
 
 import { can } from "./can";
-import { DEV_USERS, type DevUserId } from "./dev-users";
+import { FAKE_USERS, fakeUser, type FakeUserKey } from "./testing/fake-users";
 import type { Action, Team } from "./types";
 
 const ACTIONS: Action[] = ["view", "edit", "confirm"];
 const TEAMS: Team[] = ["management", "production", "service"];
 
-// 기대값: [view, edit, confirm] × [management, production, service]
-// ○ = 허용, ✕ = 거부
-const EXPECTED: Record<DevUserId, Record<Action, Record<Team, boolean>>> = {
-  "dev-admin": {
-    view: { management: true, production: true, service: true },
-    edit: { management: true, production: true, service: true },
-    confirm: { management: true, production: true, service: true },
-  },
-  "dev-ceo": {
-    view: { management: true, production: true, service: true },
-    edit: { management: true, production: true, service: true },
-    confirm: { management: true, production: true, service: true },
-  },
-  "dev-mgmt-leader": {
-    view: { management: true, production: true, service: true },
-    edit: { management: true, production: false, service: false },
-    confirm: { management: true, production: false, service: false },
-  },
-  "dev-mgmt-member": {
-    view: { management: true, production: true, service: true },
-    edit: { management: true, production: false, service: false },
-    confirm: { management: false, production: false, service: false },
-  },
-  "dev-prod-member": {
-    view: { management: false, production: true, service: false },
-    edit: { management: false, production: false, service: false },
-    confirm: { management: false, production: false, service: false },
-  },
+// 기대값: 동작별로 허용되는 팀 (M = 경영지원·메인, P = 생산, S = 서비스)
+type Expect = Record<Action, string>;
+const EXPECTED: Record<FakeUserKey, Expect> = {
+  admin: { view: "MPS", edit: "MPS", confirm: "MPS" },
+  // 임시: 이전 "경영지원 팀장"과 같은 권한 (새 규칙은 다음 단계)
+  mgmt: { view: "MPS", edit: "M", confirm: "M" },
+  prodLeader: { view: "P", edit: "P", confirm: "P" },
+  prodMember: { view: "P", edit: "", confirm: "" },
+  svcLeader: { view: "S", edit: "S", confirm: "S" },
+  svcMember: { view: "S", edit: "", confirm: "" },
+  dual: { view: "PS", edit: "", confirm: "" },
 };
 
-const cases = DEV_USERS.flatMap((user) =>
+const LETTER: Record<Team, string> = {
+  management: "M",
+  production: "P",
+  service: "S",
+};
+
+const cases = (Object.keys(EXPECTED) as FakeUserKey[]).flatMap((key) =>
   ACTIONS.flatMap((action) =>
     TEAMS.map((team) => ({
-      user,
+      key,
       action,
       team,
-      expected: EXPECTED[user.id][action][team],
+      expected: EXPECTED[key][action].includes(LETTER[team]),
     })),
   ),
 );
 
 describe("can(user, action, team)", () => {
-  it("5명 × 3동작 × 3팀 = 45개 케이스", () => {
-    expect(cases).toHaveLength(45);
+  it.each(cases)("$key · $action · $team → $expected", (c) => {
+    expect(can(FAKE_USERS[c.key], c.action, c.team)).toBe(c.expected);
   });
 
-  it.each(cases)(
-    "$user.name · $action · $team → $expected",
-    ({ user, action, team, expected }) => {
-      expect(can(user, action, team)).toBe(expected);
-    },
-  );
-
-  it("다른 팀 팀장은 자기 팀만 입력·확정, 다른 팀은 열람도 불가", () => {
-    const prodLeader = {
-      id: "x",
-      name: "생산 팀장",
-      role: "MEMBER",
-      team: "production",
-      isLeader: true,
-    } as const;
-    expect(can(prodLeader, "edit", "production")).toBe(true);
-    expect(can(prodLeader, "confirm", "production")).toBe(true);
-    expect(can(prodLeader, "view", "service")).toBe(false);
+  it("비활성 계정은 관리자라도 모두 불가", () => {
+    const inactive = fakeUser("admin", { active: false });
+    for (const action of ACTIONS) {
+      for (const team of TEAMS) expect(can(inactive, action, team)).toBe(false);
+    }
   });
 
-  it("다른 팀 팀원은 자기 팀 입력 불가 (경영지원팀만 팀원 입력 허용)", () => {
-    const serviceMember = {
-      id: "y",
-      name: "서비스 팀원",
-      role: "MEMBER",
-      team: "service",
-      isLeader: false,
-    } as const;
-    expect(can(serviceMember, "view", "service")).toBe(true);
-    expect(can(serviceMember, "edit", "service")).toBe(false);
+  it("팀장의 수정 권한은 열람 범위 안에서만 (데이터가 어긋나도 막는다)", () => {
+    const odd = fakeUser("prodLeader", {
+      viewTeams: ["production"],
+      editTeams: ["production", "service"],
+    });
+    expect(can(odd, "edit", "service")).toBe(false);
+    expect(can(odd, "view", "service")).toBe(false);
   });
 });

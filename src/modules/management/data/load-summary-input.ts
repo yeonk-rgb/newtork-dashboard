@@ -44,11 +44,8 @@ export async function getTodayKst(): Promise<Date> {
   return todayKst(new Date());
 }
 
-/** 현재 시각 (확정 일시 등 기록용). getTodayKst 와 같은 이유로 connection() 뒤에서 구한다 */
-export async function getNow(): Promise<Date> {
-  await connection();
-  return new Date();
-}
+/** 현재 시각 (확정 일시 등 기록용) — 공통 함수 (src/shared/time/now.ts) */
+export { getNow } from "@/shared/time/now";
 
 export async function loadSummaryInput(
   period: Period,

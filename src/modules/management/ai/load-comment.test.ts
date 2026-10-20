@@ -1,13 +1,16 @@
 // 메인(/)·경영지원 상세(/management)가 같은 분기의 같은 기록을 보는지 — DB 는 가짜(findFirst 호출 확인)
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { FAKE_USERS } from "@/shared/auth/testing/fake-users";
 import type { Period } from "@/shared/period/period";
 
 import { computeManagementSummary } from "../metrics/summary";
 import { date, financeMonth } from "../metrics/test-fixtures";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/shared/auth", () => ({ userDisplayName: (id: string) => id }));
+vi.mock("@/shared/auth", () => ({
+  loadUserNames: async () => (id: string) => id,
+}));
 const findFirst = vi.fn();
 /** 업로드 데이터 개수 (엑셀 업로드로 저장된 달·목표) */
 const uploadedMonths = vi.fn(async () => 0);
@@ -27,9 +30,8 @@ vi.mock("@/shared/db/client", () => ({
 const { loadAiCommentView } = await import("./load-comment");
 const { PROMPT_VERSION } = await import("./prompt");
 const { aiTargetQuarter } = await import("./rules");
-const { DEV_USERS } = await import("@/shared/auth/dev-users");
 
-const leader = DEV_USERS.find((u) => u.id === "dev-mgmt-leader")!;
+const leader = FAKE_USERS.mgmt;
 const today = date("2026-10-20");
 const months = [7, 8].map((m) =>
   financeMonth(2026, m, { productSales: 100_000_000n }),

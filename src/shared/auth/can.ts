@@ -1,24 +1,29 @@
 // 권한 규칙 — 모든 권한 확인은 이 함수를 거친다. 실제 정책이 확정되면 이 파일의 규칙만 바꾼다.
-// 기준: docs/03-meeting-notes-20261014.md 4번 + 해석(docs/05-open-questions.md 14·15번, 고객사 확인 전)
+// 사용자 모델 교체(역할 4개) 후 임시 매핑: 경영지원팀 = 이전 "경영지원 팀장"과 같은 권한.
+// 새 권한 규칙(경영지원팀 = 모든 팀 수정)은 다음 단계에서 이 파일만 바꾼다.
 import type { Action, AppUser, Team } from "./types";
 
 export function can(user: AppUser, action: Action, team: Team): boolean {
-  // 관리자·대표: 모든 팀 열람·입력·확정
-  if (user.role === "ADMIN" || user.role === "CEO") return true;
+  if (!user.active) return false;
 
-  // 경영지원팀: 모든 팀 열람
-  if (action === "view" && user.team === "management") return true;
-
-  // 그 외에는 자기 팀만
-  if (user.team !== team) return false;
-
-  switch (action) {
-    case "view":
+  switch (user.role) {
+    case "ADMIN":
       return true;
-    case "edit":
-      // 경영지원팀은 팀원도 월말 입력·임시저장 가능, 다른 팀은 팀장만
-      return user.isLeader || team === "management";
-    case "confirm":
-      return user.isLeader;
+    case "MANAGEMENT":
+      // 모든 팀 열람, 입력·확정은 경영지원만
+      return action === "view" || team === "management";
+    case "LEADER":
+      if (team === "management" || !user.viewTeams.includes(team)) {
+        return false;
+      }
+      return action === "view" || user.editTeams.includes(team);
+    case "MEMBER":
+      if (team === "management") return false;
+      return action === "view" && user.viewTeams.includes(team);
   }
+}
+
+/** 관리자 설정(직원 권한 변경·비밀번호 초기화·계정 추가·비활성화) */
+export function canManageUsers(user: AppUser): boolean {
+  return user.active && user.role === "ADMIN";
 }

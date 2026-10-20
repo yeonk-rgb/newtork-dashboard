@@ -1,5 +1,5 @@
 // 화면 접근 규칙 (메뉴, 이동할 페이지). 판단은 모두 can()에 맡긴다.
-import { can } from "./can";
+import { can, canManageUsers } from "./can";
 import type { Action, AppUser, Team } from "./types";
 
 export type NavItem = { href: string; label: string; children?: NavItem[] };
@@ -43,8 +43,9 @@ const NAV_RULES: NavRule[] = [
   { href: "/admin", label: "관리자", adminOnly: true },
 ];
 
+/** 관리자 설정 화면 — 판단은 can.ts 의 canManageUsers() */
 export function canAccessAdmin(user: AppUser): boolean {
-  return user.role === "ADMIN";
+  return canManageUsers(user);
 }
 
 /** 사이드바·403 화면에 보여줄, 이 사용자가 열 수 있는 페이지 (하위 메뉴 포함) */
@@ -66,9 +67,15 @@ export function accessiblePages(user: AppUser): NavItem[] {
   });
 }
 
-/** 메인에 접근할 수 없을 때 이동할 자기 팀 페이지 */
+/** 열 수 있는 페이지가 하나도 없을 때 (권한 없음 안내) */
+export const NO_ACCESS_PATH = "/forbidden";
+
+/**
+ * 로그인 후·메인에 접근할 수 없을 때 이동할 페이지
+ * 메인 → 열람 범위의 첫 팀(생산 → 서비스 순, 겸직이면 생산) → 없으면 권한 없음 안내
+ */
 export function homePathFor(user: AppUser): string {
   if (can(user, "view", "management")) return "/";
-  if (user.team) return `/${user.team}`;
-  return accessiblePages(user)[0]?.href ?? "/";
+  const page = accessiblePages(user)[0];
+  return page?.href ?? NO_ACCESS_PATH;
 }

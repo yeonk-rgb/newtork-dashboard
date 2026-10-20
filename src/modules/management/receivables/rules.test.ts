@@ -1,7 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { DEV_USERS } from "@/shared/auth/dev-users";
-import type { AppUser } from "@/shared/auth/types";
+import { EDIT_ONLY_MGMT, FAKE_USERS } from "@/shared/auth/testing/fake-users";
 
 import {
   canCreateReceivable,
@@ -16,11 +15,16 @@ import {
   type ReceivableRow,
 } from "./rules";
 
-const user = (id: string): AppUser => DEV_USERS.find((u) => u.id === id)!;
-const leader = user("dev-mgmt-leader");
-const member = user("dev-mgmt-member");
-const prod = user("dev-prod-member");
-const ceo = user("dev-ceo");
+// 경영지원팀 = 확정까지 가능, EDIT_ONLY_MGMT = 입력만 가능(지금 규칙엔 없는 조합 — 화면 분기 검사용)
+vi.mock("@/shared/auth/can", async (importOriginal) => {
+  const { withEditOnlyUser } = await import("@/shared/auth/testing/fake-users");
+  return withEditOnlyUser(await importOriginal());
+});
+
+const leader = FAKE_USERS.mgmt;
+const member = EDIT_ONLY_MGMT;
+const prod = FAKE_USERS.prodMember;
+const ceo = FAKE_USERS.admin;
 
 const TODAY = "2026-10-16";
 

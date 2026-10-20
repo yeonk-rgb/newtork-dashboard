@@ -1,7 +1,7 @@
 // 월간 입력 화면 데이터 (서버 전용): 해당 월 값, 전월 값, 그 외 지출 항목
 import "server-only";
 
-import { userDisplayName } from "@/shared/auth";
+import { loadUserNames } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
 import { addMonths, type YearMonth } from "@/shared/period/period";
 
@@ -69,6 +69,7 @@ export async function loadEntry(ym: YearMonth): Promise<EntryData> {
       .filter((e) => e.amount !== 0n)
       .map((e) => e.categoryId),
   );
+  const nameOf = await loadUserNames([row?.updatedById]);
   return {
     year: ym.year,
     month: ym.month,
@@ -83,7 +84,7 @@ export async function loadEntry(ym: YearMonth): Promise<EntryData> {
       .filter((c) => c.isActive || usedHere.has(c.id))
       .map((c) => ({ id: c.id, name: c.name, inactive: !c.isActive })),
     updatedAt: row ? row.updatedAt.toISOString() : null,
-    updatedByName: row ? userDisplayName(row.updatedById) : null,
+    updatedByName: row ? nameOf(row.updatedById) : null,
     confirmedAt: row?.confirmedAt ? row.confirmedAt.toISOString() : null,
   };
 }

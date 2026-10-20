@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { homePathFor } from "@/shared/auth/access";
-import { DEV_USERS } from "@/shared/auth/dev-users";
+import { EDIT_ONLY_MGMT, FAKE_USERS } from "@/shared/auth/testing/fake-users";
 import type { AppUser } from "@/shared/auth/types";
 
 import { date } from "../metrics/test-fixtures";
@@ -12,7 +12,12 @@ import {
   type QuarterPeriod,
 } from "./rules";
 
-const user = (id: string): AppUser => DEV_USERS.find((u) => u.id === id)!;
+// 경영지원팀 = 확정까지 가능, EDIT_ONLY_MGMT = 입력만 가능(지금 규칙엔 없는 조합 — 화면 분기 검사용)
+vi.mock("@/shared/auth/can", async (importOriginal) => {
+  const { withEditOnlyUser } = await import("@/shared/auth/testing/fake-users");
+  return withEditOnlyUser(await importOriginal());
+});
+
 const q3: QuarterPeriod = { unit: "quarter", year: 2026, quarter: 3 };
 const ym = (month: number) => ({ year: 2026, month });
 
@@ -39,8 +44,8 @@ describe("aiTargetQuarter", () => {
 });
 
 describe("aiAbilities", () => {
-  const leader = user("dev-mgmt-leader");
-  const member = user("dev-mgmt-member");
+  const leader = FAKE_USERS.mgmt;
+  const member = EDIT_ONLY_MGMT;
 
   it("끝난 분기 + 확정 데이터 + 팀장이면 분석 가능", () => {
     expect(aiAbilities(leader, q3, date("2026-10-01"), true)).toEqual({
@@ -48,7 +53,7 @@ describe("aiAbilities", () => {
       notice: null,
     });
     expect(
-      aiAbilities(user("dev-ceo"), q3, date("2026-10-17"), true).canGenerate,
+      aiAbilities(FAKE_USERS.admin, q3, date("2026-10-17"), true).canGenerate,
     ).toBe(true);
   });
 
@@ -71,7 +76,7 @@ describe("aiAbilities", () => {
   });
 
   it("팀원·생산 팀원은 버튼 없음 (안내 없이 결과만 열람)", () => {
-    for (const u of [member, user("dev-prod-member")]) {
+    for (const u of [member, FAKE_USERS.prodMember]) {
       expect(aiAbilities(u, q3, date("2026-10-17"), true)).toEqual({
         canGenerate: false,
         notice: null,
@@ -82,7 +87,8 @@ describe("aiAbilities", () => {
 
 describe("역할 × 화면별 AI 카드 노출", () => {
   // 화면 접근: 메인(/)은 경영지원 열람 권한이 없으면 자기 팀 페이지로 이동, /management 는 403
-  type Outcome = "카드+버튼" | "카드(열람)" | "이동:/production" | "403";
+  type Outcome =
+    "카드+버튼" | "카드(열람)" | `이동:/${"production" | "service"}` | "403";
   const outcome = (u: AppUser, screen: "/" | "/management"): Outcome => {
     const access = aiCardAccess(u);
     if (access === "none") {
@@ -91,17 +97,16 @@ describe("역할 × 화면별 AI 카드 노출", () => {
     return access === "generate" ? "카드+버튼" : "카드(열람)";
   };
 
-  const table: [string, Outcome, Outcome][] = [
-    // 역할, 메인(/), 경영지원 상세(/management)
-    ["dev-admin", "카드+버튼", "카드+버튼"],
-    ["dev-ceo", "카드+버튼", "카드+버튼"],
-    ["dev-mgmt-leader", "카드+버튼", "카드+버튼"],
-    ["dev-mgmt-member", "카드(열람)", "카드(열람)"],
-    ["dev-prod-member", "이동:/production", "403"],
+  const table: [string, AppUser, Outcome, Outcome][] = [
+    // 사용자, 메인(/), 경영지원 상세(/management)
+    ["관리자", FAKE_USERS.admin, "카드+버튼", "카드+버튼"],
+    ["경영지원팀", FAKE_USERS.mgmt, "카드+버튼", "카드+버튼"],
+    ["입력 전용(가정)", EDIT_ONLY_MGMT, "카드(열람)", "카드(열람)"],
+    ["생산 팀원", FAKE_USERS.prodMember, "이동:/production", "403"],
+    ["서비스 팀장", FAKE_USERS.svcLeader, "이동:/service", "403"],
   ];
 
-  it.each(table)("%s: / → %s, /management → %s", (id, main, detail) => {
-    const u = user(id);
+  it.each(table)("%s: / → %s, /management → %s", (_, u, main, detail) => {
     expect(outcome(u, "/")).toBe(main);
     expect(outcome(u, "/management")).toBe(detail);
     // 버튼은 분기 조건(끝난 분기·확정 데이터)까지 만족할 때 — 화면과 무관하게 같은 판단

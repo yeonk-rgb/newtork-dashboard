@@ -1,16 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 
-import {
-  can,
-  DEV_USERS,
-  getCurrentUser,
-  isDevSwitchEnabledNow,
-  roleLabel,
-} from "@/shared/auth";
-
-import { DevUserSwitcher } from "./dev-user-switcher";
+import { logout } from "@/shared/auth/actions";
+import { getCurrentUser, roleLabel } from "@/shared/auth";
 
 export function Header() {
   return (
@@ -32,27 +25,26 @@ async function HeaderUser() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
-      {/* 상단 메뉴: 경영지원 열람 권한이 있으면 엑셀 업로드 바로가기 (실제 차단은 페이지에서) */}
-      {can(user, "view", "management") && (
-        <Link
-          href="/management/upload"
-          className="rounded px-2 py-1 hover:bg-white/10"
-        >
-          엑셀 업로드
-        </Link>
-      )}
       <span className="flex items-center gap-1.5">
         <UserRound className="size-4" aria-hidden />
         {user.name}
         <span className="opacity-70">· {roleLabel(user)}</span>
       </span>
-      {/* 개발 환경에서만 렌더링 — 배포 빌드에는 드롭다운 자체가 없다 */}
-      {isDevSwitchEnabledNow() && (
-        <DevUserSwitcher
-          currentId={user.id}
-          users={DEV_USERS.map(({ id, name }) => ({ id, name }))}
-        />
-      )}
+      <Link
+        href="/account/password"
+        className="rounded px-1.5 py-0.5 opacity-90 hover:bg-white/15 hover:opacity-100"
+      >
+        비밀번호 변경
+      </Link>
+      <form action={logout}>
+        <button
+          type="submit"
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 opacity-90 hover:bg-white/15 hover:opacity-100"
+        >
+          <LogOut className="size-3.5" aria-hidden />
+          로그아웃
+        </button>
+      </form>
     </div>
   );
 }

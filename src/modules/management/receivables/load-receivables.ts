@@ -1,7 +1,7 @@
 // 미수금 관리 화면 데이터 (서버 전용)
 import "server-only";
 
-import { userDisplayName } from "@/shared/auth";
+import { loadUserNames, type NameOf } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
 
 import { toDateOnly, type ReceivableRow } from "./rules";
@@ -10,7 +10,7 @@ type DbReceivable = Awaited<
   ReturnType<typeof prisma.receivable.findMany>
 >[number];
 
-function toRow(r: DbReceivable): ReceivableRow {
+function toRow(r: DbReceivable, nameOf: NameOf): ReceivableRow {
   return {
     id: r.id,
     customerName: r.customerName,
@@ -21,10 +21,10 @@ function toRow(r: DbReceivable): ReceivableRow {
     isCollected: r.isCollected,
     collectedOn: r.collectedOn ? toDateOnly(r.collectedOn) : null,
     updatedAt: r.updatedAt.toISOString(),
-    updatedBy: userDisplayName(r.updatedById),
+    updatedBy: nameOf(r.updatedById),
     hidden: r.deletedAt !== null,
     deletedAt: r.deletedAt?.toISOString() ?? null,
-    deletedBy: r.deletedById ? userDisplayName(r.deletedById) : null,
+    deletedBy: r.deletedById ? nameOf(r.deletedById) : null,
   };
 }
 
@@ -50,7 +50,10 @@ export async function loadReceivablesData(
       select: { customerName: true },
     }),
   ]);
-  const all = rows.map(toRow);
+  const nameOf = await loadUserNames(
+    rows.flatMap((r) => [r.updatedById, r.deletedById]),
+  );
+  const all = rows.map((r) => toRow(r, nameOf));
   return {
     rows: all.filter((r) => !r.hidden),
     hiddenRows: all.filter((r) => r.hidden),
