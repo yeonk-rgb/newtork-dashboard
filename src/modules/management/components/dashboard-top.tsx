@@ -19,11 +19,14 @@ export async function DashboardTop({
   title,
   summary,
   aboveKpis,
+  showKpis = true,
 }: {
   title: string;
   summary: ManagementSummary;
   /** KPI 카드 위에 넣을 내용 (경영지원 상세의 AI 분석 카드) */
   aboveKpis?: React.ReactNode;
+  /** 경영 대시보드는 KPI 카드 대신 AI 카드 아래 도넛으로 보여준다 */
+  showKpis?: boolean;
 }) {
   const range = await loadYearRange((await getTodayKst()).getUTCFullYear());
   // URL로 범위 밖 연도를 골라도 드롭다운에 보이도록
@@ -37,7 +40,7 @@ export async function DashboardTop({
       </div>
       <ConfirmationBanner confirmation={summary.confirmation} />
       {aboveKpis}
-      <KpiCards summary={summary} />
+      {showKpis && <KpiCards summary={summary} />}
     </section>
   );
 }
