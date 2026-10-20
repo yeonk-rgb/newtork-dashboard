@@ -141,4 +141,5 @@ type Period =
   - 키는 `npm run env:set-key`로 넣습니다 (입력 숨김, 길이만 표시).
   - **예시 분석(`npm run seed:ai-examples`)은 시드(가짜) 데이터용입니다.** 고객사 실제 데이터를 넣기 전(05-19번 답변 후)에는 반드시 `npm run seed:ai-examples -- --remove`로 지워 주세요. 예시는 `model = "example"`, id `ai-example-*`로 저장되어 다른 기록과 구분됩니다.
   - ⚠️ 외부 AI로 재무 집계값을 보내는 것은 고객사 확인 전입니다 (05-19번). 답변 전까지 **샘플 시드 데이터로만** 사용하고, 실제 데이터를 넣은 DB에서는 AI 분석을 실행하지 않습니다.
+- **파일 업로드 공통**: `src/shared/upload/read-table.ts`의 `readTableFile(fileName, ArrayBuffer)` → 시트별 셀 표(문자열·숫자·null). .xlsx(exceljs 4.4.0 고정)·.csv(UTF-8/EUC-KR 자동 판별) 지원, .xls는 안내 메시지. 팀별 열 인식·검증은 각 모듈에서 합니다(경영지원: `modules/management/upload/`).
 - `npm run check` (lint + typecheck + test)가 통과하는 상태로 합칩니다.

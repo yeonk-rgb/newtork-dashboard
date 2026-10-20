@@ -9,9 +9,18 @@ import { date, financeMonth } from "../metrics/test-fixtures";
 vi.mock("server-only", () => ({}));
 vi.mock("@/shared/auth", () => ({ userDisplayName: (id: string) => id }));
 const findFirst = vi.fn();
+/** 업로드 데이터 개수 (엑셀 업로드로 저장된 달·목표) */
+const uploadedMonths = vi.fn(async () => 0);
+const uploadedTargets = vi.fn(async () => 0);
 vi.mock("@/shared/db/client", () => ({
   prisma: {
     aiComment: { findFirst: (...args: unknown[]) => findFirst(...args) },
+    monthlyFinance: {
+      count: (...args: unknown[]) => uploadedMonths(...(args as [])),
+    },
+    annualTarget: {
+      count: (...args: unknown[]) => uploadedTargets(...(args as [])),
+    },
   },
 }));
 
@@ -82,5 +91,63 @@ describe("두 화면이 같은 분기 기록을 공유", () => {
         orderBy: { createdAt: "desc" },
       });
     }
+  });
+});
+
+describe("업로드 데이터가 AI 입력에 들어가면 분석 차단 (05-19 동의 전)", () => {
+  beforeEach(() => {
+    findFirst.mockReset();
+    findFirst.mockResolvedValue(null);
+    uploadedMonths.mockReset();
+    uploadedTargets.mockReset();
+    uploadedMonths.mockResolvedValue(0);
+    uploadedTargets.mockResolvedValue(0);
+  });
+
+  it("업로드 데이터가 없으면 [분석하기] 가능 (샘플·예시 데이터는 지금처럼)", async () => {
+    const view = await cardFor({ unit: "quarter", year: 2026, quarter: 3 });
+    expect(view.abilities).toEqual({ canGenerate: true, notice: null });
+  });
+
+  it("AI 입력 달 중 업로드된 달이 있으면 막고 안내", async () => {
+    uploadedMonths.mockResolvedValue(2);
+    const view = await cardFor({ unit: "quarter", year: 2026, quarter: 3 });
+    expect(view.abilities).toEqual({
+      canGenerate: false,
+      notice:
+        "외부 AI 전송 동의 확인 전에는 업로드 데이터를 분석할 수 없습니다.",
+    });
+  });
+
+  it("그 해 연간 목표가 업로드된 경우도 막는다", async () => {
+    uploadedTargets.mockResolvedValue(1);
+    const view = await cardFor({ unit: "quarter", year: 2026, quarter: 3 });
+    expect(view.abilities.canGenerate).toBe(false);
+  });
+
+  it("조회 범위: 그 분기·직전 분기·전년 동기·1월~분기 말", async () => {
+    await cardFor({ unit: "quarter", year: 2026, quarter: 3 });
+    const where = (
+      uploadedMonths.mock.calls[0] as unknown as [
+        { where: { OR: { year: number; month: number }[] } },
+      ]
+    )[0].where;
+    const keys = where.OR.map((m) => `${m.year}-${m.month}`).sort();
+    expect(keys).toEqual(
+      [
+        "2026-1",
+        "2026-2",
+        "2026-3",
+        "2026-4",
+        "2026-5",
+        "2026-6",
+        "2026-7",
+        "2026-8",
+        "2026-9",
+        "2025-7",
+        "2025-8",
+        "2025-9",
+      ].sort(),
+    );
   });
 });

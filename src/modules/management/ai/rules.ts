@@ -4,7 +4,10 @@ import { can } from "@/shared/auth/can";
 import type { AppUser } from "@/shared/auth/types";
 import {
   periodEndDate,
+  periodMonths,
+  previousPeriod,
   quarterOf,
+  samePeriodLastYear,
   type Period,
   type Quarter,
   type YearMonth,
@@ -56,11 +59,19 @@ export type AiAbilities = {
  * - 그 분기에 확정 월이 하나 이상 있어야 함
  * @param today UTC 자정 (한국 날짜)
  */
+export const UPLOADED_DATA_NOTICE =
+  "외부 AI 전송 동의 확인 전에는 업로드 데이터를 분석할 수 없습니다.";
+
+/**
+ * 분석 가능 여부. 서버 Server Action 과 화면이 같은 함수를 쓴다.
+ * - uploadedData: AI 입력에 엑셀 업로드 데이터가 들어감 → 외부 AI 전송 동의(05-19) 전까지 차단
+ */
 export function aiAbilities(
   user: AppUser,
   quarter: QuarterPeriod,
   today: Date,
   hasConfirmedData: boolean,
+  uploadedData = false,
 ): AiAbilities {
   const end = periodEndDate(quarter);
   if (end.getTime() >= today.getTime()) {
@@ -76,6 +87,7 @@ export function aiAbilities(
       notice: "이 분기에 확정된 달이 없어 분석할 수 없습니다.",
     };
   }
+  if (uploadedData) return { canGenerate: false, notice: UPLOADED_DATA_NOTICE };
   if (!can(user, "confirm", "management")) {
     return { canGenerate: false, notice: null };
   }
@@ -94,4 +106,28 @@ export function quarterKey(year: number, quarter: Quarter | number): string {
 export function aiCardAccess(user: AppUser): "none" | "view" | "generate" {
   if (!can(user, "view", "management")) return "none";
   return can(user, "confirm", "management") ? "generate" : "view";
+}
+
+/**
+ * 이 분기 AI 입력(buildAiInput)에 쓰이는 달: 그 분기, 직전 분기, 전년 동기, 그 해 1월~분기 말(목표 누적)
+ * — 이 중 엑셀 업로드 데이터가 있으면 분석을 막는다
+ */
+export function aiInputMonths(quarter: QuarterPeriod): YearMonth[] {
+  const yearToDate = Array.from({ length: quarter.quarter * 3 }, (_, i) => ({
+    year: quarter.year,
+    month: i + 1,
+  }));
+  const all = [
+    ...periodMonths(quarter),
+    ...periodMonths(previousPeriod(quarter)),
+    ...periodMonths(samePeriodLastYear(quarter)),
+    ...yearToDate,
+  ];
+  const seen = new Set<string>();
+  return all.filter((m) => {
+    const key = `${m.year}-${m.month}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

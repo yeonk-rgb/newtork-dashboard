@@ -21,7 +21,8 @@
     "db:deploy": "prisma migrate deploy",
     "metrics:report": "tsx --conditions=react-server scripts/metrics-report.ts",
     "env:set-key": "bash scripts/set-anthropic-key.sh",
-    "seed:ai-examples": "tsx --conditions=react-server scripts/seed-ai-examples.ts"
+    "seed:ai-examples": "tsx --conditions=react-server scripts/seed-ai-examples.ts",
+    "db:smoke": "tsx --conditions=react-server scripts/db-smoke.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0",
@@ -30,6 +31,7 @@
     "@prisma/client": "7.10.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
+    "exceljs": "4.4.0",
     "lucide-react": "^1.57.0",
     "next": "16.4.2",
     "react": "19.3.0",
