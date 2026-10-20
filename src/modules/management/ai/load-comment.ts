@@ -25,7 +25,7 @@ export type AiCommentView = {
     id: string;
     /** 옛 형식(legacy)도 새 모양으로 바꿔 읽은 것 */
     result: AiCommentDisplay;
-    /** "2026-10-17 14:32" (한국 시간) */
+    /** "2026-10-19 14:13:35" (한국 시간) */
     createdAtLabel: string;
     createdBy: string;
     isMock: boolean;
@@ -47,6 +47,7 @@ const dateTimeLabel = (date: Date) =>
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
   }).format(date);
 
 export async function loadLatestAiComment(year: number, quarter: number) {

@@ -7,10 +7,10 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/shared/auth";
 import { periodLabel, type Period } from "@/shared/period/period";
 
-import { ChartCard } from "../components/donuts/chart-card";
 import { getTodayKst, loadSummaryInput } from "../data/load-summary-input";
 import { computeManagementSummary } from "../metrics/summary";
 import type { ManagementSummary } from "../metrics/types";
+import { AiCardFrame } from "./ai-card-frame";
 import { AiCommentPanel } from "./ai-comment-panel";
 import { loadAiCommentView } from "./load-comment";
 import { aiCardAccess, aiTargetQuarter } from "./rules";
@@ -31,11 +31,11 @@ export async function AiCommentCard({
   const quarter = aiTargetQuarter(period, summary.confirmation.confirmedMonths);
   if (!quarter) {
     return (
-      <ChartCard title={TITLE}>
+      <AiCardFrame title={TITLE}>
         <p className="py-10 text-center text-sm text-muted-foreground">
           {periodLabel(period)}에 확정된 달이 없어 분석할 분기가 없습니다.
         </p>
-      </ChartCard>
+      </AiCardFrame>
     );
   }
 
@@ -55,22 +55,24 @@ export async function AiCommentCard({
         : `${periodLabel(period)} 중 확정된 달이 있는 마지막 분기의 분석입니다.`;
 
   return (
-    <ChartCard title={`${TITLE} · ${view.quarterLabel}`}>
-      <AiCommentPanel view={view} basisNote={basisNote} />
-    </ChartCard>
+    <AiCommentPanel
+      title={`${TITLE} · ${view.quarterLabel}`}
+      view={view}
+      basisNote={basisNote}
+    />
   );
 }
 
 export function AiCommentCardSkeleton() {
   return (
-    <ChartCard title={TITLE}>
+    <AiCardFrame title={TITLE}>
       <div className="flex-1 animate-pulse space-y-2 py-4" aria-hidden>
         <div className="h-3 w-3/4 rounded bg-muted" />
         <div className="h-3 w-full rounded bg-muted" />
         <div className="h-3 w-2/3 rounded bg-muted" />
       </div>
       <p className="sr-only">AI 분석 코멘트를 불러오는 중</p>
-    </ChartCard>
+    </AiCardFrame>
   );
 }
 
