@@ -8,9 +8,15 @@ import { cn } from "@/shared/lib/utils";
 
 import { AiCardColumn, AiCardFrame } from "./ai-card-frame";
 import { generateAiComment, type AiActionResult } from "./actions";
-import type { AiCommentView } from "./load-comment";
+import type { AiCommentMethod, AiCommentView } from "./load-comment";
 
 type Failure = Extract<AiActionResult, { ok: false }>;
+
+const METHOD_LABEL: Record<AiCommentMethod, string> = {
+  ai: "AI 분석",
+  mock: "모의 응답",
+  example: "예시",
+};
 
 export function AiCommentPanel({
   title,
@@ -57,9 +63,9 @@ export function AiCommentPanel({
     </button>
   );
 
-  // 생성 방식: AI 결과면 "AI 분석", 모의 응답이면 "모의 응답"
+  // 생성 방식: "AI 분석" / "모의 응답" / "예시"
   const meta = latest
-    ? `${latest.isMock ? "모의 응답" : "AI 분석"} · ${latest.createdAtLabel}`
+    ? `${METHOD_LABEL[latest.method]} · ${latest.createdAtLabel}`
     : undefined;
 
   return (
@@ -171,7 +177,9 @@ export function AiCommentPanel({
         )}
 
         <p className="border-t pt-2 text-xs text-muted-foreground">
-          AI가 생성한 참고용 분석입니다
+          {latest?.method === "example"
+            ? "시드 데이터로 만든 예시 분석입니다. [다시 분석]을 누르면 새 분석으로 바뀝니다"
+            : "AI가 생성한 참고용 분석입니다"}
           {latest?.result.legacy && " · 이전 형식"}
           {latest && abilities.notice && (
             <span className="block">{abilities.notice}</span>
