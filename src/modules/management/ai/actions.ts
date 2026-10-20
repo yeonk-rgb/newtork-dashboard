@@ -19,7 +19,7 @@ import { computeManagementSummary } from "../metrics/summary";
 import { buildAnnotations } from "./annotations";
 import { buildAiInput, type AiInput } from "./build-input";
 import { hashAiInput } from "./hash";
-import { loadLatestAiComment } from "./load-comment";
+import { hasUploadedInput, loadLatestAiComment } from "./load-comment";
 import { MOCK_MODEL, mockAiComment } from "./mock-comment";
 import { buildUserMessage, PROMPT_VERSION, SYSTEM_PROMPT } from "./prompt";
 import { aiAbilities, quarterKey, type QuarterPeriod } from "./rules";
@@ -116,6 +116,7 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
     period,
     today,
     summary.confirmation.hasData,
+    await hasUploadedInput(period), // 업로드 데이터는 외부 AI 전송 동의(05-19) 전 분석 불가
   );
   if (!abilities.canGenerate) {
     return fail(

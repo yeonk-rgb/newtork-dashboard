@@ -72,5 +72,9 @@ jobs:
           fi
           exit "$code"
 
+      # 단위 테스트는 DB 를 가짜로 바꾸므로, 마이그레이션을 적용한 실제 DB 에서 모든 칸 조회·주요 조회를 한 번 돌린다
+      - name: 실제 DB 점검 (스키마 칸·주요 조회)
+        run: npm run db:smoke
+
       - name: 빌드
         run: npm run build

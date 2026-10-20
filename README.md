@@ -110,6 +110,7 @@ npm run build        # 배포 빌드 확인 (선택)
 | `npm run db:generate` | Prisma Client 생성 (스키마 변경 후) |
 | `npm run db:deploy` | 마이그레이션 파일을 DB에 적용 (처음 받았을 때, main pull 후) |
 | `npm run db:push` | 스키마를 로컬 DB에 반영 (개발 중) |
+| `npm run db:smoke` | 실제 DB에서 모든 칸·주요 조회 점검 (스키마 변경 후, CI에서도 실행) — 스키마를 바꾸면 dev 서버도 재시작 |
 | `npm run check` | lint + typecheck + test (작업 단계마다, PR 전 필수) |
 | `npm run db:seed` | 샘플 데이터 넣기 (2024-10 ~ 2026-09) |
 | `npm run metrics:report -- 2026 Q3` | 지표 계산 결과 검산용 표 출력 (`2026 9` 월 / `2026` 연간 / `2026 ytd9` 누적) |

@@ -63,6 +63,8 @@ export { ManagementDetail } from "./components/detail/management-detail";
 export { EntryScreen } from "./entry/entry-screen";
 export { SettingsScreen } from "./settings/settings-screen";
 export { ReceivablesScreen } from "./receivables/receivables-screen";
+export { UploadScreen } from "./upload/upload-screen";
+export { buildTemplate, TEMPLATE_FILE_NAME } from "./upload/template";
 
 // 메인 원형 그래프용 생산팀 데이터 — 통합 전까지 목업 (source: "mock")
 export {

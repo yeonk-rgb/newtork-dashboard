@@ -96,6 +96,11 @@
 - 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
+- **엑셀 업로드(7단계)**: `modules/management/upload/`, `/management/upload`, 파일 읽기는 `shared/upload/read-table.ts`(xlsx·csv, .xls 미지원 안내)
+  - 열 이름 자동 인식(`columns.ts`), 검증·미리보기·저장 계획(`parse-upload.ts`, 순수 함수) — 미리보기와 저장 모두 서버에서 파일을 다시 읽어 검증, 오류 1건이라도 있으면 저장 불가, 합계 행 제외
+  - 저장은 한 트랜잭션(`save-upload.ts`): 월별실적은 **확정으로 덮어씀**, 그외지출액은 '기타(엑셀 이관)' 항목, 그 달 나머지 그 외 지출 항목은 0원. 이력은 `mgmt_data_upload`
+  - 업로드로 저장된 달·목표는 `uploadId`가 남고, 그 데이터가 AI 입력에 들어가는 분기는 **[분석하기] 차단**(05-19 동의 전, `hasUploadedInput()`)
+  - 권한: 화면·미리보기 = 경영지원 view, 저장 = confirm (`upload/rules.ts`)
 - **미수금 관리(6단계 ③)**: `modules/management/receivables/`, `/management/receivables` — 규칙은 `rules.ts`의 `receivableAbilities()`(화면·Server Action 공용). 등록·미수 건 수정·수금 처리 = edit, 수금 완료 건 수정·수금 취소·숨김·복구 = confirm
   - **삭제 대신 숨김**(`deletedAt`·`deletedById`): 미수금을 새로 조회할 때는 **반드시 `deletedAt: null` 조건**을 넣는다 (지표용 `loadReceivables()`는 이미 제외). 숨긴 건은 복구 외 모든 동작 불가
   - 날짜: 발생일·수금일은 오늘 이후 불가, 예정일·수금일은 발생일 이후 (`receivableDateErrors()`), 오늘 = `getTodayKst()`
@@ -204,6 +209,7 @@ newtork-dashboard/ (= 이 폴더)
 - **모듈 간 import 금지**: `modules/<팀>`끼리 직접 import하지 않는다. 공통 코드는 `shared/`에만 둔다. (`eslint-plugin-boundaries`로 검사)
 - **연동은 `index.ts` 공개 함수로만**: 메인 대시보드 등에서 다른 팀 데이터가 필요하면 해당 모듈 `index.ts`가 export한 함수(예: `getSalesShareByIndustry(period)`)만 사용한다. 통합 전까지는 `docs/interface-production.md` 형식 그대로의 **목업**을 쓴다.
 - **기간 처리**: DB에는 **월 단위로만 저장**하고, 분기·연간은 조회할 때 계산한다.
+- **스키마를 바꾼 뒤**: `npm run db:push` → `npm run db:generate` → **dev 서버 재시작**(옛 Prisma 클라이언트가 남아 "Unknown argument" 에러가 날 수 있음 — 2026-10-20) → `npm run db:smoke`(실제 DB로 모든 칸·주요 조회 점검). 보고할 때 "dev 서버 재시작 필요"를 꼭 적는다
 - **마이그레이션**: 작업 중에는 `npm run db:push`로 로컬 DB에만 반영하고, 마이그레이션 파일은 **PR 올리기 직전에** `npx prisma migrate dev --name <설명>`으로 1개 생성한다. (`prisma/migrations/`는 git에 포함)
 - **권한 확인은 반드시 서버에서, `can()`으로**: 페이지·Server Action·조회 함수 모두 서버에서 `shared/auth`의 `can()`을 호출해 확인한다. 역할 비교를 직접 쓰지 않는다. UI에서 메뉴·버튼을 숨기는 건 보조 수단일 뿐이다.
 
@@ -224,6 +230,7 @@ newtork-dashboard/ (= 이 폴더)
 
 - [ ] 스키마(`prisma/schema/*.prisma`)를 바꿨으면 마이그레이션 파일 생성 (`npx prisma migrate dev --name <설명>`) → `npx prisma migrate status`가 "up to date"인지 확인
 - [ ] `npm run check` 통과
+- [ ] 스키마를 바꿨으면 `npm run db:smoke` 통과 (CI에서도 빈 DB에 마이그레이션 적용 후 실행)
 - [ ] **PR의 CI가 통과(✓)한 것을 확인한 뒤 머지** (`.github/workflows/ci.yml` — 비공개 Free 플랜이라 실패해도 머지 버튼이 막히지 않으므로 직접 확인)
 - [ ] **main 머지는 사람이 직접 한다. Claude는 PR 생성까지만** (머지·브랜치 삭제는 사람이 머지했다고 알려준 뒤, `gh pr view`로 MERGED 상태를 확인하고 진행)
 

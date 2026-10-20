@@ -27,6 +27,9 @@ model AnnualTarget {
   q3Target      BigInt?
   q4Target      BigInt?
 
+  /// 마지막으로 엑셀 업로드로 저장된 경우 그 업로드 id (외부 AI 분석 차단 판단용, 05-19)
+  uploadId String?
+
   createdById String
   updatedById String
   createdAt   DateTime @default(now())
@@ -57,6 +60,9 @@ model MonthlyFinance {
 
   status      MgmtEntryStatus @default(DRAFT)
   confirmedAt DateTime?
+
+  /// 마지막으로 엑셀 업로드로 저장된 경우 그 업로드 id (외부 AI 분석 차단 판단용, 05-19)
+  uploadId String?
 
   createdById String
   updatedById String
@@ -150,4 +156,21 @@ model AiComment {
 
   @@index([year, quarter, createdAt])
   @@map("mgmt_ai_comment")
+}
+
+/// 엑셀 업로드 이력 (누가, 언제, 어떤 파일, 몇 행)
+model DataUpload {
+  id        String @id @default(cuid())
+  /// 올린 파일 이름 목록
+  fileNames Json
+  /// 시트별 결과 [{ fileName, sheetName, kind, savedRows, excludedRows }]
+  sheets    Json
+  /// 저장한 행 수 합계
+  savedRows Int
+
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("mgmt_data_upload")
 }
