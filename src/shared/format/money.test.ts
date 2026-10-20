@@ -4,7 +4,7 @@ import {
   formatAmount,
   formatWon,
   formatWonCompact,
-  formatWonKorean,
+  formatWonShort,
 } from "./money";
 
 describe("formatAmount", () => {
@@ -70,36 +70,42 @@ describe("formatWon", () => {
   });
 });
 
-describe("formatWonKorean", () => {
+describe("formatWonShort", () => {
   it("0원, 1만 원 미만은 원 단위 그대로", () => {
-    expect(formatWonKorean(0n)).toBe("0원");
-    expect(formatWonKorean(9_500n)).toBe("9,500원");
-    expect(formatWonKorean(9_999n)).toBe("9,999원");
+    expect(formatWonShort(0n)).toBe("0원");
+    expect(formatWonShort(9_500n)).toBe("9,500원");
+    expect(formatWonShort(9_999n)).toBe("9,999원");
   });
 
-  it("1만 원 이상은 억·만 원 단위 (만 원 미만 반올림)", () => {
-    expect(formatWonKorean(10_000n)).toBe("1만 원");
-    expect(formatWonKorean(48_170_000n)).toBe("4,817만 원");
-    expect(formatWonKorean(123_000_000n)).toBe("1억 2,300만 원");
-    expect(formatWonKorean(123_004_999n)).toBe("1억 2,300만 원");
-    expect(formatWonKorean(123_005_000n)).toBe("1억 2,301만 원");
-    expect(formatWonKorean(2_800_500_000n)).toBe("28억 50만 원");
-    expect(formatWonKorean(1_234_500_000_000n)).toBe("12,345억 원");
+  it("1만 원 이상 1억 미만은 만원 (반올림)", () => {
+    expect(formatWonShort(10_000n)).toBe("1만원");
+    expect(formatWonShort(66_680_000n)).toBe("6,668만원");
+    expect(formatWonShort(66_684_999n)).toBe("6,668만원");
+    expect(formatWonShort(66_685_000n)).toBe("6,669만원");
+  });
+
+  it("1억 이상은 억원 소수 둘째 자리", () => {
+    expect(formatWonShort(709_000_000n)).toBe("7.09억원");
+    expect(formatWonShort(4_000_000_000n)).toBe("40.00억원");
+    expect(formatWonShort(3_620_000_000n)).toBe("36.20억원");
+    expect(formatWonShort(708_500_000n)).toBe("7.09억원"); // 0.005억 반올림
+    expect(formatWonShort(123_456_789_000_000n)).toBe("1,234,567.89억원");
   });
 
   it("정확히 1억, 반올림으로 1억이 되는 경우", () => {
-    expect(formatWonKorean(100_000_000n)).toBe("1억 원");
-    expect(formatWonKorean(99_999_999n)).toBe("1억 원");
+    expect(formatWonShort(100_000_000n)).toBe("1.00억원");
+    expect(formatWonShort(99_999_999n)).toBe("1.00억원");
+    expect(formatWonShort(99_994_999n)).toBe("9,999만원");
   });
 
   it("음수 (목표 초과분·적자 등)", () => {
-    expect(formatWonKorean(-123_000_000n)).toBe("-1억 2,300만 원");
-    expect(formatWonKorean(-9_500n)).toBe("-9,500원");
-    expect(formatWonKorean(-100_000_000n)).toBe("-1억 원");
+    expect(formatWonShort(-123_000_000n)).toBe("-1.23억원");
+    expect(formatWonShort(-66_680_000n)).toBe("-6,668만원");
+    expect(formatWonShort(-9_500n)).toBe("-9,500원");
   });
 
   it("직렬화된 정수 문자열·number 도 받는다", () => {
-    expect(formatWonKorean("481773000")).toBe("4억 8,177만 원");
-    expect(formatWonKorean(10_000)).toBe("1만 원");
+    expect(formatWonShort("481773000")).toBe("4.82억원");
+    expect(formatWonShort(10_000)).toBe("1만원");
   });
 });

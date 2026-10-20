@@ -13,13 +13,13 @@ type NavRule = { href: string; label: string; children?: SubRule[] } & (
 
 const NAV_RULES: NavRule[] = [
   // 메인(전사 요약)은 경영지원팀 열람 권한과 같다
-  { href: "/", label: "메인", team: "management" },
+  { href: "/", label: "경영 대시보드", team: "management" },
   {
     href: "/management",
     label: "경영지원",
     team: "management",
     children: [
-      { href: "/management", label: "대시보드", action: "view" },
+      { href: "/management", label: "경영지원 상세", action: "view" },
       { href: "/management/entry", label: "월간 입력", action: "edit" },
       {
         href: "/management/receivables",

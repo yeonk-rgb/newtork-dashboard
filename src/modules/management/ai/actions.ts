@@ -16,6 +16,7 @@ import { periodLabel } from "@/shared/period/period";
 
 import { getTodayKst, loadSummaryInput } from "../data/load-summary-input";
 import { computeManagementSummary } from "../metrics/summary";
+import { buildAnnotations } from "./annotations";
 import { buildAiInput, type AiInput } from "./build-input";
 import { hashAiInput } from "./hash";
 import { loadLatestAiComment } from "./load-comment";
@@ -143,6 +144,8 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
     const input = buildAiInput(summary, period);
     const inputHash = hashAiInput(input);
     const { result, model } = await callAi(input, key);
+    // headline·장기 미수 거래처명은 AI 가 아니라 서버가 만들어 함께 저장 (거래처명은 AI 로 보내지 않음)
+    const annotations = buildAnnotations(summary);
 
     await prisma.$transaction(async (tx) => {
       // AI 응답을 기다리는 사이 다른 사람이 저장했으면 버린다
@@ -157,7 +160,7 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
           year,
           quarter,
           inputSummary: input,
-          result,
+          result: { ...result, ...annotations },
           inputHash,
           model,
           promptVersion: PROMPT_VERSION,

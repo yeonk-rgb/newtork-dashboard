@@ -1,6 +1,7 @@
 // 개발용 모의 응답 (AI_MOCK=true) — API 키 없이 화면 흐름을 확인할 때만 쓴다
-// 입력 수치를 그대로 옮겨 적은 고정 문장이며, 실제 분석이 아님을 문장에 표시한다
-// 프롬프트 9번(미확정 월 언급)·10번(비교 불가는 숫자 없이) 규칙이 화면에서 어떻게 보일지 확인할 수 있게 따른다
+// 입력 수치를 정해진 문장에 끼워 넣은 것이며, 실제 분석이 아님을 문장에 표시한다
+// 카드의 3단(이번 기간 현황 / 부족한 점·주의 / 다음 분기 개선할 점)이 모두 채워지도록,
+// 프롬프트의 규칙(9 미확정 월, 10 비교 불가, 11 거래처명 없음, 개선 제안 짝 맞추기)을 따른다
 import type { AiInput } from "./build-input";
 import type { AiCommentResponse } from "./schemas";
 
@@ -13,41 +14,49 @@ export function mockAiComment(input: AiInput): AiCommentResponse {
   const unconfirmed = input.confirmation.unconfirmedMonths
     .map((m) => m.month.replace(/^\d{4}년 /, ""))
     .join("·");
+  const item = (label: string) =>
+    input.revenue.items.find((i) => i.item === label)?.amount ?? "0원";
   const previous = input.changes.previousQuarter.revenue;
-  const lastYear = input.changes.sameQuarterLastYear.revenue;
 
   const summary = [
-    target
-      ? `[모의] 분기 목표 대비 ${target.quarterAchievement}입니다.`
-      : `[모의] 연간 목표가 없어 달성률을 계산할 수 없습니다.`,
-    target
-      ? `[모의] ${target.annualProgress}입니다.`
-      : `[모의] 확정 매출은 ${input.revenue.total}입니다.`,
-    unconfirmed
-      ? `[모의] ${unconfirmed}은 미확정이라 집계에서 빠졌습니다.`
-      : `[모의] 확정 매출은 ${input.revenue.total}입니다.`,
+    `[모의] 매출 ${input.revenue.total}(제품 ${item("제품 매출")}·상품 ${item("상품 매출")}·용역 ${item("용역 매출")})입니다.`,
+    // 9번 규칙: 미확정 달이 있으면 그 사실과 같은 달끼리 비교했다는 점을 함께 쓴다
+    unconfirmed && !isUnavailable(previous)
+      ? `[모의] ${unconfirmed} 미확정, 같은 달끼리 전 분기 대비 ${previous}입니다.`
+      : unconfirmed
+        ? `[모의] ${unconfirmed} 미확정, 전 분기와는 비교할 수 없습니다.`
+        : isUnavailable(previous)
+          ? "[모의] 전 분기와는 비교할 수 없습니다."
+          : `[모의] 전 분기 대비 매출이 ${previous} 변했습니다.`,
+    `[모의] 매입 ${input.expense.purchaseTotal}·경비 ${input.expense.operatingTotal}, 추정 손익 ${input.profit.estimatedProfit}입니다.`,
   ];
 
-  const shortfalls: string[] = [];
-  if (target?.quarterAchievement.includes("부족")) {
-    shortfalls.push(
-      `[모의] 분기 매출이 목표보다 ${target.quarterDifference}합니다.`,
-    );
+  // 부족한 점과 개선 제안은 같은 순서로 짝을 맞춘다
+  const pairs: [string, string][] = [];
+  if (target?.gapVsExpected.endsWith("부족")) {
+    pairs.push([
+      `[모의] 기대치 대비 ${target.gapVsExpected}입니다.`,
+      "[모의] 부족분만큼 수주·출하 일정을 앞당겨 점검합니다.",
+    ]);
   }
-  if (!isUnavailable(previous) && previous.startsWith("-")) {
-    shortfalls.push(`[모의] 매출이 직전 분기 대비 ${previous} 감소했습니다.`);
+  const { over90 } = input.receivables;
+  if (over90.count > 0) {
+    pairs.push([
+      `[모의] 90일 초과 미수금 ${over90.amount}(${over90.count}건)입니다.`,
+      "[모의] 장기 미수 거래처에 수금 일정을 확인합니다.",
+    ]);
   }
+
+  const improvements = pairs.map(([, fix]) => fix);
+  improvements.push(
+    unconfirmed
+      ? `[모의] ${unconfirmed} 실적을 확정해 분석을 갱신합니다.`
+      : "[모의] 실제 분석은 API 키를 넣고 AI_MOCK을 끈 뒤 확인합니다.",
+  );
 
   return {
     summary,
-    shortfalls,
-    improvements: [
-      isUnavailable(lastYear)
-        ? "[모의] 전년 동기는 데이터가 없어 비교할 수 없습니다."
-        : `[모의] 전년 동기 대비 ${lastYear} 변화의 원인을 확인합니다.`,
-      unconfirmed
-        ? `[모의] ${unconfirmed} 실적을 확정해 분석을 갱신합니다.`
-        : "[모의] 실제 분석은 API 키를 넣고 AI_MOCK을 끈 뒤 확인합니다.",
-    ],
+    shortfalls: pairs.map(([issue]) => issue),
+    improvements,
   };
 }

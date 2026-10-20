@@ -69,23 +69,22 @@ export function formatWonCompact(value: AmountInput): string {
 }
 
 /**
- * 보고서용 한글 단위 금액 (AI 분석 입력 등): "1억 2,300만 원"
- * - 1만 원 미만: 원 단위 그대로 "9,500원", 0 은 "0원"
- * - 1만 원 이상: 만 원 단위로 반올림 "4,817만 원", "1억 원", "28억 50만 원"
- * - 음수: 앞에 "-" ("-1억 2,300만 원")
+ * 보고서용 짧은 금액 (AI 분석 카드·입력): "7.09억원", "6,668만원", "40.00억원"
+ * - 1억 이상: 억 단위 소수 둘째 자리 (0.01억 = 100만 원 단위 반올림)
+ * - 1만 이상 1억 미만: 만 원 단위 반올림 "6,668만원" (반올림해 1억이 되면 "1.00억원")
+ * - 1만 원 미만: 원 단위 "9,500원", 0 은 "0원"
+ * - 음수: 앞에 "-" ("-1.23억원")
  */
-export function formatWonKorean(value: AmountInput): string {
+export function formatWonShort(value: AmountInput): string {
   const v = toBigInt(value);
   const sign = v < 0n ? "-" : "";
   const abs = v < 0n ? -v : v;
 
   if (abs < MAN) return `${sign}${wonFormatter.format(abs)}원`;
-  const man = roundDiv(abs, MAN); // 만 원 단위 (반올림으로 1억이 될 수 있음)
-  const eok = man / 10_000n;
-  const restMan = man % 10_000n;
-  const parts = [
-    eok > 0n ? `${wonFormatter.format(eok)}억` : "",
-    restMan > 0n ? `${wonFormatter.format(restMan)}만` : "",
-  ].filter(Boolean);
-  return `${sign}${parts.join(" ")} 원`;
+  const man = roundDiv(abs, MAN);
+  if (man < 10_000n) return `${sign}${wonFormatter.format(man)}만원`;
+  const hundredths = roundDiv(abs, EOK / 100n); // 0.01억 단위
+  const whole = hundredths / 100n;
+  const fraction = String(hundredths % 100n).padStart(2, "0");
+  return `${sign}${wonFormatter.format(whole)}.${fraction}억원`;
 }

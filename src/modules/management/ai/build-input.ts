@@ -1,9 +1,10 @@
 // AI 에 보낼 입력 만들기 (순수 함수): getManagementSummary 집계값만 사용
 // - 거래처명·건별 미수 내역·비고·원본 월별 행은 넣지 않는다 (미수금은 금액·건수·구간만)
 // - 생산팀 목업 비중(샘플 데이터)도 넣지 않는다 — AI 가 실제처럼 해석할 위험 (아래 TODO: 연동 시 추가)
-// - 금액은 "1억 2,300만 원", 비율은 "12.3%", 목표 차이는 "82.4%로 17.6%p 부족"처럼 미리 계산해 AI 가 계산하지 않게 한다
+// - 금액은 "7.09억원"·"6,668만원", 비율은 "12.3%", 목표·기대치 차이는 "82.4%로 17.6%p 부족"처럼 미리 계산해 AI 가 계산하지 않게 한다
+// - 화면 headline·장기 미수 거래처명은 AI 에 보내지 않고 서버가 따로 만든다 (annotations.ts)
 // - 오늘 날짜에 따라 바뀌는 값은 넣지 않는다 (끝난 분기는 같은 데이터면 같은 입력 → 같은 해시)
-import { formatWonKorean } from "@/shared/format/money";
+import { formatWonShort } from "@/shared/format/money";
 import { periodMonths, type YearMonth } from "@/shared/period/period";
 
 import type {
@@ -44,7 +45,7 @@ const marginText = (m: MarginChange) =>
 const shares = (items: AmountShare[]) =>
   items.map((i) => ({
     item: i.label,
-    amount: formatWonKorean(i.amount),
+    amount: formatWonShort(i.amount),
     share: i.ratio === null ? "-" : pct(i.ratio),
   }));
 
@@ -53,8 +54,26 @@ function amountDifference(target: bigint, actual: bigint): string {
   const diff = target - actual;
   if (diff === 0n) return "차이 없음";
   return diff > 0n
-    ? `${formatWonKorean(diff)} 부족`
-    : `${formatWonKorean(-diff)} 초과`;
+    ? `${formatWonShort(diff)} 부족`
+    : `${formatWonShort(-diff)} 초과`;
+}
+
+const itemSum = (items: AmountShare[], keys: string[]) =>
+  items
+    .filter((i) => keys.includes(i.key))
+    .reduce((total, i) => total + i.amount, 0n);
+
+/** 분기 말까지 기대 매출 = 연간 목표 × (분기 수 ÷ 4), 원 단위 내림 */
+export function expectedToDate(annualTarget: bigint, quarter: number): bigint {
+  return (annualTarget * BigInt(quarter)) / 4n;
+}
+
+function over90Of(aging: ManagementSummary["receivables"]["aging"]) {
+  const bucket = aging.find((a) => a.bucket === "90+");
+  return {
+    amount: formatWonShort(bucket?.amount ?? 0n),
+    count: bucket?.count ?? 0,
+  };
 }
 
 const BUCKET_LABEL: Record<AgingBucket, string> = {
@@ -114,16 +133,25 @@ export function buildAiInput(
       partial: confirmation.isPartial,
     },
     revenue: {
-      total: formatWonKorean(revenue.total),
+      total: formatWonShort(revenue.total),
       items: shares(revenue.items),
     },
     expense: {
-      total: formatWonKorean(expenses.total),
+      total: formatWonShort(expenses.total),
+      /** 매입 합계 = 상품 매입 + 원재료 매입 */
+      purchaseTotal: formatWonShort(
+        itemSum(expenses.items, ["goodsPurchase", "materialPurchase"]),
+      ),
+      /** 경비 합계 = 경비 + 그 외 지출 */
+      operatingTotal: formatWonShort(
+        itemSum(expenses.items, ["operatingExpense", "otherExpense"]),
+      ),
       items: shares(expenses.items),
       otherDetail: shares(expenses.otherItems),
     },
     profit: {
-      profit: formatWonKorean(profit.profit),
+      /** 추정 손익 (적자면 "-") */
+      estimatedProfit: formatWonShort(profit.profit),
       margin: profit.margin === null ? "-" : pct(profit.margin),
       costBasis:
         profit.costMode === "purchases"
@@ -137,12 +165,12 @@ export function buildAiInput(
     target:
       targets.annual && targets.quarterTargets && targets.period
         ? {
-            quarterTarget: formatWonKorean(targets.period.target),
+            quarterTarget: formatWonShort(targets.period.target),
             quarterTargetSource:
               targets.quarterTargets.sources[quarterIndex] === "input"
                 ? "직접 입력"
                 : "연간 목표에서 자동 배분",
-            quarterActual: formatWonKorean(targets.period.actual),
+            quarterActual: formatWonShort(targets.period.actual),
             /** "82.4%로 17.6%p 부족" / "105.2%로 5.2%p 초과" */
             quarterAchievement:
               targets.period.rate === null
@@ -153,46 +181,55 @@ export function buildAiInput(
               targets.period.target,
               targets.period.actual,
             ),
-            annualTarget: formatWonKorean(targets.annual.target),
+            annualTarget: formatWonShort(targets.annual.target),
             /** 1월 ~ 이번 분기 말까지 확정 매출 누적 */
-            cumulativeActualToQuarterEnd: formatWonKorean(
-              targets.annual.actual,
-            ),
+            cumulativeActualToQuarterEnd: formatWonShort(targets.annual.actual),
             /** 이번 분기 말 기준 연간 경과율(분기 수 ÷ 4) 대비 진도 */
             annualProgress:
               targets.annual.rate === null
                 ? "비교 불가 (연간 목표가 0원)"
                 : progressText(targets.annual.rate, quarter.quarter / 4),
+            /** 기간 경과 기준 기대치 = 연간 목표 × 경과율 */
+            expectedToQuarterEnd: formatWonShort(
+              expectedToDate(targets.annual.target, quarter.quarter),
+            ),
+            /** 기대치 − 누적 실적: "3.80억원 부족" / "초과" */
+            gapVsExpected: amountDifference(
+              expectedToDate(targets.annual.target, quarter.quarter),
+              targets.annual.actual,
+            ),
           }
         : "연간 목표 미설정",
     // TODO(생산팀 연동): 판매처 산업분야·제품 시리즈 비중은 연동 전까지 넣지 않는다 (목업 = 가짜 비중).
     // 연동 후 getSalesShareByIndustry / getSalesShareBySeries(quarter) 결과를 아래 형태로 추가하면
     // 프롬프트 7번 규칙(is_sample 이면 "샘플 데이터 기준")이 그대로 적용된다:
-    //   industryShares: { is_sample: source === "mock", items: [{ item, amount: formatWonKorean(..), share: pct(..) }] },
+    //   industryShares: { is_sample: source === "mock", items: [{ item, amount: formatWonShort(..), share: pct(..) }] },
     //   seriesShares:   { is_sample: ..., items: [...] },
     receivables: {
       asOf: receivables.asOf.toISOString().slice(0, 10),
-      total: formatWonKorean(receivables.total),
+      total: formatWonShort(receivables.total),
       count: receivables.count,
       agingBasis: "경과일은 발생일부터 계산",
+      /** 90일 초과 (거래처명은 보내지 않음) */
+      over90: over90Of(receivables.aging),
       aging: receivables.aging.map((a) => ({
         bucket: BUCKET_LABEL[a.bucket],
-        amount: formatWonKorean(a.amount),
+        amount: formatWonShort(a.amount),
         count: a.count,
       })),
       pastDue: {
-        amount: formatWonKorean(receivables.expected.overdue.amount),
+        amount: formatWonShort(receivables.expected.overdue.amount),
         count: receivables.expected.overdue.count,
       },
       noDueDate: {
-        amount: formatWonKorean(receivables.expected.noDueDate.amount),
+        amount: formatWonShort(receivables.expected.noDueDate.amount),
         count: receivables.expected.noDueDate.count,
       },
       expectedCollections: receivables.expected.months
         .filter((m) => m.count > 0)
         .map((m) => ({
           month: `${m.year}년 ${m.month}월`,
-          amount: formatWonKorean(m.amount),
+          amount: formatWonShort(m.amount),
           count: m.count,
         })),
     },

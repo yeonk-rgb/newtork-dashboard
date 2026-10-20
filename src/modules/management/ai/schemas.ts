@@ -22,11 +22,29 @@ export type AiCommentResponse = z.infer<typeof aiCommentResponseSchema>;
 
 const sentence = z.string().min(1).max(SENTENCE_MAX);
 
+/** 서버가 붙이는 부분 (AI 가 만들지 않음 — annotations.ts). 프롬프트 v2 이전 기록에는 없다 */
+const annotationFields = {
+  /** 연간 목표 달성 한 줄 */
+  headline: z.string().min(1).max(200).optional(),
+  /** 90일 초과 미수 거래처 (금액 큰 순, 최대 3곳) */
+  longOverdue: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(100),
+        amount: z.string().min(1).max(30),
+        ageDays: z.number().int().min(0),
+      }),
+    )
+    .max(3)
+    .optional(),
+};
+
 /** DB 에 저장하는 형식 (새로 저장하는 것은 항상 이 형식) */
 export const aiCommentResultSchema = z.object({
   summary: z.array(sentence).min(1).max(3),
   shortfalls: z.array(sentence).max(3),
   improvements: z.array(sentence).max(3),
+  ...annotationFields,
 });
 export type AiCommentResult = z.infer<typeof aiCommentResultSchema>;
 
