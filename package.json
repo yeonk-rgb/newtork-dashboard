@@ -20,7 +20,8 @@
     "db:push": "prisma db push",
     "db:deploy": "prisma migrate deploy",
     "metrics:report": "tsx --conditions=react-server scripts/metrics-report.ts",
-    "env:set-key": "bash scripts/set-anthropic-key.sh"
+    "env:set-key": "bash scripts/set-anthropic-key.sh",
+    "seed:ai-examples": "tsx --conditions=react-server scripts/seed-ai-examples.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0",

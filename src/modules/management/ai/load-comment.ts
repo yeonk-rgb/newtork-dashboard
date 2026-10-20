@@ -10,6 +10,7 @@ import { periodLabel } from "@/shared/period/period";
 import type { ManagementSummary } from "../metrics/types";
 import { buildAiInput } from "./build-input";
 import { hashAiInput } from "./hash";
+import { EXAMPLE_MODEL } from "./examples";
 import { MOCK_MODEL } from "./mock-comment";
 import { PROMPT_VERSION } from "./prompt";
 import { aiAbilities, type AiAbilities, type QuarterPeriod } from "./rules";
@@ -28,7 +29,8 @@ export type AiCommentView = {
     /** "2026-10-19 14:13:35" (한국 시간) */
     createdAtLabel: string;
     createdBy: string;
-    isMock: boolean;
+    /** 생성 방식: ai = 실제 AI, mock = 개발용 모의 응답, example = 시드 예시 */
+    method: AiCommentMethod;
   } | null;
   /**
    * 최신이 아닌 이유 (최신이면 null)
@@ -38,6 +40,14 @@ export type AiCommentView = {
   staleReason: "prompt" | "data" | null;
   abilities: AiAbilities;
 };
+
+export type AiCommentMethod = "ai" | "mock" | "example";
+
+export function methodOf(model: string): AiCommentMethod {
+  if (model === MOCK_MODEL) return "mock";
+  if (model === EXAMPLE_MODEL) return "example";
+  return "ai";
+}
 
 const dateTimeLabel = (date: Date) =>
   new Intl.DateTimeFormat("sv-SE", {
@@ -83,7 +93,7 @@ export async function loadAiCommentView(
             result: display,
             createdAtLabel: dateTimeLabel(row.createdAt),
             createdBy: userDisplayName(row.createdById),
-            isMock: row.model === MOCK_MODEL,
+            method: methodOf(row.model),
           }
         : null,
     staleReason: !row
