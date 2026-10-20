@@ -18,9 +18,12 @@ export async function resolvePeriod(param: string | undefined) {
 export async function DashboardTop({
   title,
   summary,
+  aboveKpis,
 }: {
   title: string;
   summary: ManagementSummary;
+  /** KPI 카드 위에 넣을 내용 (경영지원 상세의 AI 분석 카드) */
+  aboveKpis?: React.ReactNode;
 }) {
   const range = await loadYearRange((await getTodayKst()).getUTCFullYear());
   // URL로 범위 밖 연도를 골라도 드롭다운에 보이도록
@@ -33,6 +36,7 @@ export async function DashboardTop({
         <PeriodSelector period={summary.period} years={years} />
       </div>
       <ConfirmationBanner confirmation={summary.confirmation} />
+      {aboveKpis}
       <KpiCards summary={summary} />
     </section>
   );

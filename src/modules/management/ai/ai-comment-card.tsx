@@ -1,5 +1,8 @@
-// 메인 하단 AI 분석 코멘트 카드 (서버): 선택 기간 → 분석 대상 분기를 정하고 저장된 코멘트를 보여준다
+// AI 분석 코멘트 카드 (서버): 선택 기간 → 분석 대상 분기를 정하고 저장된 코멘트를 보여준다
+// 메인(`/`)·경영지원 상세(`/management`) 상단 공용 — 기록은 (연도, 분기)로만 찾으므로 두 화면이 같은 기록을 본다
 import "server-only";
+
+import { Suspense } from "react";
 
 import { getCurrentUser } from "@/shared/auth";
 import { periodLabel, type Period } from "@/shared/period/period";
@@ -10,7 +13,7 @@ import { computeManagementSummary } from "../metrics/summary";
 import type { ManagementSummary } from "../metrics/types";
 import { AiCommentPanel } from "./ai-comment-panel";
 import { loadAiCommentView } from "./load-comment";
-import { aiTargetQuarter } from "./rules";
+import { aiCardAccess, aiTargetQuarter } from "./rules";
 
 const TITLE = "AI 분석 코멘트";
 
@@ -23,7 +26,7 @@ export async function AiCommentCard({
   summary: ManagementSummary;
 }) {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user || aiCardAccess(user) === "none") return null;
 
   const quarter = aiTargetQuarter(period, summary.confirmation.confirmedMonths);
   if (!quarter) {
@@ -68,5 +71,14 @@ export function AiCommentCardSkeleton() {
       </div>
       <p className="sr-only">AI 분석 코멘트를 불러오는 중</p>
     </ChartCard>
+  );
+}
+
+/** 페이지 상단에 넣는 AI 카드 (자체 Suspense — 카드가 늦게 와도 KPI 등은 먼저 보인다) */
+export function AiCommentSection({ summary }: { summary: ManagementSummary }) {
+  return (
+    <Suspense fallback={<AiCommentCardSkeleton />}>
+      <AiCommentCard period={summary.period} summary={summary} />
+    </Suspense>
   );
 }

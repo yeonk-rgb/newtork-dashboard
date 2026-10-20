@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import {
+  AiCommentSection,
   DashboardDonuts,
   DashboardTop,
   DashboardTopSkeleton,
@@ -44,6 +45,7 @@ async function MainContent({
   return (
     <div className="space-y-4">
       <DashboardTop title="경영 대시보드" summary={summary} />
+      <AiCommentSection summary={summary} />
       <DashboardDonuts summary={summary} />
       <MainBottom summary={summary} trend={trend} />
     </div>

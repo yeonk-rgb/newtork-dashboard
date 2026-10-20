@@ -56,6 +56,7 @@ export {
 } from "./components/dashboard-top";
 export { DashboardDonuts } from "./components/donuts/dashboard-donuts";
 export { MainBottom } from "./components/bottom/main-bottom";
+export { AiCommentSection } from "./ai/ai-comment-card";
 export { ManagementDetail } from "./components/detail/management-detail";
 
 // 6단계 입력 화면

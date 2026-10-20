@@ -85,3 +85,13 @@ export function aiAbilities(
 export function quarterKey(year: number, quarter: Quarter | number): string {
   return `${year}-Q${quarter}`;
 }
+
+/**
+ * AI 분석 카드 노출 (메인 `/`·경영지원 상세 `/management` 공통)
+ * - none: 카드 없음 (경영지원 열람 권한 없음 — 이 경우 페이지 자체가 이동·차단된다)
+ * - view: 결과만 열람 / generate: [분석하기]·[다시 분석] 가능 (분기 조건은 aiAbilities 가 추가로 판단)
+ */
+export function aiCardAccess(user: AppUser): "none" | "view" | "generate" {
+  if (!can(user, "view", "management")) return "none";
+  return can(user, "confirm", "management") ? "generate" : "view";
+}
