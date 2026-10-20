@@ -7,6 +7,12 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import {
+  generateTempPassword,
+  hashPassword,
+} from "../src/shared/auth/password";
+import {
+  AuthRole,
+  AuthTeam,
   MgmtCostType,
   MgmtEntryStatus,
   PrismaClient,
@@ -340,7 +346,115 @@ async function seedReceivables() {
   }
 }
 
+// 직원 계정 7명 (관리자 설정 화면 예시와 같은 구성)
+// 초기 비밀번호: .env 의 SEED_INITIAL_PASSWORD, 없으면 실행할 때 만들어서 화면에 한 번만 출력한다 (코드·git에 남기지 않음)
+// 이미 있는 계정은 건드리지 않는다 (비밀번호·권한을 덮어쓰지 않음)
+const SEED_ACCOUNTS: {
+  loginId: string;
+  name: string;
+  role: AuthRole;
+  viewTeams: AuthTeam[];
+  editTeams: AuthTeam[];
+}[] = [
+  {
+    loginId: "admin",
+    name: "관리자",
+    role: AuthRole.ADMIN,
+    viewTeams: [],
+    editTeams: [],
+  },
+  {
+    loginId: "dual_member",
+    name: "정겸직",
+    role: AuthRole.MEMBER,
+    viewTeams: [AuthTeam.production, AuthTeam.service],
+    editTeams: [],
+  },
+  {
+    loginId: "mgmt_member",
+    name: "윤경영",
+    role: AuthRole.MANAGEMENT,
+    viewTeams: [],
+    editTeams: [],
+  },
+  {
+    loginId: "prod_leader",
+    name: "김생산",
+    role: AuthRole.LEADER,
+    viewTeams: [AuthTeam.production],
+    editTeams: [AuthTeam.production],
+  },
+  {
+    loginId: "prod_member",
+    name: "이생산",
+    role: AuthRole.MEMBER,
+    viewTeams: [AuthTeam.production],
+    editTeams: [],
+  },
+  {
+    loginId: "svc_leader",
+    name: "박서비스",
+    role: AuthRole.LEADER,
+    viewTeams: [AuthTeam.service],
+    editTeams: [AuthTeam.service],
+  },
+  {
+    loginId: "svc_member",
+    name: "최서비스",
+    role: AuthRole.MEMBER,
+    viewTeams: [AuthTeam.service],
+    editTeams: [],
+  },
+];
+
+async function seedUsers() {
+  const existing = new Set(
+    (
+      await prisma.authUser.findMany({
+        where: { loginId: { in: SEED_ACCOUNTS.map((a) => a.loginId) } },
+        select: { loginId: true },
+      })
+    ).map((u) => u.loginId),
+  );
+  const missing = SEED_ACCOUNTS.filter((a) => !existing.has(a.loginId));
+  if (missing.length === 0) {
+    console.log("계정: 7개 모두 이미 있음 (비밀번호·권한은 그대로)");
+    return;
+  }
+
+  const fromEnv = process.env.SEED_INITIAL_PASSWORD?.trim();
+  const password = fromEnv || generateTempPassword();
+  const passwordHash = await hashPassword(password);
+  for (const account of missing) {
+    await prisma.authUser.create({
+      data: {
+        ...account,
+        passwordHash,
+        mustChangePassword: true,
+        createdById: SEED_USER_ID,
+        updatedById: SEED_USER_ID,
+      },
+    });
+  }
+
+  const ids = missing.map((a) => a.loginId).join(", ");
+  console.log(`계정 ${missing.length}개 생성: ${ids}`);
+  if (fromEnv) {
+    console.log("  초기 비밀번호: .env 의 SEED_INITIAL_PASSWORD");
+  } else {
+    console.log("");
+    console.log("  ┌──────────────────────────────────────────────");
+    console.log(`  │ 초기 비밀번호 (위 계정 공통): ${password}`);
+    console.log("  │ ⚠️ 지금 한 번만 표시됩니다. DB에는 해시만 저장됩니다.");
+    console.log("  │ 첫 로그인 때 각자 새 비밀번호로 바꾸게 됩니다.");
+    console.log("  │ 잊었으면 admin 으로 로그인해 [비밀번호 초기화]를 쓰세요.");
+    console.log("  └──────────────────────────────────────────────");
+    console.log("");
+  }
+}
+
 async function main() {
+  await seedUsers();
   const categories = await seedExpenseCategories();
   await seedAnnualTargets();
   await seedMonthlyFinance(categories);

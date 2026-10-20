@@ -17,6 +17,8 @@ import {
   loadExistingData,
   loadRecentUploads,
 } from "@/modules/management/upload/save-upload";
+import { findSessionUser } from "@/shared/auth/session";
+import { loadUserNames } from "@/shared/auth/user-names";
 import { prisma } from "@/shared/db/client";
 import { Prisma } from "@/shared/db/generated/client";
 
@@ -56,6 +58,12 @@ async function main() {
   );
   await check("AI 카드: 최신 분석 (loadLatestAiComment)", () =>
     loadLatestAiComment(2026, 3),
+  );
+  await check("로그인 세션 조회 (findSessionUser)", () =>
+    findSessionUser("smoke-not-a-token", new Date()),
+  );
+  await check("작성자 이름 조회 (loadUserNames)", () =>
+    loadUserNames(["seed", "smoke-unknown"]),
   );
   await check("미수금 관리 목록 (loadReceivablesData)", () =>
     loadReceivablesData(true),

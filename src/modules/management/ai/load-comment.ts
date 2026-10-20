@@ -3,7 +3,7 @@
 import "server-only";
 
 import type { AppUser } from "@/shared/auth";
-import { userDisplayName } from "@/shared/auth";
+import { loadUserNames } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
 import { periodLabel } from "@/shared/period/period";
 
@@ -109,6 +109,7 @@ export async function loadAiCommentView(
     hasUploadedInput(quarter),
   ]);
   const display = row ? readStoredComment(row.result) : null;
+  const nameOf = await loadUserNames([row?.createdById]);
   const currentHash = hashAiInput(buildAiInput(summary, quarter));
 
   return {
@@ -122,7 +123,7 @@ export async function loadAiCommentView(
             id: row.id,
             result: display,
             createdAtLabel: dateTimeLabel(row.createdAt),
-            createdBy: userDisplayName(row.createdById),
+            createdBy: nameOf(row.createdById),
             method: methodOf(row.model),
           }
         : null,

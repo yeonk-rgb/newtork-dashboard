@@ -31,10 +31,13 @@
 
 - **개발 범위**: `modules/management`, `app/(dashboard)/`의 메인(`page.tsx`)·`management/`, `prisma/schema/management.prisma`(`mgmt_*` 테이블), 경영지원팀이 쓰는 `shared/`
 - **손대지 않는 곳**: `production/`, `service/` 폴더(모듈·화면·스키마)는 placeholder 그대로 두고 수정하지 않는다
-- **인증·계정·권한**: 로그인 방식은 **통합 시 팀과 함께 결정**한다. 지금은 **개발용 임시 사용자**로 진행하되, 권한 확인은 **반드시 `shared/auth`의 `can()` 함수를 거친다** → 나중에 `can()`과 임시 사용자 부분만 실제 로그인으로 교체
-  - 현재 사용자: `getCurrentUser()` (cookies를 읽으므로 **`<Suspense>` 안 컴포넌트에서** 호출 — cacheComponents)
-  - 동작: `view` / `edit`(입력·임시저장) / `confirm`(확정·설정 변경). 저장 시 `createdById`/`updatedById` = `getCurrentUser().id`
-  - 배포 빌드는 `src/proxy.ts`가 기본 차단, `DEMO_MODE=true`일 때만 경영지원 팀장 고정. **실제 로그인 전 외부 공개 배포 금지**
+- **인증·계정·권한** (2026-10-21 실제 로그인으로 교체): 아이디·비밀번호 로그인(회원가입 없음, 관리자가 발급), 외부 패키지 없이 Node 내장 `scrypt` + DB 세션(`auth_user`·`auth_session`, `prisma/schema/auth.prisma`). 권한 확인은 **반드시 `shared/auth`의 `can()` 함수를 거친다**
+  - 현재 사용자: `getCurrentUser()` (cookies를 읽으므로 **`<Suspense>` 안 컴포넌트에서** 호출 — cacheComponents). 로그인 안 함·만료·비활성이면 `null`
+  - 동작: `view` / `edit`(입력·임시저장) / `confirm`(확정·설정 변경). 저장 시 `createdById`/`updatedById` = `getCurrentUser().id` (외래키 없는 문자열, 시드 데이터는 `"seed"`) — 화면 표시 이름은 `loadUserNames(ids)`
+  - `src/proxy.ts`: 미로그인 → `/login?next=…`, 초기 비밀번호 사용 중 → `/account/password?next=…`
+  - 세션 12시간, 로그인 5회 실패 시 10분 잠금, 새 비밀번호 8자 이상·영문+숫자·아이디/현재 비밀번호와 다르게 (`login-rules.ts`)
+  - 테스트용 가짜 사용자: `shared/auth/testing/fake-users.ts` (`*.test.ts`에서만 import)
+  - 시드 계정 7명(`npm run db:seed`): 초기 비밀번호는 `.env`의 `SEED_INITIAL_PASSWORD`, 없으면 실행 시 한 번만 출력 (코드·git에 남기지 않음)
   - 교체할 파일 목록: `docs/integration-notes.md` 8번
 - **통합 대비 규칙**
   - 경영지원팀 코드는 `modules/management`와 `mgmt_` 테이블 안에서만 작성한다
@@ -107,7 +110,7 @@
 
 ## 공통 정책
 
-> 권한·계정은 고객사 요구사항 기록용이다. 실제 구현은 통합 시 결정 (위 "이 저장소의 범위" 참고). 지금은 `can()`에 이 표의 규칙을 임시 사용자 기준으로 반영한다.
+> 권한·계정은 고객사 요구사항 기록용이다. 실제 규칙은 `src/shared/auth/can.ts`와 `docs/integration-notes.md` 8번 (내부 결정, 고객사 확인 대기 — `docs/05-open-questions.md` 14·15번).
 
 ### 권한
 | 역할 | 권한 |
@@ -136,7 +139,7 @@
 | 금액 타입 | Prisma `BigInt` (`Int`는 최대 약 21억 원이라 사용 금지) |
 | 차트 | Recharts (도넛 = `PieChart` + `innerRadius`) |
 | UI | Tailwind + shadcn/ui |
-| 인증 | **통합 시 결정** (후보: Better Auth). 지금은 개발용 임시 사용자 + `shared/auth`의 `can()` |
+| 인증 | 자체 구현 (외부 패키지 없음): Node 내장 `crypto.scrypt` 해시 + DB 세션(httpOnly 쿠키) + `shared/auth`의 `can()` |
 | 검증 | Zod (폼·업로드·Server Action 공통) |
 | 엑셀 | exceljs |
 | PDF | pdfjs-dist (텍스트 PDF) / 스캔본은 Claude API로 추출 |
@@ -150,7 +153,8 @@ newtork-dashboard/ (= 이 폴더)
 ├─ prisma.config.ts           # Prisma 7 설정 (스키마 폴더, 마이그레이션 경로, DB URL)
 ├─ prisma/
 │  ├─ schema/
-│  │  ├─ base.prisma          # datasource, generator (User 등 인증 모델은 통합 시)
+│  │  ├─ base.prisma          # datasource, generator
+│  │  ├─ auth.prisma          # auth_user, auth_session (로그인·권한, 공통)
 │  │  ├─ management.prisma    # mgmt_* 테이블
 │  │  ├─ production.prisma    # (이 저장소에서는 만들지 않음)
 │  │  └─ service.prisma       # (이 저장소에서는 만들지 않음)
@@ -158,7 +162,7 @@ newtork-dashboard/ (= 이 폴더)
 │  └─ seed.ts                 # 경영지원팀 샘플 데이터 (가짜)
 ├─ src/
 │  ├─ app/
-│  │  ├─ (auth)/login/        # placeholder — 통합 시
+│  │  ├─ (auth)/login/        # 로그인 (회원가입 없음)
 │  │  ├─ (dashboard)/
 │  │  │  ├─ layout.tsx        # 공통 셸: 다우오피스풍 사이드바·헤더
 │  │  │  ├─ page.tsx          # 메인 = 전사 요약 (경영지원팀)
@@ -166,7 +170,7 @@ newtork-dashboard/ (= 이 폴더)
 │  │  │  ├─ management/
 │  │  │  ├─ production/       # placeholder — 수정 금지
 │  │  │  └─ service/          # placeholder — 수정 금지
-│  │  ├─ account/password/    # placeholder — 통합 시
+│  │  ├─ account/password/    # 비밀번호 변경 (초기 비밀번호면 강제)
 │  │  └─ api/                 # 꼭 필요한 Route Handler만
 │  ├─ modules/
 │  │  ├─ admin/               # placeholder — 통합 시
@@ -180,14 +184,14 @@ newtork-dashboard/ (= 이 폴더)
 │  │  ├─ production/          # placeholder — 수정 금지
 │  │  └─ service/             # placeholder — 수정 금지
 │  ├─ shared/
-│  │  ├─ auth/                # can(user, action, team) + 개발용 임시 사용자 (통합 시 교체)
+│  │  ├─ auth/                # can(user, action, team), 로그인 세션, 비밀번호 해시, getCurrentUser()
 │  │  ├─ db/                  # Prisma client (generated/ 는 git 제외)
 │  │  ├─ ai/                  # Anthropic 호출 (server-only)
 │  │  ├─ upload/              # 엑셀/PDF 파서 공통
 │  │  ├─ format/              # 금액 콤마, BigInt 직렬화, 기간(월/분기/연) 유틸
 │  │  ├─ lib/                 # cn() 등 공통 헬퍼
 │  │  └─ ui/                  # shadcn 컴포넌트, app-shell, DonutChart, KpiCard, PeriodToggle
-│  └─ proxy.ts                # 배포 빌드 차단 (DEMO_MODE=true 일 때만 통과) → 통합 시 미로그인 차단으로 교체
+│  └─ proxy.ts                # 미로그인 → /login, 초기 비밀번호 → /account/password
 ├─ docker-compose.yml         # 로컬 PostgreSQL (Docker 사용 시, 포트 5433)
 ├─ .env.example               # 키 이름만 (값 없음)
 ├─ CODEOWNERS
@@ -199,7 +203,7 @@ newtork-dashboard/ (= 이 폴더)
 | 영역 | 담당 |
 |---|---|
 | `management/`, 메인 화면, `shared/`, `prisma/schema/base.prisma`·`management.prisma` | 나 (경영지원팀) — **이 저장소의 개발 범위** |
-| `admin/`, 로그인·계정 | 통합 시 팀과 함께 결정 |
+| `admin/`, 로그인·계정 | 나 (경영지원팀) — 2026-10-21 인증 시리즈로 구현, 다른 팀은 `docs/integration-notes.md` 8번 방식으로 붙인다 |
 | `production/` (+ `production.prisma`) | 생산팀 담당자 — 각자 저장소에서 개발, 여기서는 placeholder |
 | `service/` (+ `service.prisma`) | 서비스팀 담당자 — 각자 저장소에서 개발, 여기서는 placeholder |
 
@@ -233,6 +237,15 @@ newtork-dashboard/ (= 이 폴더)
 - [ ] 스키마를 바꿨으면 `npm run db:smoke` 통과 (CI에서도 빈 DB에 마이그레이션 적용 후 실행)
 - [ ] **PR의 CI가 통과(✓)한 것을 확인한 뒤 머지** (`.github/workflows/ci.yml` — 비공개 Free 플랜이라 실패해도 머지 버튼이 막히지 않으므로 직접 확인)
 - [ ] **main 머지는 사람이 직접 한다. Claude는 PR 생성까지만** (머지·브랜치 삭제는 사람이 머지했다고 알려준 뒤, `gh pr view`로 MERGED 상태를 확인하고 진행)
+
+### 예외: 인증 시리즈 한정 머지 규칙 (2026-10-21 사용자 지시)
+
+**인증 작업 시리즈(PR ① 사용자 모델·로그인·비밀번호 변경 → ② 권한 규칙 교체·라우트 보호 → ③ 관리자 설정 화면)에서만** 아래를 적용한다. 시리즈가 끝나면 위 기본 규칙(사람이 머지)으로 돌아간다.
+
+- `gh`는 `~/.local/bin/gh` (셸 PATH에 `~/.local/bin` 추가, `gh auth status`로 확인). brew로 설치하지 않는다
+- **CI ✓ + `npm run check` + `npm run build` + 서버 로그 확인이 모두 통과**하면 Claude가 `gh pr merge --merge`(merge commit)로 머지 → MERGED 확인 → 브랜치 정리 → `main` pull → 다음 PR
+- 하나라도 실패하면 머지하지 않고 멈춰서 보고
+- dev 서버는 Claude가 띄우지 않는다 — 서버 로그 확인은 임시 DB + `next start`(다른 포트)로 대신하고 끝나면 정리, 화면 확인은 마지막에 사람이 한 번에
 
 ## 코딩 규칙
 

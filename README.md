@@ -58,7 +58,7 @@ npm run db:validate  # prisma.config.ts + prisma/schema/*.prisma 검사
 ```bash
 npm run db:generate  # Prisma Client 생성 → src/shared/db/generated (git 제외 — 이게 없으면 typecheck 실패)
 npm run db:deploy    # prisma/migrations 의 마이그레이션을 순서대로 적용해 테이블 생성
-npm run db:seed      # 2024-10 ~ 2026-09 가짜 데이터 (여러 번 실행해도 중복 없음)
+npm run db:seed      # 직원 계정 7개 + 2024-10 ~ 2026-09 가짜 데이터 (여러 번 실행해도 중복 없음)
 ```
 
 > 이미 `db:push`로 테이블을 만들어 둔 DB라면 `db:deploy` 대신
@@ -79,15 +79,13 @@ npm run dev          # http://localhost:3000
 npm run build        # 배포 빌드 확인 (선택)
 ```
 
-### 개발용 임시 사용자 (로그인은 통합 시 결정)
+### 로그인 (직원 계정)
 
-- 로그인 화면이 없다. `npm run dev`에서 헤더 오른쪽 **DEV 드롭다운**으로 사용자를 바꾼다.
-  - 관리자 / 대표 / 경영지원 팀장(기본) / 경영지원 팀원 / 생산 팀원
-- 권한 규칙과 교체 방법: [docs/integration-notes.md](docs/integration-notes.md) 8번
-
-> ⚠️ **실제 로그인 전에는 외부 공개 배포 금지.**
-> `npm run build && npm run start`(배포 모드)는 기본적으로 **모든 요청을 403으로 차단**한다.
-> 사내 시연할 때만 `.env`에 `DEMO_MODE=true`를 넣으면 "경영지원 팀장"으로 고정되어 열린다 — 접속하는 누구나 그 권한을 갖게 되므로 외부에 공개하지 않는다.
+- 회원가입은 없다. `npm run db:seed`가 직원 계정 7개를 만든다 (이미 있으면 그대로 둔다).
+  - `admin`(관리자) · `mgmt_member`(경영지원팀) · `prod_leader`·`svc_leader`(팀장) · `prod_member`·`svc_member`·`dual_member`(팀원, `dual_member`는 생산+서비스 겸직)
+  - 초기 비밀번호: `.env`의 `SEED_INITIAL_PASSWORD`, 비워 두면 **시드 실행 화면에 한 번만** 출력된다 (DB에는 해시만 저장). 첫 로그인 때 새 비밀번호로 바꾸게 된다.
+  - 잊었으면 `admin`으로 로그인해 관리자 설정에서 [비밀번호 초기화].
+- 권한 규칙과 다른 팀이 붙이는 방법: [docs/integration-notes.md](docs/integration-notes.md) 8번
 
 ### 대시보드 예시 AI 분석
 
@@ -112,7 +110,7 @@ npm run build        # 배포 빌드 확인 (선택)
 | `npm run db:push` | 스키마를 로컬 DB에 반영 (개발 중) |
 | `npm run db:smoke` | 실제 DB에서 모든 칸·주요 조회 점검 (스키마 변경 후, CI에서도 실행) — 스키마를 바꾸면 dev 서버도 재시작 |
 | `npm run check` | lint + typecheck + test (작업 단계마다, PR 전 필수) |
-| `npm run db:seed` | 샘플 데이터 넣기 (2024-10 ~ 2026-09) |
+| `npm run db:seed` | 직원 계정 7개(초기 비밀번호 1회 출력) + 샘플 데이터 넣기 (2024-10 ~ 2026-09) |
 | `npm run metrics:report -- 2026 Q3` | 지표 계산 결과 검산용 표 출력 (`2026 9` 월 / `2026` 연간 / `2026 ytd9` 누적) |
 | `npm run seed:ai-examples` | 대시보드 예시 AI 분석 4건 넣기 (중복 없음) · `-- --remove` 로 예시만 지우기 |
 | `npm run env:set-key` | AI 분석용 Anthropic API 키를 `.env`에 저장 (입력 숨김, 길이만 표시) |

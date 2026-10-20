@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { findDevUser } from "@/shared/auth/dev-users";
+import { EDIT_ONLY_MGMT, FAKE_USERS } from "@/shared/auth/testing/fake-users";
 
 import {
   caretAfterFormat,
@@ -15,9 +15,14 @@ import {
   monthState,
 } from "./rules";
 
+// 경영지원팀 = 확정까지 가능, EDIT_ONLY_MGMT = 입력만 가능(지금 규칙엔 없는 조합 — 화면 분기 검사용)
+vi.mock("@/shared/auth/can", async (importOriginal) => {
+  const { withEditOnlyUser } = await import("@/shared/auth/testing/fake-users");
+  return withEditOnlyUser(await importOriginal());
+});
+
 const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const today = d("2026-10-16");
-const user = (id: string) => findDevUser(id)!;
 
 describe("입력 가능한 달", () => {
   it("미래 / 이번 달 / 지난 달", () => {
@@ -37,10 +42,10 @@ describe("입력 가능한 달", () => {
 });
 
 describe("entryAbilities", () => {
-  const leader = user("dev-mgmt-leader");
-  const member = user("dev-mgmt-member");
-  const prod = user("dev-prod-member");
-  const admin = user("dev-admin");
+  const leader = FAKE_USERS.mgmt;
+  const member = EDIT_ONLY_MGMT;
+  const prod = FAKE_USERS.prodMember;
+  const admin = FAKE_USERS.admin;
 
   it("지난 달 임시저장 상태: 팀장은 저장·확정, 팀원은 저장만 + 확정 대기 안내", () => {
     expect(entryAbilities(leader, "DRAFT", "closed")).toMatchObject({

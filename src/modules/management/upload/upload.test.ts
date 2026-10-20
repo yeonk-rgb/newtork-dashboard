@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { DEV_USERS } from "@/shared/auth/dev-users";
+import { EDIT_ONLY_MGMT, FAKE_USERS } from "@/shared/auth/testing/fake-users";
 import type { AppUser } from "@/shared/auth/types";
 import {
   decodeText,
@@ -20,6 +20,12 @@ import {
 } from "./parse-upload";
 import { uploadAbilities } from "./rules";
 import { buildTemplate } from "./template";
+
+// EDIT_ONLY_MGMT = 경영지원 입력만 가능(지금 규칙엔 없는 조합 — 화면 분기 검사용)
+vi.mock("@/shared/auth/can", async (importOriginal) => {
+  const { withEditOnlyUser } = await import("@/shared/auth/testing/fake-users");
+  return withEditOnlyUser(await importOriginal());
+});
 
 const today = new Date("2026-10-20T00:00:00Z");
 const noExisting: ExistingData = { months: new Map(), targetYears: new Set() };
@@ -405,15 +411,13 @@ describe("파일 읽기", () => {
 });
 
 describe("권한", () => {
-  const user = (id: string): AppUser => DEV_USERS.find((u) => u.id === id)!;
-  it.each([
-    ["dev-admin", true, true],
-    ["dev-ceo", true, true],
-    ["dev-mgmt-leader", true, true],
-    ["dev-mgmt-member", true, false],
-    ["dev-prod-member", false, false],
-  ])("%s: 화면 %s, 저장 %s", (id, view, save) => {
-    const a = uploadAbilities(user(id));
+  it.each<[string, AppUser, boolean, boolean]>([
+    ["관리자", FAKE_USERS.admin, true, true],
+    ["경영지원팀", FAKE_USERS.mgmt, true, true],
+    ["입력 전용(가정)", EDIT_ONLY_MGMT, true, false],
+    ["생산 팀원", FAKE_USERS.prodMember, false, false],
+  ])("%s: 화면 %s, 저장 %s", (_, user, view, save) => {
+    const a = uploadAbilities(user);
     expect(a.canView).toBe(view);
     expect(a.canSave).toBe(save);
   });

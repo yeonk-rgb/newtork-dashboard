@@ -3,7 +3,7 @@ import { ShieldAlert } from "lucide-react";
 
 import { accessiblePages, roleLabel, type AppUser } from "@/shared/auth";
 
-/** 권한 없음 안내 + 이동 가능한 페이지 링크. user가 null이면 배포 접근 차단 안내 */
+/** 권한 없음 안내 + 이동 가능한 페이지 링크. user가 null이면 로그인 안내 */
 export function Forbidden({ user }: { user: AppUser | null }) {
   const pages = user ? accessiblePages(user) : [];
 
@@ -17,7 +17,15 @@ export function Forbidden({ user }: { user: AppUser | null }) {
         </p>
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">
-          로그인 기능이 준비되기 전에는 접근할 수 없습니다.
+          로그인이 필요합니다.{" "}
+          <Link href="/login" className="text-primary underline">
+            로그인 화면으로
+          </Link>
+        </p>
+      )}
+      {user && pages.length === 0 && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          열람할 수 있는 페이지가 없습니다. 관리자에게 열람 범위를 요청하세요.
         </p>
       )}
       {pages.length > 0 && (
