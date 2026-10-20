@@ -13,7 +13,12 @@ import { hashAiInput } from "./hash";
 import { EXAMPLE_MODEL } from "./examples";
 import { MOCK_MODEL } from "./mock-comment";
 import { PROMPT_VERSION } from "./prompt";
-import { aiAbilities, type AiAbilities, type QuarterPeriod } from "./rules";
+import {
+  aiAbilities,
+  aiInputMonths,
+  type AiAbilities,
+  type QuarterPeriod,
+} from "./rules";
 import { readStoredComment, type AiCommentDisplay } from "./schemas";
 
 export type AiCommentView = {
@@ -49,7 +54,8 @@ export function methodOf(model: string): AiCommentMethod {
   return "ai";
 }
 
-const dateTimeLabel = (date: Date) =>
+/** UTC 로 저장된 시각 → 한국 시간 "2026-10-19 14:13:35" */
+export const dateTimeLabel = (date: Date) =>
   new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -59,6 +65,27 @@ const dateTimeLabel = (date: Date) =>
     minute: "2-digit",
     second: "2-digit",
   }).format(date);
+
+/** AI 입력에 쓰이는 달·그 해 목표 중 엑셀 업로드로 저장된 것이 있는지 (05-19 동의 전 분석 차단) */
+export async function hasUploadedInput(
+  quarter: QuarterPeriod,
+): Promise<boolean> {
+  const [months, target] = await Promise.all([
+    prisma.monthlyFinance.count({
+      where: {
+        uploadId: { not: null },
+        OR: aiInputMonths(quarter).map((m) => ({
+          year: m.year,
+          month: m.month,
+        })),
+      },
+    }),
+    prisma.annualTarget.count({
+      where: { year: quarter.year, uploadId: { not: null } },
+    }),
+  ]);
+  return months + target > 0;
+}
 
 export async function loadLatestAiComment(year: number, quarter: number) {
   return prisma.aiComment.findFirst({
@@ -77,7 +104,10 @@ export async function loadAiCommentView(
   summary: ManagementSummary,
   today: Date,
 ): Promise<AiCommentView> {
-  const row = await loadLatestAiComment(quarter.year, quarter.quarter);
+  const [row, uploaded] = await Promise.all([
+    loadLatestAiComment(quarter.year, quarter.quarter),
+    hasUploadedInput(quarter),
+  ]);
   const display = row ? readStoredComment(row.result) : null;
   const currentHash = hashAiInput(buildAiInput(summary, quarter));
 
@@ -103,6 +133,12 @@ export async function loadAiCommentView(
         : row.inputHash !== currentHash
           ? "data"
           : null,
-    abilities: aiAbilities(user, quarter, today, summary.confirmation.hasData),
+    abilities: aiAbilities(
+      user,
+      quarter,
+      today,
+      summary.confirmation.hasData,
+      uploaded,
+    ),
   };
 }

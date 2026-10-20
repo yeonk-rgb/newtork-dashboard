@@ -135,6 +135,7 @@ type Period =
 ## 9. 기타
 
 - 비밀키는 `.env`에만 (`.env.example`에 키 이름만). AI 키 등은 클라이언트로 보내지 않습니다.
+- **파일 업로드 공통**: `src/shared/upload/read-table.ts`의 `readTableFile(fileName, ArrayBuffer)` → 시트별 셀 표(문자열·숫자·null). .xlsx(exceljs 4.4.0 고정)·.csv(UTF-8/EUC-KR 자동 판별) 지원, .xls는 안내 메시지. 팀별 열 인식·검증은 각 모듈에서 합니다(경영지원: `modules/management/upload/`).
 - **AI 호출 공통**: `src/shared/ai/` — `getAnthropicClient()`(server-only, 키 없으면 `AiError("not-configured")`), `generateJson({ create, model, system, user, schema })`(JSON 출력 + Zod 검증 + 오류 종류 분류), `AiError`·`aiErrorMessage()`(화면 안내 문구). 다른 팀도 AI를 쓰면 이 함수를 재사용해 주세요. SDK 버전은 `package.json`에 정확히 고정(`@anthropic-ai/sdk` 0.131.0).
   - 테스트에서는 `create`에 가짜 함수를 넣습니다. Vitest 실행 중에는 `getAnthropicClient()`가 항상 에러를 내므로 CI가 실제 API를 부를 수 없습니다.
   - 개발 화면 확인용 `AI_MOCK=true`(실패 연습 `AI_MOCK=fail`)는 `next dev`에서만 동작합니다.
