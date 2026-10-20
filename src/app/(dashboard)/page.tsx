@@ -44,7 +44,7 @@ async function MainContent({
 
   return (
     <div className="space-y-4">
-      <DashboardTop title="경영 대시보드" summary={summary} />
+      <DashboardTop title="경영 대시보드" summary={summary} showKpis={false} />
       <AiCommentSection summary={summary} />
       <DashboardDonuts summary={summary} />
       <MainBottom summary={summary} trend={trend} />

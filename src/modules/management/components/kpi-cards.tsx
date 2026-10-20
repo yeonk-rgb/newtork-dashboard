@@ -1,4 +1,5 @@
-// KPI 카드 4개: 매출 / (기간) 목표 달성률 / 이익률 / 미수금 총액
+// KPI 카드 4개: 매출 / (기간) 목표 달성률 / 이익률 / 미수금 총액 (경영지원 상세)
+// 증감 표시(Deltas 등)는 경영 대시보드 도넛 카드 아래에서도 쓴다
 import { Won } from "@/shared/ui/won";
 
 import { comparisonNote } from "./confirmation-text";
@@ -47,7 +48,7 @@ type DeltaRow = {
   partial: boolean;
 };
 
-function Deltas({ rows, suffix }: { rows: DeltaRow[]; suffix: string }) {
+export function Deltas({ rows, suffix }: { rows: DeltaRow[]; suffix: string }) {
   return (
     <dl className="mt-3 space-y-0.5 text-xs text-muted-foreground">
       {rows.map((row) => (
@@ -82,7 +83,7 @@ function previousLabel(period: Period) {
 }
 
 /** 연간·연초 누적은 직전 기간 = 전년 동기라 한 줄만 */
-function comparisonRows<T>(
+export function comparisonRows<T>(
   period: Period,
   changes: ManagementSummary["changes"],
   pick: (c: Comparison) => T,
@@ -105,10 +106,13 @@ function comparisonRows<T>(
   return rows;
 }
 
-const fromChange = (c: Change) => ({ value: c.rate, reason: c.reason });
-const fromMargin = (c: MarginChange) => ({ value: c.diff, reason: c.reason });
+export const fromChange = (c: Change) => ({ value: c.rate, reason: c.reason });
+export const fromMargin = (c: MarginChange) => ({
+  value: c.diff,
+  reason: c.reason,
+});
 
-function targetTitle(period: Period) {
+export function targetTitle(period: Period) {
   switch (period.unit) {
     case "quarter":
       return `${period.quarter}분기 목표 달성률`;
