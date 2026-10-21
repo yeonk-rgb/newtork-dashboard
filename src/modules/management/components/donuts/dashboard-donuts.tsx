@@ -84,8 +84,8 @@ export async function DashboardDonuts({
     monthsText(list.map((month) => ({ year: period.year, month })));
 
   return (
-    <section aria-label="원형 그래프" className="space-y-5">
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <section aria-label="원형 그래프" className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <DonutCard
           title={`${summary.label} 매출`}
           {...revenue}
@@ -130,7 +130,7 @@ export async function DashboardDonuts({
                   {formatWonShort(targets.period.actual)}
                 </p>
                 {targets.annual && period.unit !== "year" && (
-                  <p className="mt-0.5">
+                  <p className="mt-1">
                     {period.year}년 연간{" "}
                     <span className="text-foreground">
                       {targets.annual.rate === null
@@ -183,7 +183,7 @@ export async function DashboardDonuts({
             </Link>
           }
           footer={
-            <dl className="space-y-0.5">
+            <dl className="space-y-1">
               <div className="flex justify-between gap-2">
                 <dt>90일 초과</dt>
                 <dd className="text-foreground">
@@ -209,7 +209,7 @@ export async function DashboardDonuts({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
         <DonutCard
           title={`${period.year}년 연간 목표 달성률`}
           {...annual}
@@ -238,13 +238,13 @@ export async function DashboardDonuts({
                   )}
                 </p>
                 {progress.excludedMonths.length > 0 && (
-                  <p className="mt-0.5">
+                  <p className="mt-1">
                     {yearMonths(progress.excludedMonths)}은 미확정이라 진도
                     비교에서 제외
                   </p>
                 )}
                 {progress.gapMonths.length > 0 && (
-                  <p className="mt-0.5">
+                  <p className="mt-1">
                     {yearMonths(progress.gapMonths)}은 미확정이라 누적 실적에서
                     빠져 있습니다
                   </p>

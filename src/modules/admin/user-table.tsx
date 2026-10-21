@@ -31,6 +31,13 @@ import {
   type Scope,
 } from "./rules";
 import { TempPasswordDialog } from "./temp-password-dialog";
+import {
+  buttonCompactClass,
+  buttonPrimaryClass,
+  buttonSecondaryClass,
+  cardTitleClass,
+  pillClass,
+} from "@/shared/ui/styles";
 
 export type AdminUserRow = {
   id: string;
@@ -193,8 +200,8 @@ export function UserTable({
 
   return (
     <section className="overflow-hidden rounded-card border bg-card">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/60 px-4 py-2.5">
-        <h2 className="text-sm font-bold">직원 목록</h2>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-6 py-4">
+        <h2 className={cardTitleClass}>직원 목록</h2>
         <p className="text-sm text-muted-foreground">
           역할·체크박스를 바꾼 뒤 맨 아래 [변경]을 눌러야 저장됩니다. 바뀐 줄은
           노란색으로 표시됩니다.
@@ -204,7 +211,7 @@ export function UserTable({
           onClick={() => setCreating(true)}
           disabled={dirty || isPending}
           title={blockedHint}
-          className="ml-auto rounded-lg border bg-background px-2.5 py-1 text-xs hover:bg-muted disabled:opacity-50"
+          className={cn(buttonSecondaryClass, "ml-auto")}
         >
           + 계정 추가
         </button>
@@ -213,7 +220,7 @@ export function UserTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[60rem] text-sm [&_td]:px-3 [&_th]:px-3">
           <thead>
-            <tr className="border-b-2 border-foreground/70 text-left">
+            <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
               {[
                 "아이디",
                 "이름",
@@ -223,11 +230,11 @@ export function UserTable({
                 "비밀번호",
                 "마지막 로그인",
               ].map((label) => (
-                <th key={label} scope="col" className="px-2 py-2 font-bold">
+                <th key={label} scope="col" className="px-2 py-3 font-medium">
                   {label}
                 </th>
               ))}
-              <th scope="col" className="px-2 py-2">
+              <th scope="col" className="px-2 py-3">
                 <span className="sr-only">관리</span>
               </th>
             </tr>
@@ -248,16 +255,18 @@ export function UserTable({
                     !u.active && "text-muted-foreground",
                   )}
                 >
-                  <td className="px-2 py-2.5">{u.loginId}</td>
-                  <td className="px-2 py-2.5">
+                  <td className="px-2 py-3">{u.loginId}</td>
+                  <td className="px-2 py-3">
                     {u.name}
                     {!u.active && (
-                      <span className="ml-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                      <span
+                        className={cn(pillClass, "ml-2 bg-muted text-body")}
+                      >
                         비활성
                       </span>
                     )}
                   </td>
-                  <td className="px-2 py-2.5">
+                  <td className="px-2 py-3">
                     <select
                       aria-label={`${u.name} 역할`}
                       value={scope.role}
@@ -283,7 +292,7 @@ export function UserTable({
                     )}
                   </td>
                   {(["viewTeams", "editTeams"] as const).map((field) => (
-                    <td key={field} className="px-2 py-2.5">
+                    <td key={field} className="px-2 py-3">
                       {hasAllTeams(scope.role) ? (
                         <span className="text-muted-foreground">전체</span>
                       ) : (
@@ -321,17 +330,22 @@ export function UserTable({
                       )}
                     </td>
                   ))}
-                  <td className="px-2 py-2.5">
+                  <td className="px-2 py-3">
                     {u.mustChangePassword && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-warning-strong">
+                      <span
+                        className={cn(
+                          pillClass,
+                          "bg-warning-soft text-warning-strong",
+                        )}
+                      >
                         초기 비밀번호 사용 중
                       </span>
                     )}
                   </td>
-                  <td className="px-2 py-2.5 text-muted-foreground">
+                  <td className="px-2 py-3 text-muted-foreground">
                     {u.lastLogin ?? "로그인 기록 없음"}
                   </td>
-                  <td className="px-2 py-2.5 text-right">
+                  <td className="px-2 py-3 text-right">
                     {ability.isSelf ? (
                       <span className="text-muted-foreground">본인</span>
                     ) : u.active ? (
@@ -341,7 +355,10 @@ export function UserTable({
                           onClick={() => askReset(u)}
                           disabled={dirty || isPending}
                           title={blockedHint}
-                          className="rounded-lg border border-destructive bg-background px-3 py-1.5 whitespace-nowrap text-destructive hover:bg-destructive/5 disabled:opacity-50"
+                          className={cn(
+                            buttonCompactClass,
+                            "text-destructive hover:bg-danger-soft",
+                          )}
                         >
                           비밀번호 초기화
                         </button>
@@ -361,7 +378,7 @@ export function UserTable({
                         onClick={() => act(() => restoreUser({ id: u.id }))}
                         disabled={dirty || isPending}
                         title={blockedHint}
-                        className="rounded-lg border bg-background px-3 py-1.5 text-foreground hover:bg-muted disabled:opacity-50"
+                        className={buttonCompactClass}
                       >
                         복구
                       </button>
@@ -378,7 +395,7 @@ export function UserTable({
         <p
           role={result.ok ? "status" : "alert"}
           className={cn(
-            "border-t px-4 py-2 text-sm",
+            "border-t px-6 py-3 text-sm",
             result.ok ? "text-primary" : "text-destructive",
           )}
         >
@@ -386,7 +403,7 @@ export function UserTable({
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-2 border-t bg-muted/60 px-4 py-3">
+      <div className="flex items-center justify-between gap-2 border-t px-6 py-4">
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {dirty ? `바뀐 내용 ${changed.length}건` : "바뀐 내용이 없습니다"}
         </p>
@@ -395,7 +412,7 @@ export function UserTable({
             type="button"
             onClick={() => setDrafts({})}
             disabled={!dirty || isPending}
-            className="rounded-lg border bg-background px-4 py-2 text-sm hover:bg-muted disabled:opacity-50"
+            className={buttonSecondaryClass}
           >
             되돌리기
           </button>
@@ -403,7 +420,7 @@ export function UserTable({
             type="button"
             onClick={save}
             disabled={!dirty || errors.size > 0 || isPending}
-            className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className={buttonPrimaryClass}
           >
             {isPending ? "저장 중…" : "변경"}
           </button>

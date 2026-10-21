@@ -87,7 +87,8 @@ type Period =
 ## 7. 공통 UI
 
 - 레이아웃: 상단 헤더 + 좌측 사이드바 + 밝은 회색 바탕 위 흰 라운드 카드 — `src/shared/ui/app-shell/` (2026-10-21 리스킨, 다우오피스 스타일에서 변경)
-- **디자인 규칙은 [`docs/design-guide.md`](design-guide.md)** — 색 토큰, 카드(`rounded-card border bg-card p-5`), 배지·상태 점·세그먼트 토글·표 클래스, 도넛·막대 규칙, 범주 팔레트
+- **디자인 규칙은 [`docs/design-guide.md`](design-guide.md)** — 색 토큰, 카드(`rounded-card border bg-card p-6`), 배지·상태 점·세그먼트 토글·표 클래스, 도넛·막대 규칙, 범주 팔레트, 로고 사용 규칙
+- 제목·버튼·배지 클래스는 `src/shared/ui/styles.ts` 상수(`pageTitleClass`·`cardTitleClass`·`buttonPrimaryClass`·`pillClass` 등)를 import 해서 씁니다. 로고는 `src/shared/ui/brand/logo.tsx`의 `<Logo />`만 사용
 - 사이드바 메뉴: 메인 / 경영지원 / 생산 / 서비스 / 관리자
 - 각 팀 화면은 `(dashboard)/<팀>/page.tsx` 안의 내용만 만들면 셸은 공통으로 씌워집니다.
 - 색상은 `src/app/globals.css`의 토큰(`bg-primary`, `bg-canvas`, `text-body`, `bg-success-soft` 등)을 씁니다. 직접 색상값(`#...`, `bg-blue-600` 등)을 쓰지 말아 주세요. 차트 색은 `src/shared/ui/chart-colors.ts`에서 import (같은 항목 = 같은 색)

@@ -9,6 +9,7 @@ import type { ManagementSummary } from "../metrics/types";
 import { ConfirmationBanner } from "./confirmation-banner";
 import { KpiCards } from "./kpi-cards";
 import { PeriodSelector } from "./period-selector";
+import { pageTitleClass } from "@/shared/ui/styles";
 
 /** URL 값 → 기간. 없거나 잘못되면 "이미 끝난 분기 중 가장 최근 분기" */
 export async function resolvePeriod(param: string | undefined) {
@@ -33,9 +34,9 @@ export async function DashboardTop({
   const years = [...new Set([...range, summary.period.year])].sort();
 
   return (
-    <section className="space-y-5" aria-label="기간 요약">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+    <section className="space-y-6" aria-label="기간 요약">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className={pageTitleClass}>{title}</h1>
         <PeriodSelector period={summary.period} years={years} />
       </div>
       <ConfirmationBanner confirmation={summary.confirmation} />
@@ -47,9 +48,9 @@ export async function DashboardTop({
 
 export function DashboardTopSkeleton() {
   return (
-    <div className="space-y-5" aria-hidden>
+    <div className="space-y-6" aria-hidden>
       <div className="h-8 w-64 animate-pulse rounded-lg bg-muted" />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="h-40 animate-pulse rounded-card bg-muted" />
         ))}

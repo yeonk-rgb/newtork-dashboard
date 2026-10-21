@@ -14,8 +14,8 @@ export function Won({
   className,
 }: {
   value: AmountInput;
-  /** 축약 뒤에 "원" 붙이기 */
-  unit?: boolean;
+  /** 축약 뒤에 "원" 붙이기. "subtle" = KPI 큰 숫자용 — "원"을 숫자보다 작고 연하게 */
+  unit?: boolean | "subtle";
   className?: string;
 }) {
   const full = formatWon(value);
@@ -23,7 +23,13 @@ export function Won({
     <span title={full} className={className}>
       <span aria-hidden>
         {formatWonCompact(value)}
-        {unit && "원"}
+        {unit === "subtle" ? (
+          <span className="ml-1 text-[0.55em] font-medium tracking-normal text-muted-foreground">
+            원
+          </span>
+        ) : (
+          unit && "원"
+        )}
       </span>
       <span className="sr-only">{full}</span>
     </span>

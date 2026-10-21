@@ -4,6 +4,7 @@ import { formatAmount, type AmountInput } from "@/shared/format/money";
 import { cn } from "@/shared/lib/utils";
 
 import type { Change } from "../../metrics/types";
+import { cardTitleClass } from "@/shared/ui/styles";
 
 /** 원 단위 전체 금액 (단위는 표 머리글에 "(원)") */
 export function Amount({ value }: { value: AmountInput }) {
@@ -67,15 +68,13 @@ export function Section({
   return (
     <section
       id={id}
-      className={cn("scroll-mt-4 rounded-card border bg-card p-5", className)}
+      className={cn("scroll-mt-4 rounded-card border bg-card p-6", className)}
     >
       <header className="mb-4 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 className="text-[15px] font-semibold">{title}</h2>
+          <h2 className={cardTitleClass}>{title}</h2>
           {description && (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {description}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
           )}
         </div>
         {action}
@@ -87,6 +86,7 @@ export function Section({
 
 export const tableClass = "w-full text-sm [&_td]:px-3 [&_th]:px-3";
 export const theadClass = "bg-muted text-xs text-muted-foreground";
-export const thClass = "py-2.5 font-medium";
+export const thClass = "py-3 font-medium";
 export const rowClass = "border-b";
-export const totalRowClass = "border-t-2 font-semibold";
+/** 합계 행: 굵은 글자로만 구분 (보더는 1px 그대로) */
+export const totalRowClass = "border-t font-semibold";

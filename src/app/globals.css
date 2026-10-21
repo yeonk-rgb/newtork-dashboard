@@ -159,6 +159,11 @@
   --copper-800: #652a01;
   --copper-900: #481c01;
 
+  /* 강조 카드 바탕: 코퍼 기준값(500)보다 한 단계 진한 곳에서 시작 → 흰 글씨 최저 4.91:1 (500 은 4.39:1 로 미달)
+     코퍼 500 은 차트 등 다른 곳에서 그대로 쓴다 */
+  --emphasis-from: #ad5a2a;
+  --emphasis-to: var(--copper-600);
+
   --primary: var(--primary-700);
   --primary-foreground: #ffffff;
   --brand-soft: var(--primary-50); /* 브랜드 연한 배경 (선택 상태·안내 영역) */
@@ -259,6 +264,8 @@
   --color-copper-700: var(--copper-700);
   --color-copper-800: var(--copper-800);
   --color-copper-900: var(--copper-900);
+  --color-emphasis-from: var(--emphasis-from);
+  --color-emphasis-to: var(--emphasis-to);
   --radius-card: var(--radius-card-size);
 }
 
@@ -271,5 +278,18 @@
   input[type="checkbox"],
   input[type="radio"] {
     accent-color: var(--primary);
+  }
+  /* 아이콘(lucide): 선 굵기 1.5 로 통일 — 크기는 size-4(16px)·size-5(20px) 두 가지만 */
+  svg.lucide {
+    stroke-width: 1.5;
+  }
+  /* 호버·포커스는 배경색만 150ms 로 바뀐다 (그 밖의 움직임 없음) */
+  a,
+  button,
+  summary,
+  [role="switch"],
+  [role="menuitem"] {
+    transition-property: color, background-color, border-color;
+    transition-duration: 150ms;
   }
 }

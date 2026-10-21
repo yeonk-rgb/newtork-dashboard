@@ -14,9 +14,14 @@ import {
 import type { AdminActionResult } from "./actions";
 import { hasAllTeams, normalizeScope, scopeError } from "./rules";
 import { LOGIN_ID_RULE, type CreateUserInput } from "./schemas";
+import {
+  buttonPrimaryClass,
+  buttonSecondaryClass,
+  cardTitleClass,
+} from "@/shared/ui/styles";
 
 const fieldClass =
-  "h-9 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 const EMPTY = {
   loginId: "",
@@ -91,15 +96,15 @@ export function CreateUserDialog({
       ref={ref}
       onClose={onClose}
       aria-labelledby="create-user-title"
-      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground backdrop:bg-black/30"
     >
       {open && (
-        <form onSubmit={submit} className="space-y-3">
-          <h2 id="create-user-title" className="text-base font-semibold">
+        <form onSubmit={submit} className="space-y-4">
+          <h2 id="create-user-title" className={cardTitleClass}>
             계정 추가
           </h2>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium">아이디</span>
+            <span className="mb-2 block font-medium">아이디</span>
             <input
               className={fieldClass}
               value={form.loginId}
@@ -110,13 +115,13 @@ export function CreateUserDialog({
             />
             <span
               id="login-id-rule"
-              className="mt-0.5 block text-xs text-muted-foreground"
+              className="mt-1 block text-xs text-muted-foreground"
             >
               {LOGIN_ID_RULE}
             </span>
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium">이름</span>
+            <span className="mb-2 block font-medium">이름</span>
             <input
               className={fieldClass}
               value={form.name}
@@ -126,7 +131,7 @@ export function CreateUserDialog({
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block font-medium">역할</span>
+            <span className="mb-2 block font-medium">역할</span>
             <select
               className={fieldClass}
               value={form.role}
@@ -149,7 +154,7 @@ export function CreateUserDialog({
             <div className="grid grid-cols-2 gap-3 text-sm">
               {(["viewTeams", "editTeams"] as const).map((field) => (
                 <fieldset key={field}>
-                  <legend className="mb-1 font-medium">
+                  <legend className="mb-2 font-medium">
                     {field === "viewTeams" ? "열람 범위" : "수정 권한"}
                   </legend>
                   {SCOPE_TEAMS.map((team) => {
@@ -190,14 +195,14 @@ export function CreateUserDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+              className={buttonSecondaryClass}
             >
               취소
             </button>
             <button
               type="submit"
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className={buttonPrimaryClass}
             >
               {pending ? "추가 중…" : "추가"}
             </button>

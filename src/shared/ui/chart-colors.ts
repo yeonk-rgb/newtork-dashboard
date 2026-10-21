@@ -33,8 +33,8 @@ export const METER_ON_ACCENT: MeterColors = {
 
 /** 조각 사이 간격 = 카드 배경색 */
 export const CHART_SURFACE = "#ffffff";
-/** 강조 카드 배경의 가운데 색 (코퍼 500→600 아주 옅은 그라데이션의 중간) */
-export const ACCENT_SURFACE = "#a85728";
+/** 강조 카드 배경의 가운데 색 (#AD5A2A→코퍼 600 아주 옅은 그라데이션의 중간, globals.css --emphasis-*) */
+export const ACCENT_SURFACE = "#a45527";
 
 /** 축·격자·보조 선 (글자 토큰과 같은 따뜻한 회색 계열) */
 export const CHART_INK = "#4a4f57";

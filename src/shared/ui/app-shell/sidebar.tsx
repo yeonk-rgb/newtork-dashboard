@@ -53,12 +53,12 @@ export function Sidebar({ items }: { items: NavItem[] }) {
 
   const linkClass = (active: boolean, sub = false) =>
     cn(
-      "flex items-center gap-2.5 rounded-xl text-sm transition-colors",
-      sub ? "py-2 pl-9 pr-3" : "px-3 py-2.5",
+      "flex h-10 items-center gap-3 rounded-xl text-sm transition-colors duration-150",
+      sub ? "pr-3 pl-10" : "px-3",
       // 현재 메뉴 = 진한 pill (docs/design-guide.md)
       active
         ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
-        : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        : "hover:bg-primary-50 hover:text-sidebar-accent-foreground",
     );
 
   return (
@@ -75,11 +75,11 @@ export function Sidebar({ items }: { items: NavItem[] }) {
               <Link
                 href={withPeriod(href, period)}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "flex h-10 items-center gap-3 rounded-xl px-3 text-sm transition-colors duration-150 hover:bg-primary-50 hover:text-sidebar-accent-foreground",
                   groupActive && "font-semibold text-sidebar-accent-foreground",
                 )}
               >
-                <Icon className="size-4" aria-hidden />
+                <Icon className="size-4 text-muted-foreground" aria-hidden />
                 {label}
               </Link>
               <ul className="mt-1 space-y-1">
@@ -109,7 +109,10 @@ export function Sidebar({ items }: { items: NavItem[] }) {
             aria-current={active ? "page" : undefined}
             className={linkClass(active)}
           >
-            <Icon className="size-4" aria-hidden />
+            <Icon
+              className={cn("size-4", !active && "text-muted-foreground")}
+              aria-hidden
+            />
             {label}
           </Link>
         );

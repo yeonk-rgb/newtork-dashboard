@@ -1,6 +1,7 @@
 // KPI 카드 4개: 매출 / (기간) 목표 달성률 / 이익률 / 미수금 총액 (경영지원 상세)
 // 증감 표시(Deltas 등)는 경영 대시보드 도넛 카드 아래에서도 쓴다
 import { cn } from "@/shared/lib/utils";
+import { cardTitleClass, pillClass } from "@/shared/ui/styles";
 import { Won } from "@/shared/ui/won";
 
 import { comparisonNote } from "./confirmation-text";
@@ -30,8 +31,7 @@ function DeltaValue({
   value: number | null;
   suffix: string;
 }) {
-  const pill =
-    "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums";
+  const pill = pillClass;
   if (value === null) {
     return (
       <span className={cn(pill, "bg-muted text-muted-foreground")}>-</span>
@@ -66,7 +66,7 @@ type DeltaRow = {
 
 export function Deltas({ rows, suffix }: { rows: DeltaRow[]; suffix: string }) {
   return (
-    <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+    <dl className="mt-4 space-y-2 text-xs text-muted-foreground">
       {rows.map((row) => (
         <div
           key={row.label}
@@ -149,14 +149,16 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col rounded-card border bg-card p-5">
-      <h2 className="text-[15px] font-medium text-body">{title}</h2>
+    <section className="flex flex-col rounded-card border bg-card p-6">
+      <h2 className={cardTitleClass}>{title}</h2>
       {children}
     </section>
   );
 }
 
-const valueClass = "mt-2 text-[30px] leading-tight font-bold tracking-tight";
+/** KPI 큰 숫자: 30px Bold, 자간 -0.02em, 자릿수 폭 고정 */
+const valueClass =
+  "mt-2 text-[30px] leading-tight font-bold tracking-[-0.02em] tabular-nums";
 
 export function KpiCards({ summary }: { summary: ManagementSummary }) {
   const { period, changes, targets, receivables } = summary;
@@ -174,10 +176,10 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
       <Card title={`${summary.label} 매출`}>
         <p className={valueClass}>
-          {hasData ? <Won value={summary.revenue.total} unit /> : "-"}
+          {hasData ? <Won value={summary.revenue.total} unit="subtle" /> : "-"}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           {hasData
@@ -201,7 +203,7 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
               <Won value={targets.period.actual} />
             </p>
             {targets.annual && period.unit !== "year" && (
-              <p className="mt-3 text-xs text-muted-foreground">
+              <p className="mt-4 text-xs text-muted-foreground">
                 {period.year}년 연간{" "}
                 <span className="text-foreground">
                   {targets.annual.rate === null
@@ -246,13 +248,13 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
 
       <Card title="미수금 총액">
         <p className={valueClass}>
-          <Won value={receivables.total} unit />
+          <Won value={receivables.total} unit="subtle" />
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           {receivables.count}건 · {asOf.getUTCMonth() + 1}/{asOf.getUTCDate()}{" "}
           기준
         </p>
-        <dl className="mt-3 space-y-0.5 text-xs text-muted-foreground">
+        <dl className="mt-4 space-y-2 text-xs text-muted-foreground">
           <div className="flex justify-between gap-2">
             <dt>90일 초과</dt>
             <dd className="text-foreground">

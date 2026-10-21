@@ -64,6 +64,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // 정적 파일·이미지 최적화 경로는 제외
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // 정적 파일·이미지 최적화 경로·앱 아이콘(로그인 전 화면에서도 보여야 함)은 제외
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|apple-icon.png).*)"],
 };

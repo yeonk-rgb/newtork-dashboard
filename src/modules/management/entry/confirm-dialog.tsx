@@ -1,6 +1,12 @@
 "use client";
 // 확인창 (네이티브 <dialog> — 포커스 가두기·Esc 닫기를 브라우저가 처리)
 import { useEffect, useRef } from "react";
+import {
+  buttonDangerSolidClass,
+  buttonPrimaryClass,
+  buttonSecondaryClass,
+  cardTitleClass,
+} from "@/shared/ui/styles";
 
 export type ConfirmRequest = {
   title: string;
@@ -31,22 +37,22 @@ export function ConfirmDialog({
       ref={ref}
       onClose={onClose}
       aria-labelledby="confirm-title"
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground backdrop:bg-black/30"
     >
       {request && (
         <>
-          <h2 id="confirm-title" className="text-base font-semibold">
+          <h2 id="confirm-title" className={cardTitleClass}>
             {request.title}
           </h2>
           <div className="mt-2 text-sm text-muted-foreground">
             {request.body}
           </div>
-          <div className="mt-5 flex justify-end gap-2">
+          <div className="mt-6 flex justify-end gap-2">
             <button
               type="button"
               autoFocus
               onClick={onClose}
-              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
+              className={buttonSecondaryClass}
             >
               돌아가기
             </button>
@@ -58,8 +64,8 @@ export function ConfirmDialog({
               }}
               className={
                 request.tone === "danger"
-                  ? "rounded-lg bg-destructive px-3 py-1.5 text-sm text-white hover:bg-destructive/90"
-                  : "rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
+                  ? buttonDangerSolidClass
+                  : buttonPrimaryClass
               }
             >
               {request.confirmLabel}

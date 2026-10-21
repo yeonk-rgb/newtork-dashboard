@@ -18,6 +18,7 @@ import {
   thClass,
   totalRowClass,
 } from "./table-parts";
+import { cardTitleClass } from "@/shared/ui/styles";
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 const BUCKET_LABEL = {
@@ -43,9 +44,9 @@ export function ReceivablesSection({
   ];
 
   return (
-    <div id="receivables" className="scroll-mt-4 space-y-3">
+    <div id="receivables" className="scroll-mt-4 space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold">
+        <h2 className={cardTitleClass}>
           미수금{" "}
           <span className="text-sm font-normal text-muted-foreground">
             ({isoDate(asOf)} 기준 · 경과일은 발생일부터, 고객사 확인 중 05-17번)
@@ -59,7 +60,7 @@ export function ReceivablesSection({
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Section title="거래처별 미수금" className="xl:col-span-1">
           <table className={tableClass}>
             <caption className="sr-only">거래처별 미수금</caption>
@@ -75,26 +76,26 @@ export function ReceivablesSection({
             <tbody>
               {byCustomer.map((c, i) => (
                 <tr key={c.customerName} className={rowClass}>
-                  <td className="py-2.5 text-muted-foreground">{i + 1}</td>
-                  <td className="py-2.5">{c.customerName}</td>
-                  <td className="py-2.5 text-right">
+                  <td className="py-3 text-muted-foreground">{i + 1}</td>
+                  <td className="py-3">{c.customerName}</td>
+                  <td className="py-3 text-right">
                     <Amount value={c.amount} />
                   </td>
-                  <td className="py-2.5 text-right tabular-nums">{c.count}</td>
-                  <td className="py-2.5 text-right tabular-nums">
+                  <td className="py-3 text-right tabular-nums">{c.count}</td>
+                  <td className="py-3 text-right tabular-nums">
                     {share(c.amount)}
                   </td>
                 </tr>
               ))}
               <tr className={totalRowClass}>
-                <td className="py-2.5" colSpan={2}>
+                <td className="py-3" colSpan={2}>
                   합계
                 </td>
-                <td className="py-2.5 text-right">
+                <td className="py-3 text-right">
                   <Amount value={total} />
                 </td>
-                <td className="py-2.5 text-right tabular-nums">{count}</td>
-                <td className="py-2.5 text-right">
+                <td className="py-3 text-right tabular-nums">{count}</td>
+                <td className="py-3 text-right">
                   {total === 0n ? "-" : "100%"}
                 </td>
               </tr>
@@ -121,35 +122,33 @@ export function ReceivablesSection({
                     key={a.bucket}
                     className={`${rowClass} ${old && a.count > 0 ? "bg-warning-soft" : ""}`}
                   >
-                    <td className="py-2.5">
+                    <td className="py-3">
                       {old ? (
                         <span className="inline-flex items-center gap-1 font-medium">
-                          <TriangleAlert className="size-3.5" aria-hidden />
+                          <TriangleAlert className="size-4" aria-hidden />
                           {BUCKET_LABEL[a.bucket]}
                         </span>
                       ) : (
                         BUCKET_LABEL[a.bucket]
                       )}
                     </td>
-                    <td className="py-2.5 text-right">
+                    <td className="py-3 text-right">
                       <Amount value={a.amount} />
                     </td>
-                    <td className="py-2.5 text-right tabular-nums">
-                      {a.count}
-                    </td>
-                    <td className="py-2.5 text-right tabular-nums">
+                    <td className="py-3 text-right tabular-nums">{a.count}</td>
+                    <td className="py-3 text-right tabular-nums">
                       {share(a.amount)}
                     </td>
                   </tr>
                 );
               })}
               <tr className={totalRowClass}>
-                <td className="py-2.5">합계</td>
-                <td className="py-2.5 text-right">
+                <td className="py-3">합계</td>
+                <td className="py-3 text-right">
                   <Amount value={total} />
                 </td>
-                <td className="py-2.5 text-right tabular-nums">{count}</td>
-                <td className="py-2.5 text-right">
+                <td className="py-3 text-right tabular-nums">{count}</td>
+                <td className="py-3 text-right">
                   {total === 0n ? "-" : "100%"}
                 </td>
               </tr>
@@ -173,19 +172,19 @@ export function ReceivablesSection({
             <tbody>
               {expectedRows.map((r) => (
                 <tr key={r.label} className={rowClass}>
-                  <td className="py-2.5">{r.label}</td>
-                  <td className="py-2.5 text-right">
+                  <td className="py-3">{r.label}</td>
+                  <td className="py-3 text-right">
                     <Amount value={r.amount} />
                   </td>
-                  <td className="py-2.5 text-right tabular-nums">{r.count}</td>
+                  <td className="py-3 text-right tabular-nums">{r.count}</td>
                 </tr>
               ))}
               <tr className={totalRowClass}>
-                <td className="py-2.5">합계</td>
-                <td className="py-2.5 text-right">
+                <td className="py-3">합계</td>
+                <td className="py-3 text-right">
                   <Amount value={total} />
                 </td>
-                <td className="py-2.5 text-right tabular-nums">{count}</td>
+                <td className="py-3 text-right tabular-nums">{count}</td>
               </tr>
             </tbody>
           </table>

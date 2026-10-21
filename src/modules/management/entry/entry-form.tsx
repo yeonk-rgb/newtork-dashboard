@@ -36,6 +36,14 @@ import { MoneyTextInput } from "./money-text-input";
 import { isDigitAnomaly, type EntryAbilities } from "./rules";
 import type { EntryField } from "./schemas";
 import { LEAVE_MESSAGE, useUnsavedGuard } from "./use-unsaved-guard";
+import {
+  buttonDangerClass,
+  buttonPrimaryClass,
+  buttonSecondaryClass,
+  cardTitleClass,
+  pageTitleClass,
+  pillClass,
+} from "@/shared/ui/styles";
 
 const SECTIONS: { title: string; fields: EntryField[] }[] = [
   { title: "매출", fields: ["productSales", "goodsSales", "serviceSales"] },
@@ -70,13 +78,13 @@ function HelpTip({ id, text }: { id: string; text: string }) {
         aria-describedby={id}
         className="rounded-full text-muted-foreground hover:text-foreground focus-visible:text-foreground"
       >
-        <Info className="size-3.5" aria-hidden />
+        <Info className="size-4" aria-hidden />
         <span className="sr-only">입력 안내</span>
       </button>
       <span
         id={id}
         role="tooltip"
-        className="pointer-events-none absolute top-5 left-0 z-20 hidden w-64 rounded-lg border bg-popover p-2 text-xs leading-relaxed text-popover-foreground shadow-sm group-focus-within:block group-hover:block"
+        className="pointer-events-none absolute top-5 left-0 z-20 hidden w-64 rounded-lg border bg-popover p-2 text-xs leading-relaxed text-popover-foreground group-focus-within:block group-hover:block"
       >
         {text}
       </span>
@@ -111,10 +119,10 @@ function AmountInput({
     );
 
   return (
-    <div className="grid grid-cols-[minmax(7rem,9rem)_1fr] items-start gap-x-3 gap-y-1 py-1.5 sm:grid-cols-[9rem_14rem_1fr] sm:items-center">
+    <div className="grid grid-cols-[minmax(7rem,9rem)_1fr] items-start gap-x-3 gap-y-1 py-2 sm:grid-cols-[9rem_14rem_1fr] sm:items-center">
       <label
         htmlFor={id}
-        className="flex items-center gap-1 pt-1.5 text-sm sm:pt-0"
+        className="flex items-center gap-1 pt-2 text-sm sm:pt-0"
       >
         {label}
         {inactive && (
@@ -137,7 +145,7 @@ function AmountInput({
             id={`${id}-warn`}
             className="ml-2 inline-flex items-center gap-1 font-medium text-warning-strong"
           >
-            <TriangleAlert className="size-3.5" aria-hidden />
+            <TriangleAlert className="size-4" aria-hidden />
             전월의 10배 이상이거나 1/10 이하 — 자릿수를 확인하세요
           </span>
         )}
@@ -381,7 +389,7 @@ export function EntryForm({
   };
 
   const selectClass =
-    "h-8 rounded-lg border border-input bg-background px-2 text-sm";
+    "h-10 rounded-lg border border-input bg-background px-3 text-sm hover:bg-primary-50";
   const yearMonthIndex = (y: number, m: number) => y * 12 + (m - 1);
 
   return (
@@ -389,10 +397,10 @@ export function EntryForm({
       <form
         onSubmit={(e) => e.preventDefault()}
         onKeyDown={onKeyDown}
-        className="space-y-5 pb-28"
+        className="space-y-6 pb-28"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">월간 실적 입력</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className={pageTitleClass}>월간 실적 입력</h1>
           <div className="flex items-center gap-2">
             <label className="sr-only" htmlFor="entry-year">
               연도
@@ -438,13 +446,13 @@ export function EntryForm({
           </div>
         </div>
 
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border bg-card px-3 py-2 text-sm">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border bg-card px-4 py-2 text-sm">
           <span
             className={cn(
-              "rounded-full px-2.5 py-0.5 text-xs font-medium",
+              pillClass,
               data.status === "CONFIRMED"
                 ? "bg-primary text-primary-foreground"
-                : "border",
+                : "border text-body",
             )}
           >
             {STATUS_TEXT[data.status]}
@@ -461,7 +469,7 @@ export function EntryForm({
         {pendingDraft && (
           <div
             role="alert"
-            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-primary/40 bg-sidebar-accent/40 px-3 py-2 text-sm"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-brand-soft px-4 py-3 text-sm"
           >
             <Info className="size-4 shrink-0" aria-hidden />
             <span className="flex-1">
@@ -477,14 +485,14 @@ export function EntryForm({
             <button
               type="button"
               onClick={restoreDraft}
-              className="rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground hover:bg-primary/90"
+              className={buttonPrimaryClass}
             >
               복구
             </button>
             <button
               type="button"
               onClick={discardDraft}
-              className="rounded-lg border px-3 py-1 text-sm hover:bg-muted"
+              className={buttonSecondaryClass}
             >
               버리기
             </button>
@@ -494,7 +502,7 @@ export function EntryForm({
         {abilities.notice && (
           <p
             role="status"
-            className="flex items-center gap-2 rounded-lg border border-warning/50 bg-warning-soft px-3 py-2 text-sm text-warning-strong"
+            className="flex items-center gap-2 rounded-lg bg-warning-soft px-4 py-3 text-sm text-warning-strong"
           >
             <CircleAlert className="size-4 shrink-0" aria-hidden />
             {abilities.notice}
@@ -504,9 +512,9 @@ export function EntryForm({
         {SECTIONS.map((section) => (
           <fieldset
             key={section.title}
-            className="rounded-card border bg-card px-5 py-4"
+            className="rounded-card border bg-card p-6"
           >
-            <legend className="px-1 text-sm font-semibold">
+            <legend className={`px-1 ${cardTitleClass}`}>
               {section.title}
             </legend>
             {section.fields.map((f) => (
@@ -521,7 +529,7 @@ export function EntryForm({
                 onChange={(v) => setValues((s) => ({ ...s, [f]: v }))}
               />
             ))}
-            <p className="mt-1 border-t pt-2 text-right text-sm">
+            <p className="mt-2 border-t pt-2 text-right text-sm">
               소계{" "}
               <span className="font-semibold tabular-nums">
                 {won(sum(section.fields.map((f) => values[f])))}
@@ -530,8 +538,8 @@ export function EntryForm({
           </fieldset>
         ))}
 
-        <fieldset className="rounded-card border bg-card px-5 py-4">
-          <legend className="px-1 text-sm font-semibold">그 외 지출</legend>
+        <fieldset className="rounded-card border bg-card p-6">
+          <legend className={`px-1 ${cardTitleClass}`}>그 외 지출</legend>
           {data.categories.length === 0 ? (
             <p className="py-2 text-sm text-muted-foreground">
               사용 중인 항목이 없습니다. (목표·항목 설정에서 추가)
@@ -555,7 +563,7 @@ export function EntryForm({
               />
             ))
           )}
-          <p className="mt-1 border-t pt-2 text-right text-sm">
+          <p className="mt-2 border-t pt-2 text-right text-sm">
             소계{" "}
             <span className="font-semibold tabular-nums">
               {won(otherTotal)}
@@ -565,7 +573,7 @@ export function EntryForm({
       </form>
 
       {/* 화면 아래 고정: 합계 + 저장 버튼 */}
-      <div className="fixed right-0 bottom-0 left-0 z-10 border-t bg-card/95 px-4 py-3 shadow-[0_-2px_8px_rgba(0,0,0,0.05)] backdrop-blur md:left-52">
+      <div className="fixed right-0 bottom-0 left-0 z-10 border-t bg-card/95 px-6 py-3 backdrop-blur md:left-52">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
             <div>
@@ -595,7 +603,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending}
                 onClick={onUnconfirm}
-                className="rounded-lg border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                className={buttonDangerClass}
               >
                 확정 취소
               </button>
@@ -605,7 +613,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => saveMonthlyEntry(payload("draft")))}
-                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+                className={buttonSecondaryClass}
               >
                 임시저장
               </button>
@@ -615,7 +623,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending}
                 onClick={onConfirm}
-                className="rounded-lg bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className={buttonPrimaryClass}
               >
                 확정
               </button>
@@ -625,7 +633,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending || !dirty}
                 onClick={onUpdateConfirmed}
-                className="rounded-lg bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className={buttonPrimaryClass}
               >
                 수정 저장
               </button>

@@ -21,7 +21,7 @@ export function ConfirmationBanner({
       className={cn(
         "flex items-start gap-2 rounded-xl border px-4 py-3 text-sm",
         notice.tone === "warning"
-          ? "border-warning/50 bg-warning-soft text-warning-strong"
+          ? "border-transparent bg-warning-soft text-warning-strong"
           : "border-border bg-card text-foreground",
       )}
     >

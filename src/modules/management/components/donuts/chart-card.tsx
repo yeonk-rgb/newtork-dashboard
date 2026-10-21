@@ -1,4 +1,5 @@
 /** 차트 카드 틀: 제목 + (선택) 배지 + (선택) 오른쪽 동작 */
+import { cardTitleClass, pillClass } from "@/shared/ui/styles";
 export function ChartCard({
   title,
   badge,
@@ -11,12 +12,12 @@ export function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col rounded-card border bg-card p-5">
+    <section className="flex flex-col rounded-card border bg-card p-6">
       <header className="mb-4 flex items-start justify-between gap-2">
-        <h2 className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
+        <h2 className={`flex flex-wrap items-center gap-2 ${cardTitleClass}`}>
           {title}
           {badge && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            <span className={`${pillClass} bg-muted text-muted-foreground`}>
               {badge}
             </span>
           )}

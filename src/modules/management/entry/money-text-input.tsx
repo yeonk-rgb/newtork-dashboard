@@ -66,12 +66,12 @@ export function MoneyTextInput({
           onChange(next);
         }}
         className={cn(
-          "h-9 w-full rounded-lg border border-input bg-background pr-7 pl-2 text-right tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+          "h-10 w-full rounded-lg border border-input bg-background pr-8 pl-3 text-right tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
           readOnly && "bg-muted/50 text-muted-foreground",
           invalid && "border-warning/70",
         )}
       />
-      <span className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs text-muted-foreground">
+      <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
         원
       </span>
     </div>

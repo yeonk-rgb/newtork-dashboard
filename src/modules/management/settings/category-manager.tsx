@@ -11,6 +11,13 @@ import { useUnsavedGuard } from "../entry/use-unsaved-guard";
 import { saveExpenseCategories, type SettingsActionResult } from "./actions";
 import type { CategoryRow } from "./load-settings";
 import { categoryNameErrors, NAME_MAX } from "./schemas";
+import {
+  buttonCompactClass,
+  buttonPrimaryClass,
+  buttonSecondaryClass,
+  cardTitleClass,
+  iconButtonClass,
+} from "@/shared/ui/styles";
 
 type Row = CategoryRow & { key: string; isNew: boolean };
 
@@ -125,13 +132,13 @@ export function CategoryManager({
   };
 
   const selectClass =
-    "h-8 rounded-lg border border-input bg-background px-2 text-sm";
+    "h-8 rounded-lg border border-input bg-background px-3 text-sm";
 
   return (
-    <section className="space-y-3 rounded-card border bg-card p-5">
+    <section className="space-y-4 rounded-card border bg-card p-6">
       <div>
-        <h2 className="text-sm font-semibold">그 외 지출 항목</h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <h2 className={cardTitleClass}>그 외 지출 항목</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
           순서는 월간 입력 화면의 표시 순서입니다. 비활성화한 항목은 월간
           입력에서 숨겨지고, 과거 금액은 대시보드에 그대로 남습니다. 금액이
           입력된 적 없는 항목만 삭제할 수 있습니다. 이름을 바꾸면 과거 금액의
@@ -144,14 +151,12 @@ export function CategoryManager({
           <caption className="sr-only">그 외 지출 항목 목록</caption>
           <thead className="bg-muted text-xs text-muted-foreground">
             <tr className="border-b">
-              <th className="py-2.5 text-left font-medium">순서</th>
-              <th className="py-2.5 text-left font-medium">항목명</th>
-              <th className="py-2.5 text-left font-medium">
-                고정/변동 (BEP용)
-              </th>
-              <th className="py-2.5 text-left font-medium">상태</th>
-              <th className="py-2.5 text-right font-medium">사용</th>
-              <th className="py-2.5" />
+              <th className="py-3 text-left font-medium">순서</th>
+              <th className="py-3 text-left font-medium">항목명</th>
+              <th className="py-3 text-left font-medium">고정/변동 (BEP용)</th>
+              <th className="py-3 text-left font-medium">상태</th>
+              <th className="py-3 text-right font-medium">사용</th>
+              <th className="py-3" />
             </tr>
           </thead>
           <tbody>
@@ -165,29 +170,29 @@ export function CategoryManager({
                     !row.isActive && "bg-muted/40",
                   )}
                 >
-                  <td className="py-2.5">
+                  <td className="py-3">
                     <div className="flex gap-0.5">
                       <button
                         type="button"
                         disabled={index === 0}
                         onClick={() => move(index, -1)}
-                        className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                        className={iconButtonClass}
                         aria-label={`${row.name || "새 항목"} 위로`}
                       >
-                        <ArrowUp className="size-3.5" aria-hidden />
+                        <ArrowUp className="size-4" aria-hidden />
                       </button>
                       <button
                         type="button"
                         disabled={index === rows.length - 1}
                         onClick={() => move(index, 1)}
-                        className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                        className={iconButtonClass}
                         aria-label={`${row.name || "새 항목"} 아래로`}
                       >
-                        <ArrowDown className="size-3.5" aria-hidden />
+                        <ArrowDown className="size-4" aria-hidden />
                       </button>
                     </div>
                   </td>
-                  <td className="py-2.5 pr-2">
+                  <td className="py-3 pr-2">
                     <input
                       id={`cat-name-${row.key}`}
                       value={row.name}
@@ -202,21 +207,21 @@ export function CategoryManager({
                       aria-label="항목명"
                       placeholder="예: 연구개발비"
                       className={cn(
-                        "h-8 w-full rounded-lg border border-input bg-background px-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                        "h-8 w-full rounded-lg border border-input bg-background px-3 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                         error && "border-destructive",
                       )}
                     />
                     {error && (
                       <p
                         id={`cat-err-${row.key}`}
-                        className="mt-0.5 flex items-center gap-1 text-xs text-destructive"
+                        className="mt-1 flex items-center gap-1 text-xs text-destructive"
                       >
-                        <CircleAlert className="size-3" aria-hidden />
+                        <CircleAlert className="size-4" aria-hidden />
                         {error}
                       </p>
                     )}
                   </td>
-                  <td className="py-2.5 pr-2">
+                  <td className="py-3 pr-2">
                     <select
                       aria-label="고정비/변동비"
                       className={selectClass}
@@ -235,32 +240,32 @@ export function CategoryManager({
                       <option value="VARIABLE">변동비</option>
                     </select>
                   </td>
-                  <td className="py-2.5 pr-2">
+                  <td className="py-3 pr-2">
                     <button
                       type="button"
                       onClick={() =>
                         update(row.key, { isActive: !row.isActive })
                       }
                       aria-pressed={!row.isActive}
-                      className="rounded-lg border px-2 py-1 text-xs hover:bg-muted"
+                      className={buttonCompactClass}
                     >
                       {row.isActive
                         ? "● 사용 중 → 비활성화"
                         : "○ 비활성 → 다시 사용"}
                     </button>
                   </td>
-                  <td className="py-2.5 text-right text-xs text-muted-foreground tabular-nums">
+                  <td className="py-3 text-right text-xs text-muted-foreground tabular-nums">
                     {row.isNew ? "새 항목" : `${row.usedMonths}개월`}
                   </td>
-                  <td className="py-2.5 text-right">
+                  <td className="py-3 text-right">
                     {(row.isNew || row.usedMonths === 0) && (
                       <button
                         type="button"
                         onClick={() => remove(row)}
-                        className="rounded p-1 text-destructive hover:bg-destructive/10"
+                        className={`${iconButtonClass} text-destructive hover:bg-danger-soft`}
                         aria-label={`${row.name || "새 항목"} 삭제`}
                       >
-                        <Trash2 className="size-3.5" aria-hidden />
+                        <Trash2 className="size-4" aria-hidden />
                       </button>
                     )}
                   </td>
@@ -272,19 +277,15 @@ export function CategoryManager({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={add}
-          className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
-        >
-          <Plus className="size-3.5" aria-hidden />
+        <button type="button" onClick={add} className={buttonSecondaryClass}>
+          <Plus className="size-4" aria-hidden />
           항목 추가
         </button>
         <button
           type="button"
           disabled={pending || !dirty || errors.size > 0}
           onClick={save}
-          className="rounded-lg bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className={buttonPrimaryClass}
         >
           변경 저장
         </button>

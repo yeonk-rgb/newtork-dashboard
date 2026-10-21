@@ -1,6 +1,11 @@
 "use client";
 // 입력용 모달 (네이티브 <dialog> — 포커스 가두기·Esc 닫기를 브라우저가 처리)
 import { useEffect, useRef } from "react";
+import {
+  buttonPrimaryClass,
+  buttonSecondaryClass,
+  cardTitleClass,
+} from "@/shared/ui/styles";
 
 export function Modal({
   open,
@@ -29,14 +34,14 @@ export function Modal({
       ref={ref}
       onClose={onClose}
       aria-labelledby={titleId}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground backdrop:bg-black/30"
     >
       {open && (
         <>
-          <h2 id={titleId} className="text-base font-semibold">
+          <h2 id={titleId} className={cardTitleClass}>
             {title}
           </h2>
-          <div className="mt-3">{children}</div>
+          <div className="mt-4">{children}</div>
         </>
       )}
     </dialog>
@@ -44,12 +49,12 @@ export function Modal({
 }
 
 export const fieldClass =
-  "h-9 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive";
+  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive";
 
 export function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
   return (
-    <p id={id} className="mt-0.5 text-xs text-destructive">
+    <p id={id} className="mt-1 text-xs text-destructive">
       {message}
     </p>
   );
@@ -67,18 +72,14 @@ export function DialogButtons({
   disabled?: boolean;
 }) {
   return (
-    <div className="mt-5 flex justify-end gap-2">
-      <button
-        type="button"
-        onClick={onCancel}
-        className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
-      >
+    <div className="mt-6 flex justify-end gap-2">
+      <button type="button" onClick={onCancel} className={buttonSecondaryClass}>
         취소
       </button>
       <button
         type="submit"
         disabled={pending || disabled}
-        className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className={buttonPrimaryClass}
       >
         {pending ? "저장 중…" : submitLabel}
       </button>

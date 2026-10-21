@@ -42,23 +42,23 @@ function ReceivablesTop({ summary }: { summary: ManagementSummary }) {
           <caption className="sr-only">미수금 상위 거래처</caption>
           <thead className="bg-muted text-xs text-muted-foreground">
             <tr className="border-b">
-              <th className="py-2.5 text-left font-medium">순위</th>
-              <th className="py-2.5 text-left font-medium">거래처</th>
-              <th className="py-2.5 text-right font-medium">금액</th>
-              <th className="py-2.5 text-right font-medium">건수</th>
+              <th className="py-3 text-left font-medium">순위</th>
+              <th className="py-3 text-left font-medium">거래처</th>
+              <th className="py-3 text-right font-medium">금액</th>
+              <th className="py-3 text-right font-medium">건수</th>
             </tr>
           </thead>
           <tbody>
             {top.map((c, i) => (
               <tr key={c.customerName} className="border-b last:border-0">
-                <td className="py-2.5 text-muted-foreground">{i + 1}</td>
-                <td className="max-w-0 truncate py-2.5" title={c.customerName}>
+                <td className="py-3 text-muted-foreground">{i + 1}</td>
+                <td className="max-w-0 truncate py-3" title={c.customerName}>
                   {c.customerName}
                 </td>
-                <td className="py-2.5 text-right tabular-nums">
+                <td className="py-3 text-right tabular-nums">
                   <Won value={c.amount} />
                 </td>
-                <td className="py-2.5 text-right tabular-nums">{c.count}</td>
+                <td className="py-3 text-right tabular-nums">{c.count}</td>
               </tr>
             ))}
           </tbody>
@@ -79,7 +79,7 @@ export function MainBottom({
   trend: TrendPoint[];
 }) {
   return (
-    <section aria-label="추이와 미수금" className="space-y-5">
+    <section aria-label="추이와 미수금" className="space-y-6">
       <FlowChart
         highlight={periodMonths(summary.period)}
         points={serializeBigInt(

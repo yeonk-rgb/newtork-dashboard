@@ -209,7 +209,7 @@ export function ReceivableForm({
           maxLength={NOTE_MAX}
           value={values.note}
           onChange={(e) => set({ note: e.target.value })}
-          className={`${fieldClass} h-auto py-1.5`}
+          className={`${fieldClass} h-auto py-2`}
         />
       </div>
 

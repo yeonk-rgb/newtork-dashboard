@@ -19,6 +19,7 @@ import { formatWon, formatWonCompact } from "@/shared/format/money";
 import { CHART_GRID, CHART_INK, FLOW_COLORS } from "@/shared/ui/chart-colors";
 
 import { ChartCard } from "../donuts/chart-card";
+import { chipClass } from "@/shared/ui/styles";
 
 /** 서버에서 serializeBigInt 로 받은 추이 (금액 = 정수 문자열 | null) */
 export type FlowPoint = {
@@ -95,7 +96,7 @@ function MonthTick({
       <text
         dy={12}
         textAnchor="middle"
-        className="fill-muted-foreground text-[11px]"
+        className="fill-muted-foreground text-xs"
       >
         {row.month}월
       </text>
@@ -126,7 +127,7 @@ function FlowTooltip({
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
   return (
-    <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-sm">
+    <div className="rounded-lg border bg-popover px-3 py-2 text-xs">
       <p className="font-medium">
         {row.year}년 {row.month}월{" "}
         <span className="font-normal text-muted-foreground">
@@ -137,7 +138,7 @@ function FlowTooltip({
         <p className="mt-1 text-muted-foreground">값 없음</p>
       ) : (
         <dl className="mt-1 grid grid-cols-[auto_auto] gap-x-3 tabular-nums">
-          <dt className="flex items-center gap-1.5">
+          <dt className="flex items-center gap-2">
             <span
               aria-hidden
               className="size-2.5 rounded-sm"
@@ -146,7 +147,7 @@ function FlowTooltip({
             매출
           </dt>
           <dd className="text-right">{formatWon(row.revenue)}</dd>
-          <dt className="flex items-center gap-1.5">
+          <dt className="flex items-center gap-2">
             <span
               aria-hidden
               className="size-2.5 rounded-sm"
@@ -194,7 +195,7 @@ function FlowTable({ rows }: { rows: Row[] }) {
               (h, i) => (
                 <th
                   key={h}
-                  className={`py-2.5 font-medium ${i < 2 ? "text-left" : "text-right"}`}
+                  className={`py-3 font-medium ${i < 2 ? "text-left" : "text-right"}`}
                 >
                   {h}
                 </th>
@@ -205,26 +206,26 @@ function FlowTable({ rows }: { rows: Row[] }) {
         <tbody className="tabular-nums">
           {rows.map((r) => (
             <tr key={r.key} className="border-b last:border-0">
-              <td className="py-2.5">
+              <td className="py-3">
                 {r.year}-{String(r.month).padStart(2, "0")}
               </td>
-              <td className="py-2.5">{STATUS_TEXT[r.status]}</td>
-              <td className="py-2.5 text-right">
+              <td className="py-3">{STATUS_TEXT[r.status]}</td>
+              <td className="py-3 text-right">
                 {r.revenue === null
                   ? "-"
                   : formatWon(r.revenue).replace("원", "")}
               </td>
-              <td className="py-2.5 text-right">
+              <td className="py-3 text-right">
                 {r.expense === null
                   ? "-"
                   : formatWon(r.expense).replace("원", "")}
               </td>
-              <td className="py-2.5 text-right">
+              <td className="py-3 text-right">
                 {r.profit === null
                   ? "-"
                   : formatWon(r.profit).replace("원", "")}
               </td>
-              <td className="py-2.5 text-right">
+              <td className="py-3 text-right">
                 {pct(r.margin === null ? null : r.margin * 100)}
               </td>
             </tr>
@@ -259,7 +260,7 @@ export function FlowChart({
       type="button"
       onClick={() => setShowTable((v) => !v)}
       aria-pressed={showTable}
-      className="shrink-0 rounded-full border px-3 py-1 text-xs font-medium text-body hover:bg-muted"
+      className={chipClass}
     >
       {showTable ? "그래프로 보기" : "표로 보기"}
     </button>
@@ -285,7 +286,7 @@ export function FlowChart({
         <>
           {/* 범례: 항상 표시 (2개 계열 + 미확정 무늬) */}
           <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <li className="flex items-center gap-1.5">
+            <li className="flex items-center gap-2">
               <span
                 aria-hidden
                 className="size-2.5 rounded-sm"
@@ -293,7 +294,7 @@ export function FlowChart({
               />
               매출
             </li>
-            <li className="flex items-center gap-1.5">
+            <li className="flex items-center gap-2">
               <span
                 aria-hidden
                 className="size-2.5 rounded-sm"
@@ -302,7 +303,7 @@ export function FlowChart({
               지출
             </li>
             {hasDraft && (
-              <li className="flex items-center gap-1.5">
+              <li className="flex items-center gap-2">
                 <svg aria-hidden width="10" height="10">
                   <defs>
                     <Hatch id="legend-hatch" color={INK} />

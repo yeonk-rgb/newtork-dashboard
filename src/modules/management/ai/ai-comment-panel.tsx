@@ -9,6 +9,7 @@ import { cn } from "@/shared/lib/utils";
 import { AiCardColumn, AiCardFrame } from "./ai-card-frame";
 import { generateAiComment, type AiActionResult } from "./actions";
 import type { AiCommentMethod, AiCommentView } from "./load-comment";
+import { buttonPrimaryClass } from "@/shared/ui/styles";
 
 type Failure = Extract<AiActionResult, { ok: false }>;
 
@@ -52,12 +53,12 @@ export function AiCommentPanel({
       type="button"
       onClick={generate}
       disabled={pending}
-      className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 disabled:opacity-50"
+      className={buttonPrimaryClass}
     >
       {pending ? (
-        <Loader2 className="size-3.5 animate-spin" aria-hidden />
+        <Loader2 className="size-4 animate-spin" aria-hidden />
       ) : (
-        <Sparkles className="size-3.5" aria-hidden />
+        <Sparkles className="size-4" aria-hidden />
       )}
       {pending ? "분석 중…" : latest ? "다시 분석" : "분석하기"}
     </button>
@@ -76,8 +77,8 @@ export function AiCommentPanel({
         )}
 
         {staleReason && !pending && (
-          <p className="flex items-start gap-1.5 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning-strong">
-            <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
+          <p className="flex items-start gap-2 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning-strong">
+            <TriangleAlert className="mt-px size-4 shrink-0" aria-hidden />
             <span>
               {staleReason === "prompt"
                 ? "분석 기준이 바뀌어 이전 기준으로 만든 분석입니다."
@@ -94,7 +95,7 @@ export function AiCommentPanel({
             role="status"
             className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs"
           >
-            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+            <Loader2 className="size-4 animate-spin" aria-hidden />
             AI가 분석 중입니다. 1분 정도 걸릴 수 있습니다.
           </p>
         )}
@@ -102,7 +103,7 @@ export function AiCommentPanel({
         {failure && !pending && (
           <div
             role="alert"
-            className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            className="rounded-lg bg-danger-soft px-3 py-2 text-xs text-danger-strong"
           >
             {failure.message}
             {failure.retryable && (
@@ -148,7 +149,7 @@ export function AiCommentPanel({
                 extra={
                   latest.result.longOverdue &&
                   latest.result.longOverdue.length > 0 && (
-                    <li className="flex gap-1.5 text-muted-foreground">
+                    <li className="flex gap-2 text-muted-foreground">
                       <span aria-hidden>•</span>
                       <span>
                         장기 미수 거래처:{" "}
@@ -165,7 +166,7 @@ export function AiCommentPanel({
         ) : (
           !pending && (
             <div className="flex flex-col items-center justify-center gap-2 py-6 text-center text-muted-foreground">
-              <Sparkles className="size-6" aria-hidden />
+              <Sparkles className="size-5" aria-hidden />
               <p>
                 {abilities.notice ??
                   (abilities.canGenerate

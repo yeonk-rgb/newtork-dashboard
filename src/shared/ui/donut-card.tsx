@@ -10,6 +10,7 @@ import { formatAmount, formatWon, formatWonShort } from "@/shared/format/money";
 import { cn } from "@/shared/lib/utils";
 
 import { ACCENT_SURFACE, CHART_SURFACE } from "./chart-colors";
+import { cardTitleClass, chipClass, pillClass } from "./styles";
 import {
   donutCsv,
   donutPct,
@@ -30,8 +31,9 @@ const OUTER = 0.95;
 /**
  * 카드 색 (docs/design-guide.md)
  * - default: 흰 카드
- * - accent: 강조 카드 (코퍼 단색 + 500→600 아주 옅은 그라데이션, 흰 글씨) — 화면당 1개만 (메인 연간 목표)
- *   흰 글씨 대비: 코퍼 500 4.4:1 · 600 6.0:1 → 작은 글씨도 흰색 100% (투명도로 흐리게 하지 않음)
+ * - accent: 강조 카드 (#AD5A2A → 코퍼 600 아주 옅은 그라데이션, 흰 글씨) — 화면당 1개만 (메인 연간 목표)
+ *   흰 글씨 대비: 시작 #AD5A2A 4.91:1 · 끝 600 5.97:1 → 작은 글씨도 흰색 100% (투명도로 흐리게 하지 않음)
+ *   선택 줄·배지·호버 면은 흰색을 겹치면 대비가 떨어지므로(흰 15% 3.7:1) 검정을 옅게 겹친다 (검정 10% 5.8:1)
  */
 const TONES = {
   default: {
@@ -39,21 +41,21 @@ const TONES = {
     surface: CHART_SURFACE,
     muted: "text-muted-foreground",
     line: "border-border",
-    rowActive: "bg-muted",
+    rowActive: "bg-primary-50",
     badge: "bg-muted text-muted-foreground",
-    control: "border-border text-body hover:bg-muted",
+    control: "",
     switchOn: "bg-primary",
     switchOff: "bg-border",
     marker: "stroke-foreground",
   },
   accent: {
-    card: "border border-copper-600 bg-linear-to-br from-copper-500 to-copper-600 text-white",
+    card: "border border-emphasis-to bg-linear-to-br from-emphasis-from to-emphasis-to text-white",
     surface: ACCENT_SURFACE,
     muted: "text-white",
     line: "border-white/20",
-    rowActive: "bg-white/15",
-    badge: "bg-white/20 text-white",
-    control: "border-white/40 text-white hover:bg-white/10",
+    rowActive: "bg-black/10",
+    badge: "bg-black/15 text-white",
+    control: "border-white/40 text-white hover:bg-black/10",
     switchOn: "bg-white/85",
     switchOff: "bg-white/30",
     marker: "stroke-white",
@@ -132,24 +134,20 @@ export function DonutCard({
 
   return (
     <section className={cn("flex flex-col rounded-card", t.card)}>
-      <header className="flex items-start justify-between gap-2 px-5 pt-5">
-        <h2 className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
-          {title}
-          {badge && (
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-[11px] font-medium",
-                t.badge,
-              )}
-            >
-              {badge}
-            </span>
+      <header className="flex items-start justify-between gap-2 px-6 pt-6">
+        <h2
+          className={cn(
+            cardTitleClass,
+            "flex flex-wrap items-center gap-2 text-inherit",
           )}
+        >
+          {title}
+          {badge && <span className={cn(pillClass, t.badge)}>{badge}</span>}
         </h2>
         {action}
       </header>
 
-      <div className="flex-1 px-5 py-5">
+      <div className="flex-1 p-6">
         {emptyText ? (
           <p className={cn("py-12 text-center text-sm", t.muted)}>
             {emptyText}
@@ -230,12 +228,12 @@ export function DonutCard({
               )}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
                 <span
-                  className="text-[28px] leading-tight font-bold tracking-tight tabular-nums"
+                  className="text-[28px] leading-tight font-bold tracking-[-0.02em] tabular-nums"
                   title={active ? formatWon(active.value) : center.title}
                 >
                   {active ? donutPct(active.ratio) : center.value}
                 </span>
-                <span className={cn("mt-0.5 line-clamp-2 text-xs", t.muted)}>
+                <span className={cn("mt-1 line-clamp-2 text-xs", t.muted)}>
                   {active ? active.label : center.label}
                 </span>
               </div>
@@ -253,7 +251,7 @@ export function DonutCard({
                   onFocus={() => setActiveKey(row.key)}
                   onBlur={() => setActiveKey(null)}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
                     activeKey === row.key && t.rowActive,
                     row.muted && t.muted,
                   )}
@@ -285,27 +283,24 @@ export function DonutCard({
           </div>
         )}
         {footer && <div className={cn("mt-4 text-xs", t.muted)}>{footer}</div>}
-        {note && <p className={cn("mt-2 text-[11px]", t.muted)}>{note}</p>}
+        {note && <p className={cn("mt-2 text-xs", t.muted)}>{note}</p>}
       </div>
 
       {!emptyText && (
         <footer
           className={cn(
-            "flex items-center justify-between gap-2 border-t px-5 py-3",
+            "flex items-center justify-between gap-2 border-t px-6 py-3",
             t.line,
           )}
         >
           <details className="relative">
             <summary
-              className={cn(
-                "flex cursor-pointer list-none items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium",
-                t.control,
-              )}
+              className={cn(chipClass, "cursor-pointer list-none", t.control)}
             >
               내보내기
-              <ChevronDown className="size-3.5" aria-hidden />
+              <ChevronDown className="size-4" aria-hidden />
             </summary>
-            <div className="absolute bottom-full left-0 z-10 mb-1 rounded-lg border bg-popover p-1 text-popover-foreground shadow-sm">
+            <div className="absolute bottom-full left-0 z-10 mb-1 rounded-lg border bg-popover p-1 text-popover-foreground">
               <button
                 type="button"
                 onClick={(e) => {
@@ -314,9 +309,9 @@ export function DonutCard({
                     e.currentTarget.closest("details") as HTMLDetailsElement
                   ).open = false;
                 }}
-                className="flex w-max items-center gap-1.5 rounded-md px-2 py-1.5 text-xs hover:bg-muted"
+                className="flex h-8 w-max items-center gap-2 rounded-lg px-2 text-xs hover:bg-primary-50"
               >
-                <Download className="size-3.5" aria-hidden />
+                <Download className="size-4" aria-hidden />
                 CSV로 저장
               </button>
             </div>
@@ -333,13 +328,13 @@ export function DonutCard({
               aria-checked={showTable}
               onClick={() => setShowTable((v) => !v)}
               className={cn(
-                "relative h-5 w-9 rounded-full transition-colors",
+                "relative h-5 w-9 rounded-full transition-colors duration-150",
                 showTable ? t.switchOn : t.switchOff,
               )}
             >
               <span
                 className={cn(
-                  "absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-xs transition-transform",
+                  "absolute top-0.5 left-0.5 size-4 rounded-full bg-white transition-transform duration-150",
                   tone === "accent" && showTable && "bg-copper-600",
                   showTable && "translate-x-4",
                 )}
