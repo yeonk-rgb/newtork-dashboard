@@ -3,7 +3,7 @@
 팀별로 따로 개발한 뒤 하나로 합칠 예정입니다. 합칠 때 충돌이 없도록 **아래만 맞춰 주세요.**
 경영지원팀 저장소 기준이며, 바뀌면 이 문서를 갱신합니다.
 
-> 2026-10-21: 개발용 임시 사용자를 **실제 로그인(아이디·비밀번호)**으로 교체 중입니다 (인증 시리즈 ①~③). 8번은 시리즈가 끝나면 최종 방식으로 갱신합니다.
+> 2026-10-21: 개발용 임시 사용자를 **실제 로그인(아이디·비밀번호)**으로 교체했습니다. 각 팀 화면·Server Action을 붙이는 방법은 **8번**.
 
 ## 1. 기술 스택 (버전 맞추기)
 
@@ -92,45 +92,94 @@ type Period =
 - 색상은 `src/app/globals.css`의 토큰(`--primary`, `--sidebar` 등)을 씁니다. 직접 색상값을 쓰지 말아 주세요.
 - 버튼 등 기본 컴포넌트는 shadcn/ui (`src/shared/ui/`). 한국어, 금액은 천 단위 콤마.
 
-## 8. 인증 — 통합 시 결정
+## 8. 인증·권한 (2026-10-21 실제 로그인으로 교체 — 이 방식으로 붙여 주세요)
 
-> 2026-10-21 인증 ①: 로그인 화면·DB 세션·비밀번호 변경이 들어갔고, 개발용 사용자 전환(DEV 드롭다운)과 `DEMO_MODE`는 삭제했습니다. 아래 내용 중 임시 사용자 관련 부분은 인증 ②에서 새 권한 규칙과 함께 다시 씁니다.
+아이디·비밀번호 로그인입니다 (회원가입 없음, 계정은 관리자가 `/admin`에서 발급). **외부 패키지 없이** Node 내장 `crypto.scrypt` 해시 + DB 세션으로 구현했습니다. 각 팀은 아래 함수만 쓰면 되고, 로그인·세션 코드는 건드리지 않습니다.
 
-로그인·계정·권한 방식은 **합칠 때 함께 정합니다.** 그 전까지는:
+### 8-1. 각 팀이 쓰는 것 (`src/shared/auth` — 서버 전용)
 
-- **개발용 임시 사용자**로 개발합니다 (로그인 화면 없음). `npm run dev`에서 헤더의 **DEV 드롭다운**으로 5명(관리자·대표·경영지원 팀장·경영지원 팀원·생산 팀원)을 전환합니다.
-- 현재 사용자는 **`getCurrentUser()`**, 권한 확인은 반드시 **`can(user, action, team)`** 하나를 거칩니다 (`src/shared/auth`). 화면·서버 코드에서 역할을 직접 비교하지 않습니다.
-- `action`은 3가지: `view`(열람) / `edit`(입력·임시저장) / `confirm`(확정, 확정 데이터 수정, 설정 변경)
-- 현재 규칙 (고객사 확인 중 — `docs/05-open-questions.md` 14·15번):
-
-  | 사용자 | view | edit | confirm |
-  |---|---|---|---|
-  | 관리자 · 대표 | 모든 팀 | 모든 팀 | 모든 팀 |
-  | 경영지원 팀장 | 모든 팀 | 경영지원 | 경영지원 |
-  | 경영지원 팀원 | 모든 팀 | 경영지원 | ✕ |
-  | 다른 팀 팀장 | 자기 팀 | 자기 팀 | 자기 팀 |
-  | 다른 팀 팀원 | 자기 팀 | ✕ | ✕ |
-
-- 메인(`/`)은 경영지원팀 view 권한과 같습니다. 권한이 없으면 자기 팀 페이지로 이동합니다.
-- 작성자 필드는 지금 `userId` 문자열(`createdById` 등)로만 저장하고 (임시 사용자 id, 샘플 데이터는 `"seed"`), User 테이블 관계는 통합 시 연결합니다.
-- 각 팀 페이지도 `can()`으로 서버에서 막아 주세요 (경영지원 저장소의 `production`·`service` placeholder에는 넣지 않았습니다).
-
-### 실제 로그인으로 교체할 때 바꿀 파일
-
-| 파일 | 할 일 |
+| 함수 | 용도 |
 |---|---|
-| `src/shared/auth/current-user.ts` | **교체** — `getCurrentUser()` 본문을 실제 세션 조회로 (반환 타입 `AppUser \| null` 유지) |
-| `src/shared/auth/can.ts` | **규칙 교체** — 확정된 권한 정책으로 (`can.test.ts` 기대값도 함께) |
-| `src/proxy.ts` | **교체** — 배포 차단 대신 미로그인 → `/login` 이동 |
-| `src/shared/auth/dev-users.ts` | **삭제** — 임시 사용자 5명. 함께 있는 `userDisplayName(id)`(작성자 id → 표시 이름)은 사용자 테이블 조회로 **교체** |
-| `src/shared/auth/resolve-user.ts` (+ 테스트) | **삭제** — 개발/DEMO_MODE 판정 |
-| `src/shared/auth/dev-switch.ts` | **삭제** — 사용자 전환 Server Action |
-| `src/shared/ui/app-shell/dev-user-switcher.tsx` | **삭제** — DEV 드롭다운 |
-| `src/shared/ui/app-shell/header.tsx` | **수정** — 드롭다운 제거, 로그아웃 버튼 연결 |
-| `src/shared/auth/index.ts` | **수정** — 삭제한 export 정리 |
-| `src/shared/auth/types.ts` | 유지 (필요하면 `AppUser`에 필드 추가) |
-| `src/shared/auth/access.ts`, 각 페이지의 `can()` 호출 | 유지 |
-| `.env` | `DEMO_MODE` 삭제, 인증 비밀키 추가 |
+| `getCurrentUser()` | 현재 사용자 `AppUser \| null` (로그인 안 함·세션 만료·비활성이면 `null`). cookies를 읽으므로 **`<Suspense>` 안 서버 컴포넌트·Server Action**에서 호출 (cacheComponents) |
+| `can(user, action, team)` | **모든 권한 확인은 이 함수 하나로.** 역할을 직접 비교하지 않습니다 |
+| `canManageUsers(user)` | 관리자 설정(권한 변경·비밀번호 초기화·계정 추가·비활성화) — 관리자만 |
+| `loadUserNames(ids)` | 작성자 id 목록 → `(id) => 이름` 함수 (화면 표시용, 한 번에 조회) |
+| `accessiblePages(user)`, `homePathFor(user)` | 사이드바 메뉴, 로그인 후·메인 접근 불가 시 이동할 페이지 |
+
+- `team`: `"management"`(메인·경영지원) / `"production"` / `"service"`
+- `action`: `view`(열람) / `edit`(입력·임시저장) / `confirm`(확정, 확정 데이터 수정, 설정 변경). 각 팀이 자기 화면에서 `edit`·`confirm`을 어떻게 나눌지는 자유 — 지금 규칙에서는 수정 권한이 있으면 둘 다 허용
+- 저장할 때 `createdById`·`updatedById` = `getCurrentUser().id`. **외래키 없이 문자열**로 저장합니다 (샘플 데이터는 `"seed"`). 이름은 `loadUserNames()`로 표시
+
+```ts
+// Server Action 예시 (생산팀)
+"use server";
+import { can, getCurrentUser } from "@/shared/auth";
+
+export async function saveProduction(input: Input) {
+  const user = await getCurrentUser();
+  if (!user || !can(user, "edit", "production")) {
+    return { ok: false, message: "수정 권한이 없습니다." };
+  }
+  // ... createdById: user.id
+}
+```
+
+### 8-2. 권한 규칙 (내부 결정, 고객사 확인 대기 — `docs/05-open-questions.md` 14·15번)
+
+| 역할 | 메인·경영지원 | 생산 / 서비스 | 관리자 설정 `/admin` |
+|---|---|---|---|
+| **관리자** (= 대표) | 열람·수정·확정 | 열람·수정·확정 | ✅ |
+| **경영지원팀** | 열람·수정·확정 | 열람·수정·확정 | ✕ |
+| **팀장** | ✕ | **열람 범위**에 체크한 팀 열람, **수정 권한**에 체크한 팀 수정·확정 | ✕ |
+| **팀원** | ✕ | **열람 범위**에 체크한 팀 열람만 | ✕ |
+
+- 생산팀과 서비스팀은 서로의 페이지를 볼 수 없습니다. 겸직자는 열람 범위에 둘 다 체크합니다
+- 수정 권한은 열람 범위 안에서만, 팀장·팀원은 열람 범위 최소 1개
+- **비활성(퇴사) 계정, 초기 비밀번호를 아직 안 바꾼 계정은 `can()`이 모두 `false`**
+- 메인(`/`)을 볼 수 없는 사용자는 자기 팀 페이지로 이동 (겸직이면 생산)
+- 권한을 바꾸면 다음 요청부터 바로 적용됩니다 (매 요청 DB에서 읽음). 비활성화·비밀번호 초기화는 그 사람의 로그인을 즉시 끊습니다
+
+### 8-3. 라우트 보호 (`src/proxy.ts` — 각 팀 페이지 파일은 고치지 않아도 됨)
+
+| 상황 | 처리 |
+|---|---|
+| 로그인 안 함 | `/login?next=<원래 주소>` (API는 401) |
+| 초기 비밀번호 사용 중 | `/account/password?next=…` — 바꾸기 전에는 다른 화면 불가 |
+| `/production/**`, `/service/**`, `/management/**`, `/api/management/**` | `can(user, "view", 팀)` 아니면 **권한 없음 화면** (주소는 그대로, HTTP 상태는 200 — API는 403) |
+| `/admin/**` | `canManageUsers(user)` 아니면 403 |
+| `/` | 경영지원 열람 불가면 `homePathFor(user)`로 이동 |
+
+- 경로 규칙은 `src/shared/auth/route-access.ts` 한 곳에 있습니다. **새 팀 경로(예: `/api/production/...`)를 만들면 `TEAM_PREFIXES`에 한 줄 추가**해 주세요
+- proxy는 열람(`view`)만 막습니다. **입력·확정 같은 쓰기는 각 Server Action에서 `can(user, "edit" | "confirm", 팀)`으로 꼭 다시 확인**해 주세요 (proxy만 믿지 않기)
+- 레이아웃(`layout.tsx`)은 페이지 이동 때 다시 실행되지 않으므로 권한 확인을 레이아웃에 두지 않습니다 (Next 16 문서 "Layouts and auth checks")
+
+### 8-4. 로그인·계정 동작
+
+| 항목 | 값 |
+|---|---|
+| 비밀번호 저장 | `scrypt$N$r$p$salt$hash` (N=2^17, r=8, p=1), 원문 저장 없음 |
+| 세션 | 무작위 토큰 → httpOnly·SameSite=Lax·(배포 시) Secure 쿠키 `newtork_session`, DB(`auth_session`)에는 SHA-256만. **12시간** |
+| 잠금 | 연속 5회 실패 → 10분 (관리자가 비밀번호를 초기화하면 풀림) |
+| 새 비밀번호 | 8자 이상, 영문+숫자, 아이디·현재 비밀번호와 다르게 |
+| 초기 비밀번호 | 계정 추가·초기화 때 서버가 만들어 **관리자 화면에 한 번만** 표시 → 그 직원은 첫 로그인 때 변경 강제 |
+| 퇴사자 | 삭제 대신 비활성화(`deactivatedAt`), 복구 가능. 관리자는 최소 1명 유지 |
+
+### 8-5. 파일
+
+| 파일 | 내용 |
+|---|---|
+| `prisma/schema/auth.prisma` | `auth_user`, `auth_session`, enum `AuthRole`·`AuthTeam` |
+| `src/shared/auth/can.ts` | 권한 규칙 (정책이 바뀌면 이 파일과 `can.test.ts`만) |
+| `src/shared/auth/route-access.ts` | 경로 → 필요한 권한 |
+| `src/shared/auth/session.ts`, `password.ts`, `login-rules.ts`, `actions.ts` | 세션, 해시, 잠금·비밀번호 규칙, 로그인·로그아웃·비밀번호 변경 |
+| `src/shared/auth/testing/fake-users.ts` | **테스트 전용** 가짜 사용자 7명 (시드 계정과 같은 구성) — `*.test.ts`에서만 import |
+| `src/proxy.ts` | 로그인·라우트 보호 |
+| `src/app/(auth)/login`, `src/app/account/password` | 로그인, 비밀번호 변경 |
+| `src/app/(dashboard)/admin`, `src/modules/admin` | 관리자 설정 (인증 ③) |
+| `prisma/seed.ts` | 직원 계정 7명. 초기 비밀번호는 `.env`의 `SEED_INITIAL_PASSWORD`, 없으면 실행 시 한 번만 출력 |
+
+- 테스트에서 사용자가 필요하면 `FAKE_USERS.prodLeader`, `fakeUser("prodMember", { viewTeams: [] })`처럼 씁니다. Server Action 테스트는 `vi.mock("@/shared/auth", …)`로 `getCurrentUser`를 바꿔 끼웁니다 (`src/modules/admin/actions.test.ts` 참고)
+- `.env`에서 `DEMO_MODE`는 더 이상 쓰지 않습니다 (지워도 됨). 배포 시에는 HTTPS 뒤에서 실행해야 Secure 쿠키가 동작합니다
 
 ## 9. 기타
 
