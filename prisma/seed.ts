@@ -1,6 +1,9 @@
 // 개발용 샘플 데이터 (가짜). 실행: npm run db:seed
 // - 2024-10 ~ 2026-09 (24개월), 마지막 달(2026-09)만 DRAFT
-// - upsert 방식이라 여러 번 실행해도 중복되지 않는다.
+// - upsert 방식이라 여러 번 실행해도 중복되지 않는다. (단, 샘플 값은 다시 덮어씀)
+// - 배포(Render) 빌드는 npm run db:seed:if-empty — 계정이 하나라도 있으면 아무것도 하지 않는다
+//   (재배포 때마다 사용자가 고친 값을 샘플로 덮어쓰지 않도록)
+// - INITIAL_ADMIN_ID·INITIAL_ADMIN_PASSWORD 가 있으면 그 관리자 계정을 먼저 만든다
 // - 난수는 고정 시드를 써서 실행할 때마다 같은 값이 나온다.
 // - 거래처명은 모두 가상 이름이다.
 import "dotenv/config";
@@ -441,6 +444,11 @@ async function seedUsers() {
   console.log(`계정 ${missing.length}개 생성: ${ids}`);
   if (fromEnv) {
     console.log("  초기 비밀번호: .env 의 SEED_INITIAL_PASSWORD");
+  } else if (process.env.INITIAL_ADMIN_ID) {
+    // 배포 빌드 로그에 비밀번호를 남기지 않는다 — 최초 관리자가 [비밀번호 초기화]로 발급
+    console.log(
+      "  초기 비밀번호: 무작위(표시 안 함) — 관리자 설정 화면의 [비밀번호 초기화]로 발급하세요",
+    );
   } else {
     console.log("");
     console.log("  ┌──────────────────────────────────────────────");
@@ -453,7 +461,58 @@ async function seedUsers() {
   }
 }
 
+// 최초 관리자 (배포용): 환경변수로 받은 아이디·비밀번호, 첫 로그인 때 변경 강제. 이미 있으면 건드리지 않는다
+async function seedInitialAdmin() {
+  const loginId = process.env.INITIAL_ADMIN_ID?.trim().toLowerCase();
+  const password = process.env.INITIAL_ADMIN_PASSWORD ?? "";
+  if (!loginId && !password) return;
+  if (!loginId || !password) {
+    throw new Error(
+      "INITIAL_ADMIN_ID 와 INITIAL_ADMIN_PASSWORD 를 함께 지정하세요.",
+    );
+  }
+  // 관리자 화면의 아이디 규칙(admin/schemas.ts LOGIN_ID_RULE)과 같게
+  if (!/^[a-z0-9_]{3,30}$/.test(loginId)) {
+    throw new Error(
+      "INITIAL_ADMIN_ID 는 영문 소문자·숫자·밑줄(_) 3~30자여야 합니다.",
+    );
+  }
+  if (password.length < 8) {
+    throw new Error("INITIAL_ADMIN_PASSWORD 는 8자 이상이어야 합니다.");
+  }
+
+  const exists = await prisma.authUser.findUnique({ where: { loginId } });
+  if (exists) {
+    console.log(`최초 관리자: ${loginId} 이미 있음 (비밀번호·권한은 그대로)`);
+    return;
+  }
+  await prisma.authUser.create({
+    data: {
+      loginId,
+      name: "관리자",
+      role: AuthRole.ADMIN,
+      viewTeams: [],
+      editTeams: [],
+      passwordHash: await hashPassword(password),
+      mustChangePassword: true,
+      createdById: SEED_USER_ID,
+      updatedById: SEED_USER_ID,
+    },
+  });
+  console.log(
+    `최초 관리자 생성: ${loginId} (비밀번호: INITIAL_ADMIN_PASSWORD)`,
+  );
+}
+
 async function main() {
+  if (
+    process.env.SEED_ONLY_IF_EMPTY === "true" &&
+    (await prisma.authUser.count()) > 0
+  ) {
+    console.log("시드 건너뜀: 이미 계정이 있는 DB (SEED_ONLY_IF_EMPTY)");
+    return;
+  }
+  await seedInitialAdmin();
   await seedUsers();
   const categories = await seedExpenseCategories();
   await seedAnnualTargets();

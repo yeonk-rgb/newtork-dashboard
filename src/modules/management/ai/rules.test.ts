@@ -9,6 +9,7 @@ import {
   aiAbilities,
   aiCardAccess,
   aiTargetQuarter,
+  REAL_DATA_BLOCKED_NOTICE,
   type QuarterPeriod,
 } from "./rules";
 
@@ -73,6 +74,12 @@ describe("aiAbilities", () => {
       canGenerate: false,
       notice: "이 분기에 확정된 달이 없어 분석할 수 없습니다.",
     });
+  });
+
+  it("배포 서버에서 실제 데이터 AI 전송이 막혀 있으면 불가 + 안내", () => {
+    expect(
+      aiAbilities(leader, q3, date("2026-10-17"), true, false, true),
+    ).toEqual({ canGenerate: false, notice: REAL_DATA_BLOCKED_NOTICE });
   });
 
   it("팀원·생산 팀원은 버튼 없음 (안내 없이 결과만 열람)", () => {

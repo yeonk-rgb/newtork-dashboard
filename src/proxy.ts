@@ -8,7 +8,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routeAccess } from "@/shared/auth/route-access";
 import { findSessionUser, SESSION_COOKIE } from "@/shared/auth/session";
 
-const PUBLIC_PATHS = new Set(["/login"]);
+// /api/health: 배포 헬스체크 (Render) — 로그인 없이 DB 연결 여부만 응답
+const PUBLIC_PATHS = new Set(["/login", "/api/health"]);
 const PASSWORD_PATH = "/account/password";
 
 const isApi = (pathname: string) => pathname.startsWith("/api/");

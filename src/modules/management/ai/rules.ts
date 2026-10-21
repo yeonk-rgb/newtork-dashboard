@@ -62,9 +62,13 @@ export type AiAbilities = {
 export const UPLOADED_DATA_NOTICE =
   "외부 AI 전송 동의 확인 전에는 업로드 데이터를 분석할 수 없습니다.";
 
+export const REAL_DATA_BLOCKED_NOTICE =
+  "외부 AI 전송 동의 확인 전이라 이 서버에서는 AI 분석을 실행하지 않습니다.";
+
 /**
  * 분석 가능 여부. 서버 Server Action 과 화면이 같은 함수를 쓴다.
  * - uploadedData: AI 입력에 엑셀 업로드 데이터가 들어감 → 외부 AI 전송 동의(05-19) 전까지 차단
+ * - realDataBlocked: 배포 서버에서 AI_ALLOW_REAL_DATA 가 true 가 아님 (ai/real-data-policy.ts) → 차단
  */
 export function aiAbilities(
   user: AppUser,
@@ -72,6 +76,7 @@ export function aiAbilities(
   today: Date,
   hasConfirmedData: boolean,
   uploadedData = false,
+  realDataBlocked = false,
 ): AiAbilities {
   const end = periodEndDate(quarter);
   if (end.getTime() >= today.getTime()) {
@@ -88,6 +93,9 @@ export function aiAbilities(
     };
   }
   if (uploadedData) return { canGenerate: false, notice: UPLOADED_DATA_NOTICE };
+  if (realDataBlocked) {
+    return { canGenerate: false, notice: REAL_DATA_BLOCKED_NOTICE };
+  }
   if (!can(user, "confirm", "management")) {
     return { canGenerate: false, notice: null };
   }

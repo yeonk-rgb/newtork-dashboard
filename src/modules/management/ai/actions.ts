@@ -22,6 +22,7 @@ import { hashAiInput } from "./hash";
 import { hasUploadedInput, loadLatestAiComment } from "./load-comment";
 import { MOCK_MODEL, mockAiComment } from "./mock-comment";
 import { buildUserMessage, PROMPT_VERSION, SYSTEM_PROMPT } from "./prompt";
+import { isAiRealDataBlocked } from "./real-data-policy";
 import { aiAbilities, quarterKey, type QuarterPeriod } from "./rules";
 import {
   aiCommentResponseSchema,
@@ -117,6 +118,7 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
     today,
     summary.confirmation.hasData,
     await hasUploadedInput(period), // 업로드 데이터는 외부 AI 전송 동의(05-19) 전 분석 불가
+    isAiRealDataBlocked(), // 배포 서버는 AI_ALLOW_REAL_DATA=true 일 때만
   );
   if (!abilities.canGenerate) {
     return fail(
