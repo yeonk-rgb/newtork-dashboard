@@ -38,6 +38,7 @@
   - 권한 규칙(`can.ts`, 내부 결정·고객사 확인 대기 05-14·15): 관리자·경영지원팀 = 모든 팀 view·edit·confirm, 팀장 = 열람 범위 view + 수정 권한 edit·confirm, 팀원 = 열람 범위 view. 비활성·초기 비밀번호 계정은 전부 false. 관리자 설정은 `canManageUsers()`
   - 세션 12시간, 로그인 5회 실패 시 10분 잠금, 새 비밀번호 8자 이상·영문+숫자·아이디/현재 비밀번호와 다르게 (`login-rules.ts`)
   - 테스트용 가짜 사용자: `shared/auth/testing/fake-users.ts` (`*.test.ts`에서만 import)
+  - **관리자 설정** `/admin`(`modules/admin`): 규칙은 `rules.ts`(`normalizeScope`·`scopeError`·`keepsAnAdmin`·`rowAbilities` — 화면·Server Action 공용), Action은 모두 `canManageUsers()` 확인. 역할·범위는 모아서 [변경]으로 일괄 저장(`updatedAt` 동시 수정 확인, Serializable 트랜잭션), 임시 비밀번호는 응답으로 한 번만 돌려주고 DB에는 해시만. 비활성화·초기화는 그 사람 세션 삭제
   - 시드 계정 7명(`npm run db:seed`): 초기 비밀번호는 `.env`의 `SEED_INITIAL_PASSWORD`, 없으면 실행 시 한 번만 출력 (코드·git에 남기지 않음)
   - 교체할 파일 목록: `docs/integration-notes.md` 8번
 - **통합 대비 규칙**
@@ -167,14 +168,14 @@ newtork-dashboard/ (= 이 폴더)
 │  │  ├─ (dashboard)/
 │  │  │  ├─ layout.tsx        # 공통 셸: 다우오피스풍 사이드바·헤더
 │  │  │  ├─ page.tsx          # 메인 = 전사 요약 (경영지원팀)
-│  │  │  ├─ admin/            # placeholder — 통합 시
+│  │  │  ├─ admin/            # 관리자 설정 (관리자만)
 │  │  │  ├─ management/
 │  │  │  ├─ production/       # placeholder — 수정 금지
 │  │  │  └─ service/          # placeholder — 수정 금지
 │  │  ├─ account/password/    # 비밀번호 변경 (초기 비밀번호면 강제)
 │  │  └─ api/                 # 꼭 필요한 Route Handler만
 │  ├─ modules/
-│  │  ├─ admin/               # placeholder — 통합 시
+│  │  ├─ admin/               # 관리자 설정: 직원 역할·범위, 비밀번호 초기화, 계정 추가·비활성화
 │  │  ├─ management/
 │  │  │  ├─ components/
 │  │  │  ├─ actions.ts        # Server Actions

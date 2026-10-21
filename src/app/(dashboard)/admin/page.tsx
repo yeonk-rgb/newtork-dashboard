@@ -1,21 +1,12 @@
 import { Suspense } from "react";
 
-import { canAccessAdmin, getCurrentUser } from "@/shared/auth";
-import { Forbidden } from "@/shared/ui/forbidden";
-import { PlaceholderPage } from "@/shared/ui/placeholder-page";
+import { AdminScreen } from "@/modules/admin";
 
-// 관리자 페이지 기능(계정·권한 관리)은 통합 시 결정. 지금은 접근 제한만
+// 관리자 설정 — 직원 역할·열람 범위·수정 권한, 비밀번호 초기화, 계정 추가·비활성화 (관리자만)
 export default function AdminPage() {
   return (
     <Suspense fallback={null}>
-      <AdminContent />
+      <AdminScreen />
     </Suspense>
   );
-}
-
-async function AdminContent() {
-  const user = await getCurrentUser();
-  if (!user || !canAccessAdmin(user)) return <Forbidden user={user} />;
-
-  return <PlaceholderPage title="관리자" />;
 }
