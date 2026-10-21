@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Pretendard: src/app/layout.tsx 의 next/font/local 이 --font-pretendard 를 정의 */
   --font-sans:
-    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui,
-    sans-serif;
+    var(--font-pretendard), "Noto Sans KR", "Apple SD Gothic Neo",
+    "Malgun Gothic", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);

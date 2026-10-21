@@ -8,9 +8,11 @@ export function Forbidden({ user }: { user: AppUser | null }) {
   const pages = user ? accessiblePages(user) : [];
 
   return (
-    <section className="mx-auto mt-16 max-w-md rounded-lg border bg-card p-6 text-center">
-      <ShieldAlert className="mx-auto size-10 text-destructive" aria-hidden />
-      <h1 className="mt-3 text-lg font-semibold">접근 권한이 없습니다</h1>
+    <section className="mx-auto mt-16 max-w-md rounded-card border bg-card p-8 text-center">
+      <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-destructive/10">
+        <ShieldAlert className="size-7 text-destructive" aria-hidden />
+      </span>
+      <h1 className="mt-4 text-lg font-bold">접근 권한이 없습니다</h1>
       {user ? (
         <p className="mt-2 text-sm text-muted-foreground">
           {user.name} ({roleLabel(user)}) 계정으로는 이 페이지를 볼 수 없습니다.
@@ -36,7 +38,7 @@ export function Forbidden({ user }: { user: AppUser | null }) {
               <li key={page.href}>
                 <Link
                   href={page.href}
-                  className="inline-block rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/85"
+                  className="inline-block rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   {page.label}
                 </Link>

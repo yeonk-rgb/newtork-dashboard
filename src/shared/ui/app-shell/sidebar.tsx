@@ -53,15 +53,16 @@ export function Sidebar({ items }: { items: NavItem[] }) {
 
   const linkClass = (active: boolean, sub = false) =>
     cn(
-      "flex items-center gap-2.5 rounded-md text-sm transition-colors",
-      sub ? "py-1.5 pl-9 pr-3" : "px-3 py-2",
+      "flex items-center gap-2.5 rounded-xl text-sm transition-colors",
+      sub ? "py-2 pl-9 pr-3" : "px-3 py-2.5",
+      // 현재 메뉴 = 진한 pill (docs/design-guide.md)
       active
-        ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
-        : "hover:bg-sidebar-accent/60",
+        ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
+        : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
     );
 
   return (
-    <nav aria-label="주 메뉴" className="flex flex-col gap-1 p-3">
+    <nav aria-label="주 메뉴" className="flex flex-col gap-1 px-3 py-4">
       {items.map(({ href, label, children }) => {
         const Icon = ICONS[href] ?? LayoutDashboard;
         if (children && children.length > 0) {
@@ -74,14 +75,14 @@ export function Sidebar({ items }: { items: NavItem[] }) {
               <Link
                 href={withPeriod(href, period)}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent/60",
-                  groupActive && "font-semibold",
+                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  groupActive && "font-semibold text-sidebar-accent-foreground",
                 )}
               >
                 <Icon className="size-4" aria-hidden />
                 {label}
               </Link>
-              <ul className="mt-0.5 space-y-0.5">
+              <ul className="mt-1 space-y-1">
                 {children.map((child) => {
                   const active = isSubActive(pathname, child.href);
                   return (
