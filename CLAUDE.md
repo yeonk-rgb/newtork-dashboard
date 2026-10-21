@@ -237,6 +237,7 @@ newtork-dashboard/ (= 이 폴더)
 5. 화면 작업이 끝나면 `npm run dev`로 확인할 **주소와 확인 포인트**를 알려주기
    - 화면을 확인할 때는 HTML 응답뿐 아니라 **dev 서버 로그(`.next/dev/logs/next-development.log`)에 에러·경고가 없는지도 반드시 확인** (cacheComponents 검증 에러는 화면 오버레이·로그에만 나옴)
    - 오늘 날짜가 필요하면 **`getTodayKst()`**, 기록용 현재 시각(확정 일시 등)은 **`getNow()`**만 사용 (`new Date()` 직접 사용 금지 — prerender 에러 원인)
+   - 시간대 기준: **시각은 UTC로 저장**(Prisma가 값을 직접 기록), **날짜 계산은 한국 날짜**(`getTodayKst()` = KST 날짜의 UTC 자정), **표시는 Asia/Seoul**. 로컬 DB 세션 시간대가 Asia/Seoul이라 **SQL `now()`·DB 기본값으로 시각을 넣으면 9시간 어긋난다** → 시각은 Prisma로만 넣고, 직접 SQL이 필요하면 `now() AT TIME ZONE 'UTC'`
 6. 끝나면 PR 생성 후 **CI 결과 보고**. 머지는 사람이 직접
 7. 고객사 확인이 필요한 건 `docs/05-open-questions.md`에 추가
 8. 각 단계가 끝나면 `docs/06-management-checklist.md` 상태 업데이트

@@ -226,24 +226,34 @@ describe("upsertExamples / removeExamples", () => {
     const examples = [...rows.values()].filter(
       (r) => r.model === EXAMPLE_MODEL,
     );
-    expect(examples).toHaveLength(4);
+    expect(examples).toHaveLength(EXAMPLE_QUARTERS.length);
     expect(examples.map((r) => r.createdAt)).toEqual(firstCreated);
-    expect(rows.size).toBe(4 + others.length);
+    expect(rows.size).toBe(EXAMPLE_QUARTERS.length + others.length);
   });
 
   it("--remove 는 예시만 지우고 다른 기록은 그대로", async () => {
     const { store, rows } = memoryStore(others);
     await upsertExamples(store, exampleRows);
-    expect(await removeExamples(store)).toBe(4);
+    expect(await removeExamples(store)).toBe(EXAMPLE_QUARTERS.length);
     expect([...rows.keys()].sort()).toEqual(others.map((o) => o.id).sort());
     expect(await removeExamples(store)).toBe(0);
   });
 
-  it("예시 분기 4곳은 서로 다르고 2026년 3분기는 비워 둔다", () => {
+  it("예시 분기는 서로 다르고, 시드 분기 중 2026년 3분기만 비워 둔다", () => {
     const keys = EXAMPLE_QUARTERS.map(
       ({ quarter }) => `${quarter.year}-Q${quarter.quarter}`,
     );
-    expect(new Set(keys).size).toBe(4);
-    expect(keys).not.toContain("2026-Q3");
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys.sort()).toEqual(
+      [
+        "2024-Q4",
+        "2025-Q1",
+        "2025-Q2",
+        "2025-Q3",
+        "2025-Q4",
+        "2026-Q1",
+        "2026-Q2",
+      ].sort(),
+    );
   });
 });
