@@ -1,0 +1,49 @@
+# Render Blueprint — 웹 서비스 1개 + PostgreSQL 1개 (PoC, 무료 플랜)
+# 배포 절차·환경변수 설명: README.md "8. Render 배포"
+# - 비밀값은 sync: false → Blueprint 처음 만들 때 Render 화면에서 직접 입력 (git에 값 없음)
+# - 무료 PostgreSQL은 만든 지 30일 후 만료된다 (유료 전환 전 데이터 백업 필요)
+# - 무료 웹 서비스는 15분 동안 요청이 없으면 잠들고, 다음 접속 때 깨어나는 데 시간이 걸린다
+
+databases:
+  - name: newtork-db
+    plan: free
+    region: singapore
+    postgresMajorVersion: "16"
+    databaseName: newtork
+    user: newtork
+
+services:
+  - type: web
+    name: newtork-dashboard
+    runtime: node
+    plan: free
+    region: singapore # DB와 같은 지역이어야 내부 주소로 접속된다
+    # 마이그레이션 적용 → DB가 비어 있을 때만 시드(관리자 + 샘플 데이터) → 빌드
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run db:seed:if-empty && npm run build
+    # next start 는 PORT 환경변수(Render가 지정)를 그대로 사용한다
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: newtork-db
+          property: connectionString
+      - key: NODE_VERSION
+        value: "24" # CI와 같은 버전
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      # 최초 관리자 계정 (DB가 비어 있을 때 한 번만 생성, 첫 로그인 때 비밀번호 변경 강제)
+      - key: INITIAL_ADMIN_ID
+        sync: false
+      - key: INITIAL_ADMIN_PASSWORD
+        sync: false
+      # 샘플 계정 7개의 공통 초기 비밀번호 (비워 두면 무작위 — 관리자 화면에서 초기화해서 사용)
+      - key: SEED_INITIAL_PASSWORD
+        sync: false
+      # AI 분석 코멘트 (서버 전용). 비워 두면 AI 카드에 안내 문구만 표시
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # 외부 AI 전송 동의(05-19) 전에는 false — 배포 서버에서 [분석하기] 차단
+      - key: AI_ALLOW_REAL_DATA
+        value: "false"

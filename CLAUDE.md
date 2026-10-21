@@ -91,6 +91,7 @@
   - 모델 `claude-opus-5-5`(`shared/ai/client.ts`), SDK `@anthropic-ai/sdk` 버전 정확히 고정, 구조화 출력 + 거절 시 서버 fallback + Zod 재검증. 프롬프트를 바꾸면 `ai/prompt.ts`의 `PROMPT_VERSION`을 올린다
   - 테스트는 가짜 `create`를 주입 (Vitest에서 `getAnthropicClient()`는 항상 에러 → CI 실제 호출 불가). 로컬 화면은 `.env`의 `AI_MOCK=true`(실패 연습 `fail`) — `next dev`에서만 동작
   - 키 입력: `npm run env:set-key` (값 출력 금지, 길이만)
+  - 배포 서버(`next start`)는 `AI_ALLOW_REAL_DATA=true`일 때만 [분석하기] 가능 (`ai/real-data-policy.ts` → `aiAbilities()`의 `realDataBlocked`, 05-19 답변 전 기본 `false`). `next dev`·테스트는 영향 없음
   - 예시 분석: `npm run seed:ai-examples` (`ai/examples.ts` 문장 틀 + 서버 계산 숫자, `model = "example"`, 카드에 "예시" 표시) / `-- --remove`. **실제 데이터 사용 전 삭제**
 - **지표 계산**: `modules/management/metrics/`(순수 함수, DB·화면 모름) + `data/`(DB 조회, server-only). 공개 함수는 `getManagementSummary(period)` (권한: 경영지원 view)
   - 금액은 BigInt, 비율만 number(0~1). 0으로 나누기·데이터 없음은 `null` + `reason`
@@ -199,6 +200,14 @@ newtork-dashboard/ (= 이 폴더)
 ├─ CODEOWNERS
 └─ CLAUDE.md
 ```
+
+## 배포 (Render, PoC — 2026-10-21 내부 결정, 05-8 고객사 확인 대기)
+
+- 루트 `render.yaml`(Blueprint): 웹 서비스 + PostgreSQL 16, 무료 플랜·싱가포르. Render는 **main 브랜치**의 `render.yaml`을 읽는다
+- 빌드: `npm ci` → `prisma generate` → `prisma migrate deploy` → `npm run db:seed:if-empty`(계정이 없는 빈 DB일 때만 — 재배포 때 덮어쓰기 방지) → `next build`. 시작은 `npm start`(PORT 자동)
+- 최초 관리자: `INITIAL_ADMIN_ID`·`INITIAL_ADMIN_PASSWORD`(sync: false, 첫 로그인 변경 강제). 이 값이 있고 `SEED_INITIAL_PASSWORD`가 없으면 샘플 계정 비밀번호는 로그에 출력하지 않는다
+- 헬스체크 `/api/health`(로그인 없이, `proxy.ts` `PUBLIC_PATHS`). `SESSION_SECRET`은 쓰지 않는다 (DB 세션)
+- 절차·환경변수 표: README 8번
 
 ## 담당
 

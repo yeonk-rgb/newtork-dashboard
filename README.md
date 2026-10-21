@@ -111,6 +111,7 @@ npm run build        # 배포 빌드 확인 (선택)
 | `npm run db:smoke` | 실제 DB에서 모든 칸·주요 조회 점검 (스키마 변경 후, CI에서도 실행) — 스키마를 바꾸면 dev 서버도 재시작 |
 | `npm run check` | lint + typecheck + test (작업 단계마다, PR 전 필수) |
 | `npm run db:seed` | 직원 계정 7개(초기 비밀번호 1회 출력) + 샘플 데이터 넣기 (2024-10 ~ 2026-09) |
+| `npm run db:seed:if-empty` | 계정이 없는 빈 DB일 때만 시드 (Render 빌드용, 8번 참고) |
 | `npm run metrics:report -- 2026 Q3` | 지표 계산 결과 검산용 표 출력 (`2026 9` 월 / `2026` 연간 / `2026 ytd9` 누적) |
 | `npm run seed:ai-examples` | 대시보드 예시 AI 분석 7건 넣기 (중복 없음) · `-- --remove` 로 예시만 지우기 |
 | `npm run env:set-key` | AI 분석용 Anthropic API 키를 `.env`에 저장 (입력 숨김, 길이만 표시) |
@@ -131,3 +132,49 @@ npm run build        # 배포 빌드 확인 (선택)
   1. 터미널에서 `sudo spctl developer-mode enable-terminal`
   2. 시스템 설정 → 개인정보 보호 및 보안 → 개발자 도구 → 사용하는 터미널(VS Code 포함) 켜기
   3. 터미널 재시작
+
+## 8. Render 배포 (PoC)
+
+루트의 [`render.yaml`](render.yaml)(Blueprint)이 웹 서비스 `newtork-dashboard`와 PostgreSQL 16 `newtork-db`를 함께 만든다. 둘 다 무료 플랜, 싱가포르 지역.
+
+### 배포 절차
+
+1. `render.yaml`이 **main 브랜치 루트**에 있는지 확인 (Render는 기본 브랜치에서 Blueprint를 읽는다)
+2. Render 대시보드 → **New → Blueprint** → GitHub 저장소 `yeonk-rgb/newtork-dashboard` 연결 → 브랜치 `main`
+3. `sync: false` 환경변수 입력 화면에서 아래 표의 값을 넣고 **Apply**
+4. 빌드 로그에서 순서대로 확인: `prisma migrate deploy` → `최초 관리자 생성: …`(첫 배포만) → `next build`
+5. 배포 완료 후 `https://<서비스 주소>/api/health`가 `{"status":"ok"}`인지 확인
+6. `/login`에서 `INITIAL_ADMIN_ID`로 로그인 → 새 비밀번호로 변경 → 관리자 설정(`/admin`)에서 샘플 계정 비밀번호 초기화 또는 실제 직원 계정 추가
+
+### 환경변수
+
+| 이름 | 값 | 비고 |
+|---|---|---|
+| `DATABASE_URL` | 자동 (`newtork-db` 내부 주소) | 입력 불필요 |
+| `NODE_VERSION` | `24` (자동) | CI와 같은 버전 |
+| `INITIAL_ADMIN_ID` | 영문 소문자·숫자·`_` 3~30자 (예: `boss`) | 첫 배포 때 한 번만 사용 |
+| `INITIAL_ADMIN_PASSWORD` | 8자 이상 임시 비밀번호 | 첫 로그인 때 변경 강제. 로그인 후 Render에서 지워도 됨 |
+| `SEED_INITIAL_PASSWORD` | (선택) 샘플 계정 7개 공통 초기 비밀번호 | 비우면 무작위·표시 안 함 → `/admin`에서 초기화 |
+| `ANTHROPIC_API_KEY` | (선택) `sk-ant-…` | 비우면 AI 카드에 안내 문구만 |
+| `AI_ALLOW_REAL_DATA` | `false` (자동) | 05-19번 답변 전까지 배포 서버의 [분석하기] 차단. 허용하려면 `true` |
+
+`SESSION_SECRET`·`NEXTAUTH_SECRET`은 필요 없다 — 세션은 무작위 토큰을 DB에 저장하는 방식이라 서명용 비밀키를 쓰지 않는다.
+
+### 동작 방식
+
+- **시드는 DB가 비어 있을 때만** (`npm run db:seed:if-empty`): 계정이 하나라도 있으면 건너뛴다 → 재배포해도 입력한 데이터를 샘플로 덮어쓰지 않는다
+- 첫 배포 때 들어가는 것: 최초 관리자 1명 + 샘플 계정 7개 + 샘플 재무 데이터(2024-10 ~ 2026-09, 가짜). 실제 데이터를 쓰기 전에 샘플 데이터 정리 방법을 따로 정한다
+- 업로드 파일은 디스크에 저장하지 않고 읽은 즉시 DB에 저장한다 (Render 디스크는 재배포 때 초기화)
+- 세션 쿠키는 HTTPS에서만 전송(Secure) — Render 기본 주소(`*.onrender.com`)는 HTTPS
+- 무료 플랜 제약: 웹 서비스는 15분간 요청이 없으면 잠듦(첫 접속 느림), **무료 PostgreSQL은 30일 후 만료** — 계속 쓰려면 유료 플랜으로 바꾸거나 백업
+- 빌드 단계에서 DB 접속(`migrate deploy`)이 실패하면: 웹 서비스와 DB가 같은 지역인지 확인
+
+### 가정 사항 (배포)
+
+| 항목 | 결정 | 근거 |
+|---|---|---|
+| 배포 위치 | Render (클라우드) | 내부 결정, 고객사 확인 대기 (05-8번) |
+| 플랜 | 웹·DB 모두 무료 | PoC 시연용 (2026-10-21 결정) |
+| 첫 배포 데이터 | 최초 관리자 + 샘플 계정·샘플 재무 데이터 | 시연용 (2026-10-21 결정) |
+| AI 분석 | 배포 서버는 기본 차단 (`AI_ALLOW_REAL_DATA=false`) | 외부 AI 전송 동의 확인 전 (05-19번) |
+| 지역 | 싱가포르 | 한국에서 가장 가까운 Render 지역 |
