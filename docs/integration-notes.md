@@ -184,6 +184,7 @@ export async function saveProduction(input: Input) {
 ## 9. 기타
 
 - 비밀키는 `.env`에만 (`.env.example`에 키 이름만). AI 키 등은 클라이언트로 보내지 않습니다.
+- **시간대**: 시각(`DateTime`)은 UTC로 저장하고 화면에서만 Asia/Seoul로 표시합니다. 날짜 계산(오늘·분기·경과일)은 한국 날짜 기준입니다(`getTodayKst()`). DB 세션 시간대가 Asia/Seoul인 환경에서 SQL `now()`나 DB 기본값(`CURRENT_TIMESTAMP`)으로 시각을 넣으면 KST 값이 UTC로 저장되어 9시간 어긋나므로, 시각은 Prisma로 넣거나 `now() AT TIME ZONE 'UTC'`를 쓰세요.
 - **AI 호출 공통**: `src/shared/ai/` — `getAnthropicClient()`(server-only, 키 없으면 `AiError("not-configured")`), `generateJson({ create, model, system, user, schema })`(JSON 출력 + Zod 검증 + 오류 종류 분류), `AiError`·`aiErrorMessage()`(화면 안내 문구). 다른 팀도 AI를 쓰면 이 함수를 재사용해 주세요. SDK 버전은 `package.json`에 정확히 고정(`@anthropic-ai/sdk` 0.131.0).
   - 테스트에서는 `create`에 가짜 함수를 넣습니다. Vitest 실행 중에는 `getAnthropicClient()`가 항상 에러를 내므로 CI가 실제 API를 부를 수 없습니다.
   - 개발 화면 확인용 `AI_MOCK=true`(실패 연습 `AI_MOCK=fail`)는 `next dev`에서만 동작합니다.

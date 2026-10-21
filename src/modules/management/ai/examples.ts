@@ -15,7 +15,7 @@ export const EXAMPLE_ID_PREFIX = "ai-example-";
 export const exampleId = (year: number, quarter: number) =>
   `${EXAMPLE_ID_PREFIX}${year}-q${quarter}`;
 
-/** 서로 다른 상황의 예시 4개 (2026년 3분기는 [분석하기] 확인용으로 비워 둔다) */
+/** 서로 다른 상황의 예시 — 시드 분기 중 2026년 3분기만 [분석하기] 확인용으로 비워 둔다 */
 export const EXAMPLE_QUARTERS = [
   {
     quarter: { unit: "quarter", year: 2026, quarter: 2 },
@@ -32,6 +32,18 @@ export const EXAMPLE_QUARTERS = [
   {
     quarter: { unit: "quarter", year: 2024, quarter: 4 },
     situation: "d) 전 분기와 비교 불가 (시드 첫 분기)",
+  },
+  {
+    quarter: { unit: "quarter", year: 2025, quarter: 3 },
+    situation: "e) 목표 소폭 초과 + 전 분기 대비 증가",
+  },
+  {
+    quarter: { unit: "quarter", year: 2025, quarter: 4 },
+    situation: "f) 분기 목표는 미달, 연간 목표는 초과 달성",
+  },
+  {
+    quarter: { unit: "quarter", year: 2026, quarter: 1 },
+    situation: "g) 새해 첫 분기, 목표 미달 + 소폭 감소",
   },
 ] as const satisfies readonly { quarter: QuarterPeriod; situation: string }[];
 
