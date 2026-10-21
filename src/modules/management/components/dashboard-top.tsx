@@ -33,9 +33,9 @@ export async function DashboardTop({
   const years = [...new Set([...range, summary.period.year])].sort();
 
   return (
-    <section className="space-y-4" aria-label="기간 요약">
+    <section className="space-y-5" aria-label="기간 요약">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
         <PeriodSelector period={summary.period} years={years} />
       </div>
       <ConfirmationBanner confirmation={summary.confirmation} />
@@ -47,11 +47,11 @@ export async function DashboardTop({
 
 export function DashboardTopSkeleton() {
   return (
-    <div className="space-y-4" aria-hidden>
-      <div className="h-8 w-64 animate-pulse rounded bg-muted" />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="space-y-5" aria-hidden>
+      <div className="h-8 w-64 animate-pulse rounded-lg bg-muted" />
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-40 animate-pulse rounded-lg bg-muted" />
+          <div key={i} className="h-40 animate-pulse rounded-card bg-muted" />
         ))}
       </div>
     </div>

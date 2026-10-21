@@ -31,7 +31,7 @@ export function ConfirmDialog({
       ref={ref}
       onClose={onClose}
       aria-labelledby="confirm-title"
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-lg border bg-card p-5 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground shadow-lg backdrop:bg-black/30"
     >
       {request && (
         <>
@@ -46,7 +46,7 @@ export function ConfirmDialog({
               type="button"
               autoFocus
               onClick={onClose}
-              className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
             >
               돌아가기
             </button>
@@ -58,8 +58,8 @@ export function ConfirmDialog({
               }}
               className={
                 request.tone === "danger"
-                  ? "rounded-md bg-destructive px-3 py-1.5 text-sm text-white hover:bg-destructive/90"
-                  : "rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
+                  ? "rounded-lg bg-destructive px-3 py-1.5 text-sm text-white hover:bg-destructive/90"
+                  : "rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
               }
             >
               {request.confirmLabel}

@@ -37,7 +37,7 @@ function withUnit(period: Period, unit: Unit): Period {
 }
 
 const selectClass =
-  "h-8 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "h-9 rounded-full border border-input bg-card px-3.5 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/40";
 
 export function PeriodSelector({
   period,
@@ -85,7 +85,7 @@ export function PeriodSelector({
       <div
         role="radiogroup"
         aria-label="기간 단위"
-        className="inline-flex rounded-md border border-input bg-background p-0.5"
+        className="inline-flex rounded-full border border-input bg-card p-1"
       >
         {UNITS.map(({ unit, label }) => {
           const active = period.unit === unit;
@@ -97,10 +97,10 @@ export function PeriodSelector({
               aria-checked={active}
               onClick={() => !active && go(withUnit(period, unit))}
               className={cn(
-                "rounded px-3 py-1 text-sm transition-colors",
+                "rounded-full px-3.5 py-1 text-sm font-medium transition-colors",
                 active
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted",
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               {label}

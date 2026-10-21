@@ -67,14 +67,11 @@ export function Section({
   return (
     <section
       id={id}
-      className={cn(
-        "scroll-mt-4 rounded-lg border bg-card p-4 shadow-xs",
-        className,
-      )}
+      className={cn("scroll-mt-4 rounded-card border bg-card p-5", className)}
     >
-      <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
+      <header className="mb-4 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold">{title}</h2>
+          <h2 className="text-[15px] font-semibold">{title}</h2>
           {description && (
             <p className="mt-0.5 text-xs text-muted-foreground">
               {description}
@@ -88,8 +85,8 @@ export function Section({
   );
 }
 
-export const tableClass = "w-full text-sm";
-export const theadClass = "text-xs text-muted-foreground";
-export const thClass = "py-1.5 font-normal";
+export const tableClass = "w-full text-sm [&_td]:px-3 [&_th]:px-3";
+export const theadClass = "bg-muted text-xs text-muted-foreground";
+export const thClass = "py-2.5 font-medium";
 export const rowClass = "border-b";
 export const totalRowClass = "border-t-2 font-semibold";

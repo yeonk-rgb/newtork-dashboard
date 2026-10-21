@@ -1,5 +1,6 @@
 // KPI 카드 4개: 매출 / (기간) 목표 달성률 / 이익률 / 미수금 총액 (경영지원 상세)
 // 증감 표시(Deltas 등)는 경영 대시보드 도넛 카드 아래에서도 쓴다
+import { cn } from "@/shared/lib/utils";
 import { Won } from "@/shared/ui/won";
 
 import { comparisonNote } from "./confirmation-text";
@@ -21,7 +22,7 @@ const REASON_TEXT: Record<string, string> = {
   "no-margin": "매출이 0이라 이익률 없음",
 };
 
-/** ▲12.3% / ▼4.5% / 0.0% / - (계산 불가) — 화살표 + 숫자로, 색에만 의존하지 않음 */
+/** ▲12.3% / ▼4.5% / 0.0% / - (계산 불가) — 화살표 + 숫자로, 색에만 의존하지 않음. 모양은 작은 pill 배지 */
 function DeltaValue({
   value,
   suffix,
@@ -29,11 +30,26 @@ function DeltaValue({
   value: number | null;
   suffix: string;
 }) {
-  if (value === null) return <span>-</span>;
+  const pill =
+    "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums";
+  if (value === null) {
+    return (
+      <span className={cn(pill, "bg-muted text-muted-foreground")}>-</span>
+    );
+  }
   const arrow = value > 0 ? "▲" : value < 0 ? "▼" : "";
   const abs = Math.abs(value * 100).toFixed(1);
   return (
-    <span className="tabular-nums">
+    <span
+      className={cn(
+        pill,
+        value > 0
+          ? "bg-success-soft text-success-strong"
+          : value < 0
+            ? "bg-danger-soft text-danger-strong"
+            : "bg-muted text-muted-foreground",
+      )}
+    >
       {arrow}
       {abs}
       {suffix}
@@ -50,11 +66,11 @@ type DeltaRow = {
 
 export function Deltas({ rows, suffix }: { rows: DeltaRow[]; suffix: string }) {
   return (
-    <dl className="mt-3 space-y-0.5 text-xs text-muted-foreground">
+    <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
       {rows.map((row) => (
         <div
           key={row.label}
-          className="flex justify-between gap-2"
+          className="flex items-center justify-between gap-2"
           title={
             row.reason
               ? REASON_TEXT[row.reason]
@@ -66,7 +82,7 @@ export function Deltas({ rows, suffix }: { rows: DeltaRow[]; suffix: string }) {
           <dt>
             {row.label} 대비{row.partial && row.value !== null ? "*" : ""}
           </dt>
-          <dd className="text-foreground">
+          <dd>
             <DeltaValue value={row.value} suffix={suffix} />
           </dd>
         </div>
@@ -133,14 +149,14 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col rounded-lg border bg-card p-4 shadow-xs">
-      <h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
+    <section className="flex flex-col rounded-card border bg-card p-5">
+      <h2 className="text-[15px] font-medium text-body">{title}</h2>
       {children}
     </section>
   );
 }
 
-const valueClass = "mt-1 text-3xl font-semibold tracking-tight";
+const valueClass = "mt-2 text-[30px] leading-tight font-bold tracking-tight";
 
 export function KpiCards({ summary }: { summary: ManagementSummary }) {
   const { period, changes, targets, receivables } = summary;
@@ -158,7 +174,7 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
       <Card title={`${summary.label} 매출`}>
         <p className={valueClass}>
           {hasData ? <Won value={summary.revenue.total} unit /> : "-"}

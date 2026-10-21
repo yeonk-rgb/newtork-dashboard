@@ -1,7 +1,14 @@
 // 경영 대시보드 도넛 7개의 데이터 (순수 함수): 조각·가운데 숫자·비율 분모·빈 상태 문구
 // 금액은 정수 문자열로 넘기고(BigInt 직렬화), 표시는 DonutCard 가 한다
 import { formatWonShort } from "@/shared/format/money";
-import { METER, PALETTE, REVENUE_COLORS } from "@/shared/ui/chart-colors";
+import {
+  AGING_COLORS,
+  METER,
+  PALETTE,
+  PROFIT_COLORS,
+  REVENUE_COLORS,
+  type MeterColors,
+} from "@/shared/ui/chart-colors";
 import type { DonutSlice } from "@/shared/ui/donut-data";
 
 import type { AgingBucket, ManagementSummary } from "../../metrics/types";
@@ -27,7 +34,7 @@ export function revenueDonut(summary: ManagementSummary): DonutCardData {
       key: i.key,
       label: i.label,
       value: s(i.amount),
-      color: REVENUE_COLORS[i.key] ?? PALETTE.blue,
+      color: REVENUE_COLORS[i.key] ?? PALETTE.slate,
     })),
     center: { value: formatWonShort(revenue.total), label: "총매출" },
     emptyText:
@@ -35,16 +42,23 @@ export function revenueDonut(summary: ManagementSummary): DonutCardData {
   };
 }
 
-/** 목표 대비 실적 (분기·연간 공용): 실적 / 남은 목표, 초과면 목표 달성분 / 초과분 — 비율은 목표 대비 */
-function progressSlices(target: bigint, actual: bigint): DonutSlice[] {
+/**
+ * 목표 대비 실적 (분기·연간 공용): 실적 / 남은 목표, 초과면 목표 달성분 / 초과분 — 비율은 목표 대비
+ * @param meter 색 (강조 카드 위에서는 METER_ON_ACCENT)
+ */
+function progressSlices(
+  target: bigint,
+  actual: bigint,
+  meter: MeterColors,
+): DonutSlice[] {
   if (actual <= target) {
     return [
-      { key: "actual", label: "실적", value: s(actual), color: METER.fill },
+      { key: "actual", label: "실적", value: s(actual), color: meter.fill },
       {
         key: "remaining",
         label: "남은 목표",
         value: s(target - actual),
-        color: METER.track,
+        color: meter.track,
         muted: true,
       },
     ];
@@ -54,13 +68,13 @@ function progressSlices(target: bigint, actual: bigint): DonutSlice[] {
       key: "actual",
       label: "목표 달성분",
       value: s(target),
-      color: METER.fill,
+      color: meter.fill,
     },
     {
       key: "over",
       label: "초과분",
       value: s(actual - target),
-      color: PALETTE.green,
+      color: meter.over,
     },
   ];
 }
@@ -76,7 +90,7 @@ export function periodTargetDonut(summary: ManagementSummary): DonutCardData {
     };
   }
   return {
-    slices: progressSlices(t.target, t.actual),
+    slices: progressSlices(t.target, t.actual, METER),
     ratioBase: s(t.target),
     center: {
       value: t.rate === null ? "-" : pct(t.rate),
@@ -86,8 +100,14 @@ export function periodTargetDonut(summary: ManagementSummary): DonutCardData {
   };
 }
 
-/** 연간 목표 (선택 기간과 무관하게 그 해 기준) + 진도 눈금(경과율) */
-export function annualTargetDonut(summary: ManagementSummary): DonutCardData {
+/**
+ * 연간 목표 (선택 기간과 무관하게 그 해 기준) + 진도 눈금(경과율)
+ * @param meter 색 — 메인 강조 카드(코퍼 바탕)에서는 METER_ON_ACCENT
+ */
+export function annualTargetDonut(
+  summary: ManagementSummary,
+  meter: MeterColors = METER,
+): DonutCardData {
   const p = summary.annualProgress;
   if (!p || p.target === 0n) {
     return {
@@ -97,7 +117,7 @@ export function annualTargetDonut(summary: ManagementSummary): DonutCardData {
     };
   }
   return {
-    slices: progressSlices(p.target, p.actual),
+    slices: progressSlices(p.target, p.actual, meter),
     ratioBase: s(p.target),
     center: {
       value: p.rate === null ? "-" : pct(p.rate),
@@ -112,10 +132,10 @@ export function annualTargetDonut(summary: ManagementSummary): DonutCardData {
 }
 
 const AGING: { bucket: AgingBucket; label: string; color: string }[] = [
-  { bucket: "0-30", label: "0~30일", color: PALETTE.blue },
-  { bucket: "31-60", label: "31~60일", color: PALETTE.yellow },
-  { bucket: "61-90", label: "61~90일", color: PALETTE.orange },
-  { bucket: "90+", label: "90일 초과", color: PALETTE.red },
+  { bucket: "0-30", label: "0~30일", color: AGING_COLORS["0-30"] },
+  { bucket: "31-60", label: "31~60일", color: AGING_COLORS["31-60"] },
+  { bucket: "61-90", label: "61~90일", color: AGING_COLORS["61-90"] },
+  { bucket: "90+", label: "90일 초과", color: AGING_COLORS["90+"] },
 ];
 
 /** 미수금 총액: 경과 구간 — 가운데 총액, 목록에 건수 */
@@ -167,13 +187,13 @@ export function profitDonut(summary: ManagementSummary): DonutCardData {
             key: "purchase",
             label: "매입 (상품·원재료)",
             value: s(purchase),
-            color: PALETTE.orange,
+            color: PROFIT_COLORS.purchase,
           },
           {
             key: "operating",
             label: "경비 (경비·그 외)",
             value: s(operating),
-            color: PALETTE.magenta,
+            color: PROFIT_COLORS.operating,
           },
         ]
       : [
@@ -181,7 +201,7 @@ export function profitDonut(summary: ManagementSummary): DonutCardData {
             key: "operating",
             label: "경비 (경비·그 외)",
             value: s(operating),
-            color: PALETTE.magenta,
+            color: PROFIT_COLORS.operating,
           },
         ];
   if (profit.profit > 0n) {
@@ -189,7 +209,7 @@ export function profitDonut(summary: ManagementSummary): DonutCardData {
       key: "profit",
       label: "이익",
       value: s(profit.profit),
-      color: PALETTE.blue,
+      color: PROFIT_COLORS.profit,
     });
   }
   return {

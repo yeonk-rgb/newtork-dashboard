@@ -11,12 +11,12 @@ export function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col rounded-lg border bg-card p-4 shadow-xs">
-      <header className="mb-3 flex items-start justify-between gap-2">
-        <h2 className="flex flex-wrap items-center gap-2 text-sm font-medium">
+    <section className="flex flex-col rounded-card border bg-card p-5">
+      <header className="mb-4 flex items-start justify-between gap-2">
+        <h2 className="flex flex-wrap items-center gap-2 text-[15px] font-semibold">
           {title}
           {badge && (
-            <span className="rounded border border-dashed border-muted-foreground/50 px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
               {badge}
             </span>
           )}

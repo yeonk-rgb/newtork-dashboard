@@ -9,8 +9,8 @@ import { previewUpload, saveUpload } from "./actions";
 import type { PreviewSheet, UploadPreview } from "./parse-upload";
 
 const KIND_BADGE: Record<PreviewSheet["kind"], string> = {
-  annualTarget: "bg-blue-100 text-blue-800",
-  monthly: "bg-emerald-100 text-emerald-800",
+  annualTarget: "bg-info-soft text-info-strong",
+  monthly: "bg-success-soft text-success-strong",
   unknown: "bg-muted text-muted-foreground",
 };
 
@@ -81,9 +81,9 @@ export function UploadPanel({
 
   return (
     <div className="space-y-4">
-      <section className="rounded-lg border bg-card p-4">
+      <section className="rounded-card border bg-card p-5">
         {notice && (
-          <p className="mb-3 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+          <p className="mb-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
             {notice}
           </p>
         )}
@@ -98,7 +98,7 @@ export function UploadPanel({
               setBaseYear(year);
               runPreview(files, year);
             }}
-            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+            className="h-8 rounded-lg border border-input bg-background px-2 text-sm"
           >
             {years.map((y) => (
               <option key={y} value={y}>
@@ -127,7 +127,7 @@ export function UploadPanel({
           }}
           className={cn(
             "mt-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-10 text-center transition-colors",
-            dragging ? "border-blue-500 bg-blue-50" : "hover:bg-muted/50",
+            dragging ? "border-primary bg-brand-soft" : "hover:bg-muted/50",
           )}
         >
           <Upload className="size-7 text-muted-foreground" aria-hidden />
@@ -163,7 +163,7 @@ export function UploadPanel({
 
       {(preview || pending || message) && (
         <section
-          className="space-y-3 rounded-lg border bg-card p-4"
+          className="space-y-3 rounded-card border bg-card p-5"
           aria-busy={pending}
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -180,14 +180,14 @@ export function UploadPanel({
                 type="button"
                 onClick={save}
                 disabled={!canPressSave}
-                className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
               >
                 {pending ? "처리 중…" : "저장"}
               </button>
             </div>
           </div>
 
-          <p className="flex items-start gap-1.5 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-900">
+          <p className="flex items-start gap-1.5 rounded-lg bg-brand-soft px-3 py-2 text-xs text-brand-soft-foreground">
             <Info className="mt-px size-3.5 shrink-0" aria-hidden />
             같은 파일을 두 번 올리면 매출 내역·미수금이 중복 등록됩니다. 다시
             올릴 때는 &apos;지우고 교체&apos;를 선택해 주세요.
@@ -198,7 +198,7 @@ export function UploadPanel({
               role={message.ok ? "status" : "alert"}
               className={cn(
                 "text-sm",
-                message.ok ? "text-emerald-700" : "text-destructive",
+                message.ok ? "text-success-strong" : "text-destructive",
               )}
             >
               {message.text}
@@ -246,7 +246,7 @@ function SheetPreview({ sheet }: { sheet: PreviewSheet }) {
         {sheet.fileName} › {sheet.sheetName}
         <span
           className={cn(
-            "rounded px-1.5 py-0.5 text-xs",
+            "rounded-full px-2 py-0.5 text-xs font-medium",
             KIND_BADGE[sheet.kind],
           )}
         >
@@ -262,20 +262,20 @@ function SheetPreview({ sheet }: { sheet: PreviewSheet }) {
         </p>
       ))}
       {sheet.rows.length > 0 && (
-        <div className="max-h-96 overflow-auto rounded-md border">
-          <table className="w-full min-w-max text-sm">
+        <div className="max-h-96 overflow-auto rounded-lg border">
+          <table className="w-full min-w-max text-sm [&_td]:px-3 [&_th]:px-3">
             <thead className="sticky top-0 bg-muted text-xs text-muted-foreground">
               <tr>
-                <th className="px-2 py-1.5 text-left font-normal">행</th>
+                <th className="px-2 py-2.5 text-left font-medium">행</th>
                 {sheet.columns.map((c) => (
                   <th
                     key={c}
-                    className="px-2 py-1.5 text-right font-normal first:text-left"
+                    className="px-2 py-2.5 text-right font-medium first:text-left"
                   >
                     {c}
                   </th>
                 ))}
-                <th className="px-2 py-1.5 text-left font-normal">확인</th>
+                <th className="px-2 py-2.5 text-left font-medium">확인</th>
               </tr>
             </thead>
             <tbody>
@@ -284,7 +284,8 @@ function SheetPreview({ sheet }: { sheet: PreviewSheet }) {
                   key={row.rowNumber}
                   className={cn(
                     "border-t",
-                    row.status === "error" && "bg-red-50 text-red-700",
+                    row.status === "error" &&
+                      "bg-danger-soft text-danger-strong",
                     row.status === "total" &&
                       "bg-muted/50 text-muted-foreground",
                   )}

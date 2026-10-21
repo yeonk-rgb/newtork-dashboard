@@ -164,7 +164,7 @@ export function ReceivablesManager({
     });
 
   const actionButton =
-    "rounded-md border px-2 py-0.5 text-xs hover:bg-muted disabled:opacity-50";
+    "rounded-lg border px-2 py-0.5 text-xs hover:bg-muted disabled:opacity-50";
 
   return (
     <div className="space-y-3">
@@ -173,9 +173,9 @@ export function ReceivablesManager({
         {[
           { label: "미수 합계", list: open, tone: "" },
           { label: "90일 초과", list: over90, tone: "text-destructive" },
-          { label: "예정일 지남", list: overdue, tone: "text-amber-700" },
+          { label: "예정일 지남", list: overdue, tone: "text-warning-strong" },
         ].map((s) => (
-          <div key={s.label} className="rounded-lg border bg-card px-4 py-3">
+          <div key={s.label} className="rounded-card border bg-card px-5 py-4">
             <dt className="text-xs text-muted-foreground">
               {s.label} ({today} 기준)
             </dt>
@@ -191,7 +191,7 @@ export function ReceivablesManager({
         ))}
       </dl>
 
-      <section className="space-y-3 rounded-lg border bg-card p-4">
+      <section className="space-y-3 rounded-card border bg-card p-5">
         <div className="flex flex-wrap items-center gap-2">
           <div
             role="group"
@@ -205,7 +205,7 @@ export function ReceivablesManager({
                 aria-pressed={tab === t.key}
                 onClick={() => changeTab(t.key)}
                 className={cn(
-                  "rounded-md border px-2.5 py-1 text-sm",
+                  "rounded-lg border px-2.5 py-1 text-sm",
                   tab === t.key
                     ? "border-primary bg-primary text-primary-foreground"
                     : "hover:bg-muted",
@@ -229,7 +229,7 @@ export function ReceivablesManager({
               onChange={(e) => changeQuery(e.target.value)}
               placeholder="거래처 검색"
               aria-label="거래처 검색"
-              className="h-8 w-48 rounded-md border border-input bg-background pr-2 pl-7 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="h-8 w-48 rounded-lg border border-input bg-background pr-2 pl-7 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </div>
           {canManageHidden(user) && (
@@ -252,7 +252,7 @@ export function ReceivablesManager({
                 setResult(null);
                 setEditing({ kind: "create" });
               }}
-              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="size-3.5" aria-hidden />
               미수금 등록
@@ -261,7 +261,7 @@ export function ReceivablesManager({
         </div>
 
         {showHidden && (
-          <p className="flex items-center gap-1.5 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+          <p className="flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
             <EyeOff className="size-3.5" aria-hidden />
             숨긴 항목만 보고 있습니다. 숨긴 건은 대시보드·통계에 포함되지
             않습니다.
@@ -287,20 +287,20 @@ export function ReceivablesManager({
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-sm">
+          <table className="w-full min-w-[860px] text-sm [&_td]:px-3 [&_th]:px-3">
             <caption className="sr-only">미수금 목록</caption>
-            <thead className="text-xs text-muted-foreground">
+            <thead className="bg-muted text-xs text-muted-foreground">
               <tr className="border-b">
-                <th className="py-1.5 text-left font-normal">거래처</th>
-                <th className="py-1.5 text-left font-normal">발생일</th>
-                <th className="py-1.5 text-right font-normal">금액(원)</th>
-                <th className="py-1.5 pl-3 text-left font-normal">
+                <th className="py-2.5 text-left font-medium">거래처</th>
+                <th className="py-2.5 text-left font-medium">발생일</th>
+                <th className="py-2.5 text-right font-medium">금액(원)</th>
+                <th className="py-2.5 pl-3 text-left font-medium">
                   수금 예정일
                 </th>
-                <th className="py-1.5 text-right font-normal">경과일</th>
-                <th className="py-1.5 pl-3 text-left font-normal">상태</th>
-                <th className="py-1.5 text-left font-normal">비고</th>
-                <th className="py-1.5" />
+                <th className="py-2.5 text-right font-medium">경과일</th>
+                <th className="py-2.5 pl-3 text-left font-medium">상태</th>
+                <th className="py-2.5 text-left font-medium">비고</th>
+                <th className="py-2.5" />
               </tr>
             </thead>
             <tbody>
@@ -330,33 +330,33 @@ export function ReceivablesManager({
                     )}
                   >
                     <td
-                      className="max-w-48 truncate py-1.5"
+                      className="max-w-48 truncate py-2.5"
                       title={row.customerName}
                     >
                       {row.customerName}
                     </td>
-                    <td className="py-1.5 tabular-nums">{row.occurredOn}</td>
-                    <td className="py-1.5 text-right tabular-nums">
+                    <td className="py-2.5 tabular-nums">{row.occurredOn}</td>
+                    <td className="py-2.5 text-right tabular-nums">
                       {formatAmount(row.amount)}
                     </td>
                     <td
                       className={cn(
-                        "py-1.5 pl-3 tabular-nums",
-                        status.isOverdue && "text-amber-700",
+                        "py-2.5 pl-3 tabular-nums",
+                        status.isOverdue && "text-warning-strong",
                       )}
                     >
                       {row.dueOn ?? "-"}
                     </td>
                     <td
                       className={cn(
-                        "py-1.5 text-right tabular-nums",
+                        "py-2.5 text-right tabular-nums",
                         status.isOver90 && "font-semibold text-destructive",
                       )}
                     >
                       {status.ageDays === null ? "-" : `${status.ageDays}일`}
                     </td>
-                    <td className="py-1.5 pl-3">
-                      <div className="flex flex-wrap gap-1">
+                    <td className="py-2.5 pl-3">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
                         {row.isCollected ? (
                           <Badge>수금 {row.collectedOn}</Badge>
                         ) : (
@@ -376,12 +376,12 @@ export function ReceivablesManager({
                       </div>
                     </td>
                     <td
-                      className="max-w-48 truncate py-1.5 text-xs"
+                      className="max-w-48 truncate py-2.5 text-xs"
                       title={row.note ?? undefined}
                     >
                       {row.note ?? ""}
                     </td>
-                    <td className="py-1.5 text-right whitespace-nowrap">
+                    <td className="py-2.5 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-1">
                         {can.canCollect && (
                           <button
@@ -456,10 +456,10 @@ export function ReceivablesManager({
             {visible.length > 0 && (
               <tfoot>
                 <tr className="border-t font-medium">
-                  <td className="py-1.5" colSpan={2}>
+                  <td className="py-2.5" colSpan={2}>
                     합계 {visible.length}건
                   </td>
-                  <td className="py-1.5 text-right tabular-nums">
+                  <td className="py-2.5 text-right tabular-nums">
                     {formatAmount(sumAmount(visible))}
                   </td>
                   <td colSpan={5} />
@@ -515,15 +515,24 @@ function Badge({
   children: React.ReactNode;
 }) {
   return (
+    // 상태 = 색 점(●) + 글자 (색만으로 구분하지 않음)
     <span
       className={cn(
-        "inline-block rounded px-1.5 py-0.5 text-xs whitespace-nowrap",
-        tone === "muted" && "bg-muted text-muted-foreground",
-        tone === "open" && "bg-primary/10 text-primary",
-        tone === "danger" && "bg-destructive/10 text-destructive",
-        tone === "warn" && "bg-amber-100 text-amber-900",
+        "inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap",
+        tone === "muted" ? "text-muted-foreground" : "text-foreground",
+        tone === "danger" && "text-danger-strong",
       )}
     >
+      <span
+        aria-hidden
+        className={cn(
+          "size-1.5 shrink-0 rounded-full",
+          tone === "muted" && "bg-subtle",
+          tone === "open" && "bg-primary",
+          tone === "danger" && "bg-destructive",
+          tone === "warn" && "bg-warning",
+        )}
+      />
       {children}
     </span>
   );

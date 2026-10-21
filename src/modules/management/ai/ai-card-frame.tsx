@@ -1,4 +1,4 @@
-// AI 분석 카드 틀 (서버·클라이언트 공용, 상태 없음): 왼쪽 파란 강조선 + 제목 / 오른쪽 위 생성 정보·버튼
+// AI 분석 카드 틀 (서버·클라이언트 공용, 상태 없음): 연한 네이비 바탕(primary-50) + 왼쪽 네이비 강조선 + 제목 / 오른쪽 위 생성 정보·버튼
 export function AiCardFrame({
   title,
   meta,
@@ -16,10 +16,10 @@ export function AiCardFrame({
   return (
     <section
       aria-label="AI 분석 코멘트"
-      className="flex flex-col rounded-lg border border-l-4 border-l-blue-600 bg-card p-4 shadow-xs"
+      className="flex flex-col rounded-card border border-l-4 border-primary/15 border-l-primary bg-brand-soft/60 p-5"
     >
-      <header className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-sm font-semibold">{title}</h2>
+      <header className="mb-4 flex flex-wrap items-start justify-between gap-2">
+        <h2 className="text-[15px] font-semibold">{title}</h2>
         {(meta || action) && (
           <div className="flex flex-wrap items-center gap-2">
             {meta && (

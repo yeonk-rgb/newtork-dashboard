@@ -57,7 +57,7 @@ export function ExpenseTable({
   const cols = lastYear ? 5 : 4;
 
   return (
-    <section className="rounded-lg border bg-card p-4 shadow-xs">
+    <section className="rounded-card border bg-card p-5">
       <header className="mb-3">
         <h2 className="text-sm font-semibold">지출 항목</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
@@ -70,18 +70,18 @@ export function ExpenseTable({
           )}
         </p>
       </header>
-      <table className="w-full text-sm">
+      <table className="w-full text-sm [&_td]:px-3 [&_th]:px-3">
         <caption className="sr-only">지출 항목</caption>
-        <thead className="text-xs text-muted-foreground">
+        <thead className="bg-muted text-xs text-muted-foreground">
           <tr className="border-b">
-            <th className="py-1.5 text-left font-normal">항목</th>
-            <th className="py-1.5 text-right font-normal">금액(원)</th>
-            <th className="py-1.5 text-right font-normal">총지출 대비</th>
-            <th className="py-1.5 text-right font-normal">
+            <th className="py-2.5 text-left font-medium">항목</th>
+            <th className="py-2.5 text-right font-medium">금액(원)</th>
+            <th className="py-2.5 text-right font-medium">총지출 대비</th>
+            <th className="py-2.5 text-right font-medium">
               {previousLabel} 대비
             </th>
             {lastYear && (
-              <th className="py-1.5 text-right font-normal">전년 동기 대비</th>
+              <th className="py-2.5 text-right font-medium">전년 동기 대비</th>
             )}
           </tr>
         </thead>
@@ -90,7 +90,7 @@ export function ExpenseTable({
             const isOther = item.key === "otherExpense";
             return [
               <tr key={item.key} className="border-b">
-                <td className="py-1.5">
+                <td className="py-2.5">
                   {isOther && otherItems.length > 0 ? (
                     <button
                       type="button"
@@ -109,17 +109,17 @@ export function ExpenseTable({
                     item.label
                   )}
                 </td>
-                <td className="py-1.5 text-right tabular-nums">
+                <td className="py-2.5 text-right tabular-nums">
                   {formatAmount(item.amount)}
                 </td>
-                <td className="py-1.5 text-right tabular-nums">
+                <td className="py-2.5 text-right tabular-nums">
                   {pct(item.ratio)}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5 text-right">
                   <ChangeText change={previous[item.key]} />
                 </td>
                 {lastYear && (
-                  <td className="py-1.5 text-right">
+                  <td className="py-2.5 text-right">
                     <ChangeText change={lastYear[item.key]} />
                   </td>
                 )}
@@ -144,18 +144,18 @@ export function ExpenseTable({
             ];
           })}
           <tr className="border-t-2 font-semibold">
-            <td className="py-1.5">합계 (총지출)</td>
-            <td className="py-1.5 text-right tabular-nums">
+            <td className="py-2.5">합계 (총지출)</td>
+            <td className="py-2.5 text-right tabular-nums">
               {formatAmount(total)}
             </td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5 text-right">
               {total === "0" ? "-" : "100%"}
             </td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5 text-right">
               <ChangeText change={totalPrevious} />
             </td>
             {totalLastYear && (
-              <td className="py-1.5 text-right">
+              <td className="py-2.5 text-right">
                 <ChangeText change={totalLastYear} />
               </td>
             )}

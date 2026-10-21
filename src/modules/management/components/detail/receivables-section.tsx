@@ -75,26 +75,26 @@ export function ReceivablesSection({
             <tbody>
               {byCustomer.map((c, i) => (
                 <tr key={c.customerName} className={rowClass}>
-                  <td className="py-1.5 text-muted-foreground">{i + 1}</td>
-                  <td className="py-1.5">{c.customerName}</td>
-                  <td className="py-1.5 text-right">
+                  <td className="py-2.5 text-muted-foreground">{i + 1}</td>
+                  <td className="py-2.5">{c.customerName}</td>
+                  <td className="py-2.5 text-right">
                     <Amount value={c.amount} />
                   </td>
-                  <td className="py-1.5 text-right tabular-nums">{c.count}</td>
-                  <td className="py-1.5 text-right tabular-nums">
+                  <td className="py-2.5 text-right tabular-nums">{c.count}</td>
+                  <td className="py-2.5 text-right tabular-nums">
                     {share(c.amount)}
                   </td>
                 </tr>
               ))}
               <tr className={totalRowClass}>
-                <td className="py-1.5" colSpan={2}>
+                <td className="py-2.5" colSpan={2}>
                   합계
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5 text-right">
                   <Amount value={total} />
                 </td>
-                <td className="py-1.5 text-right tabular-nums">{count}</td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5 text-right tabular-nums">{count}</td>
+                <td className="py-2.5 text-right">
                   {total === 0n ? "-" : "100%"}
                 </td>
               </tr>
@@ -119,9 +119,9 @@ export function ReceivablesSection({
                 return (
                   <tr
                     key={a.bucket}
-                    className={`${rowClass} ${old && a.count > 0 ? "bg-amber-50" : ""}`}
+                    className={`${rowClass} ${old && a.count > 0 ? "bg-warning-soft" : ""}`}
                   >
-                    <td className="py-1.5">
+                    <td className="py-2.5">
                       {old ? (
                         <span className="inline-flex items-center gap-1 font-medium">
                           <TriangleAlert className="size-3.5" aria-hidden />
@@ -131,25 +131,25 @@ export function ReceivablesSection({
                         BUCKET_LABEL[a.bucket]
                       )}
                     </td>
-                    <td className="py-1.5 text-right">
+                    <td className="py-2.5 text-right">
                       <Amount value={a.amount} />
                     </td>
-                    <td className="py-1.5 text-right tabular-nums">
+                    <td className="py-2.5 text-right tabular-nums">
                       {a.count}
                     </td>
-                    <td className="py-1.5 text-right tabular-nums">
+                    <td className="py-2.5 text-right tabular-nums">
                       {share(a.amount)}
                     </td>
                   </tr>
                 );
               })}
               <tr className={totalRowClass}>
-                <td className="py-1.5">합계</td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5">합계</td>
+                <td className="py-2.5 text-right">
                   <Amount value={total} />
                 </td>
-                <td className="py-1.5 text-right tabular-nums">{count}</td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5 text-right tabular-nums">{count}</td>
+                <td className="py-2.5 text-right">
                   {total === 0n ? "-" : "100%"}
                 </td>
               </tr>
@@ -173,19 +173,19 @@ export function ReceivablesSection({
             <tbody>
               {expectedRows.map((r) => (
                 <tr key={r.label} className={rowClass}>
-                  <td className="py-1.5">{r.label}</td>
-                  <td className="py-1.5 text-right">
+                  <td className="py-2.5">{r.label}</td>
+                  <td className="py-2.5 text-right">
                     <Amount value={r.amount} />
                   </td>
-                  <td className="py-1.5 text-right tabular-nums">{r.count}</td>
+                  <td className="py-2.5 text-right tabular-nums">{r.count}</td>
                 </tr>
               ))}
               <tr className={totalRowClass}>
-                <td className="py-1.5">합계</td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5">합계</td>
+                <td className="py-2.5 text-right">
                   <Amount value={total} />
                 </td>
-                <td className="py-1.5 text-right tabular-nums">{count}</td>
+                <td className="py-2.5 text-right tabular-nums">{count}</td>
               </tr>
             </tbody>
           </table>

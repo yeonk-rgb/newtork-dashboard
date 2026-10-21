@@ -16,7 +16,7 @@ import { hasAllTeams, normalizeScope, scopeError } from "./rules";
 import { LOGIN_ID_RULE, type CreateUserInput } from "./schemas";
 
 const fieldClass =
-  "h-9 w-full rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+  "h-9 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 const EMPTY = {
   loginId: "",
@@ -91,7 +91,7 @@ export function CreateUserDialog({
       ref={ref}
       onClose={onClose}
       aria-labelledby="create-user-title"
-      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-lg border bg-card p-5 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground shadow-lg backdrop:bg-black/30"
     >
       {open && (
         <form onSubmit={submit} className="space-y-3">
@@ -190,14 +190,14 @@ export function CreateUserDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={pending}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {pending ? "추가 중…" : "추가"}
             </button>

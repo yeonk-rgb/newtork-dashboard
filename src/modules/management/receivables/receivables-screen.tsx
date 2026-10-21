@@ -30,10 +30,10 @@ export async function ReceivablesScreen({
   const data = await loadReceivablesData(canManageHidden(user));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold">미수금 관리</h1>
+          <h1 className="text-2xl font-bold tracking-tight">미수금 관리</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
             경과일은 발생일부터 셉니다 (고객사 확인 중 05-17번). 대시보드
             미수금은 선택한 기간의 마지막 날(진행 중인 기간은 오늘) 기준

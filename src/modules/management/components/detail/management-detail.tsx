@@ -27,8 +27,8 @@ export function ManagementDetail({
   const withLastYear = showLastYear(period);
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <RevenueTable summary={summary} />
         <ExpenseTable
           label={summary.label}

@@ -192,7 +192,7 @@ export function UserTable({
     : undefined;
 
   return (
-    <section className="overflow-hidden rounded-md border bg-card">
+    <section className="overflow-hidden rounded-card border bg-card">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/60 px-4 py-2.5">
         <h2 className="text-sm font-bold">직원 목록</h2>
         <p className="text-sm text-muted-foreground">
@@ -204,14 +204,14 @@ export function UserTable({
           onClick={() => setCreating(true)}
           disabled={dirty || isPending}
           title={blockedHint}
-          className="ml-auto rounded-md border bg-background px-2.5 py-1 text-xs hover:bg-muted disabled:opacity-50"
+          className="ml-auto rounded-lg border bg-background px-2.5 py-1 text-xs hover:bg-muted disabled:opacity-50"
         >
           + 계정 추가
         </button>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[60rem] text-sm">
+        <table className="w-full min-w-[60rem] text-sm [&_td]:px-3 [&_th]:px-3">
           <thead>
             <tr className="border-b-2 border-foreground/70 text-left">
               {[
@@ -244,7 +244,7 @@ export function UserTable({
                   key={u.id}
                   className={cn(
                     "border-b align-middle last:border-b-0",
-                    isChanged && "bg-amber-100/70",
+                    isChanged && "bg-warning-soft",
                     !u.active && "text-muted-foreground",
                   )}
                 >
@@ -252,7 +252,7 @@ export function UserTable({
                   <td className="px-2 py-2.5">
                     {u.name}
                     {!u.active && (
-                      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs">
+                      <span className="ml-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
                         비활성
                       </span>
                     )}
@@ -265,7 +265,7 @@ export function UserTable({
                       onChange={(e) =>
                         update(u, { role: e.target.value as Role })
                       }
-                      className="h-9 w-36 rounded-md border border-input bg-background px-2 disabled:bg-muted disabled:text-muted-foreground"
+                      className="h-9 w-36 rounded-lg border border-input bg-background px-2 disabled:bg-muted disabled:text-muted-foreground"
                     >
                       {ROLES.map((role) => (
                         <option key={role} value={role}>
@@ -323,7 +323,7 @@ export function UserTable({
                   ))}
                   <td className="px-2 py-2.5">
                     {u.mustChangePassword && (
-                      <span className="inline-block rounded-md bg-amber-400 px-2 py-0.5 text-xs font-bold whitespace-nowrap text-amber-950">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-warning-strong">
                         초기 비밀번호 사용 중
                       </span>
                     )}
@@ -341,7 +341,7 @@ export function UserTable({
                           onClick={() => askReset(u)}
                           disabled={dirty || isPending}
                           title={blockedHint}
-                          className="rounded-md border border-destructive bg-background px-3 py-1.5 whitespace-nowrap text-destructive hover:bg-destructive/5 disabled:opacity-50"
+                          className="rounded-lg border border-destructive bg-background px-3 py-1.5 whitespace-nowrap text-destructive hover:bg-destructive/5 disabled:opacity-50"
                         >
                           비밀번호 초기화
                         </button>
@@ -350,7 +350,7 @@ export function UserTable({
                           onClick={() => askDeactivate(u)}
                           disabled={dirty || isPending}
                           title={blockedHint}
-                          className="rounded-md px-2 py-0.5 text-xs text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
+                          className="rounded-lg px-2 py-0.5 text-xs text-muted-foreground underline-offset-2 hover:underline disabled:opacity-50"
                         >
                           비활성화
                         </button>
@@ -361,7 +361,7 @@ export function UserTable({
                         onClick={() => act(() => restoreUser({ id: u.id }))}
                         disabled={dirty || isPending}
                         title={blockedHint}
-                        className="rounded-md border bg-background px-3 py-1.5 text-foreground hover:bg-muted disabled:opacity-50"
+                        className="rounded-lg border bg-background px-3 py-1.5 text-foreground hover:bg-muted disabled:opacity-50"
                       >
                         복구
                       </button>
@@ -395,7 +395,7 @@ export function UserTable({
             type="button"
             onClick={() => setDrafts({})}
             disabled={!dirty || isPending}
-            className="rounded-md border bg-background px-4 py-2 text-sm hover:bg-muted disabled:opacity-50"
+            className="rounded-lg border bg-background px-4 py-2 text-sm hover:bg-muted disabled:opacity-50"
           >
             되돌리기
           </button>
@@ -403,7 +403,7 @@ export function UserTable({
             type="button"
             onClick={save}
             disabled={!dirty || errors.size > 0 || isPending}
-            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {isPending ? "저장 중…" : "변경"}
           </button>

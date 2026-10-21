@@ -52,7 +52,7 @@ export function AiCommentPanel({
       type="button"
       onClick={generate}
       disabled={pending}
-      className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+      className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 disabled:opacity-50"
     >
       {pending ? (
         <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -76,7 +76,7 @@ export function AiCommentPanel({
         )}
 
         {staleReason && !pending && (
-          <p className="flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <p className="flex items-start gap-1.5 rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning-strong">
             <TriangleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
             <span>
               {staleReason === "prompt"
@@ -92,7 +92,7 @@ export function AiCommentPanel({
         {pending && (
           <p
             role="status"
-            className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-xs"
+            className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs"
           >
             <Loader2 className="size-3.5 animate-spin" aria-hidden />
             AI가 분석 중입니다. 1분 정도 걸릴 수 있습니다.
@@ -102,7 +102,7 @@ export function AiCommentPanel({
         {failure && !pending && (
           <div
             role="alert"
-            className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive"
           >
             {failure.message}
             {failure.retryable && (
@@ -132,17 +132,17 @@ export function AiCommentPanel({
             {/* 넓은 화면에서 3단 */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <AiCardColumn
-                dotClass="bg-blue-600"
+                dotClass="bg-foreground"
                 title="이번 기간 현황"
                 items={latest.result.summary}
               />
               <AiCardColumn
-                dotClass="bg-red-500"
+                dotClass="bg-destructive"
                 title="부족한 점·주의"
                 items={latest.result.shortfalls}
               />
               <AiCardColumn
-                dotClass="bg-emerald-500"
+                dotClass="bg-primary"
                 title="다음 분기 개선할 점"
                 items={latest.result.improvements}
                 extra={

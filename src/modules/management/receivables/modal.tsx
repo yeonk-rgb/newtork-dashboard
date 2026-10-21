@@ -29,7 +29,7 @@ export function Modal({
       ref={ref}
       onClose={onClose}
       aria-labelledby={titleId}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-lg border bg-card p-5 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground shadow-lg backdrop:bg-black/30"
     >
       {open && (
         <>
@@ -44,7 +44,7 @@ export function Modal({
 }
 
 export const fieldClass =
-  "h-9 w-full rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive";
+  "h-9 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive";
 
 export function FieldError({ id, message }: { id: string; message?: string }) {
   if (!message) return null;
@@ -71,14 +71,14 @@ export function DialogButtons({
       <button
         type="button"
         onClick={onCancel}
-        className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+        className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
       >
         취소
       </button>
       <button
         type="submit"
         disabled={pending || disabled}
-        className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
       >
         {pending ? "저장 중…" : submitLabel}
       </button>

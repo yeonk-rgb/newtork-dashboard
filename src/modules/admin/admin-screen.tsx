@@ -11,8 +11,8 @@ export async function AdminScreen() {
   const users = await loadAdminUsers();
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl">관리자 설정</h1>
+    <div className="space-y-5">
+      <h1 className="text-2xl font-bold tracking-tight">관리자 설정</h1>
       <UserTable actorId={user.id} users={users} />
     </div>
   );

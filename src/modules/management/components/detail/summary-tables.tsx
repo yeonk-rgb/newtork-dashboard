@@ -57,18 +57,18 @@ export function RevenueTable({ summary }: { summary: ManagementSummary }) {
         <tbody>
           {revenue.items.map((item) => (
             <tr key={item.key} className={rowClass}>
-              <td className="py-1.5">{item.label}</td>
-              <td className="py-1.5 text-right">
+              <td className="py-2.5">{item.label}</td>
+              <td className="py-2.5 text-right">
                 <Amount value={item.amount} />
               </td>
-              <td className="py-1.5 text-right tabular-nums">
+              <td className="py-2.5 text-right tabular-nums">
                 {pct(item.ratio)}
               </td>
-              <td className="py-1.5 text-right">
+              <td className="py-2.5 text-right">
                 <ChangeText change={changes.previous.revenueItems[item.key]} />
               </td>
               {withLastYear && (
-                <td className="py-1.5 text-right">
+                <td className="py-2.5 text-right">
                   <ChangeText
                     change={changes.lastYear.revenueItems[item.key]}
                   />
@@ -77,18 +77,18 @@ export function RevenueTable({ summary }: { summary: ManagementSummary }) {
             </tr>
           ))}
           <tr className={totalRowClass}>
-            <td className="py-1.5">합계 (총매출)</td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5">합계 (총매출)</td>
+            <td className="py-2.5 text-right">
               <Amount value={revenue.total} />
             </td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5 text-right">
               {revenue.total === 0n ? "-" : "100%"}
             </td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5 text-right">
               <ChangeText change={changes.previous.revenue} />
             </td>
             {withLastYear && (
-              <td className="py-1.5 text-right">
+              <td className="py-2.5 text-right">
                 <ChangeText change={changes.lastYear.revenue} />
               </td>
             )}
@@ -130,8 +130,8 @@ export function ProfitTable({ summary }: { summary: ManagementSummary }) {
         </thead>
         <tbody>
           <tr className={rowClass}>
-            <td className="py-1.5">총매출</td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5">총매출</td>
+            <td className="py-2.5 text-right">
               <Amount value={revenue.total} />
             </td>
           </tr>
@@ -140,31 +140,31 @@ export function ProfitTable({ summary }: { summary: ManagementSummary }) {
               key={item.key}
               className={cn(rowClass, item.excluded && "text-muted-foreground")}
             >
-              <td className="py-1.5 pl-3">
+              <td className="py-2.5 pl-3">
                 (−) {item.label}
                 {item.excluded && " · 비용 제외"}
               </td>
-              <td className="py-1.5 text-right">
+              <td className="py-2.5 text-right">
                 {item.excluded ? "" : "−"}
                 <Amount value={amountOf(item.key)} />
               </td>
             </tr>
           ))}
           <tr className={rowClass}>
-            <td className="py-1.5">비용 합계</td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5">비용 합계</td>
+            <td className="py-2.5 text-right">
               −<Amount value={profit.cost} />
             </td>
           </tr>
           <tr className={totalRowClass}>
-            <td className="py-1.5">단순 이익</td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5">단순 이익</td>
+            <td className="py-2.5 text-right">
               <Amount value={profit.profit} />
             </td>
           </tr>
           <tr>
-            <td className="py-1.5">이익률 (이익 ÷ 총매출)</td>
-            <td className="py-1.5 text-right tabular-nums">
+            <td className="py-2.5">이익률 (이익 ÷ 총매출)</td>
+            <td className="py-2.5 text-right tabular-nums">
               {pct(profit.margin)}
             </td>
           </tr>
@@ -221,7 +221,7 @@ export function QuarterTargetsTable({
       {warning && (
         <p
           role="status"
-          className="mb-2 flex items-center gap-1.5 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-950"
+          className="mb-2 flex items-center gap-1.5 rounded border border-warning/50 bg-warning-soft px-2 py-1 text-xs text-warning-strong"
         >
           <CircleAlert className="size-3.5 shrink-0" aria-hidden />
           <span className="font-semibold">확인 필요 ·</span>{" "}
@@ -249,7 +249,7 @@ export function QuarterTargetsTable({
                 className={cn(rowClass, selected && "bg-sidebar-accent/50")}
                 aria-current={selected ? "true" : undefined}
               >
-                <td className="py-1.5">
+                <td className="py-2.5">
                   {q}분기
                   {selected && (
                     <span className="ml-1 text-xs text-muted-foreground">
@@ -257,20 +257,20 @@ export function QuarterTargetsTable({
                     </span>
                   )}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5 text-right">
                   <Amount value={target} />
                 </td>
-                <td className="py-1.5 pl-3 text-xs">
+                <td className="py-2.5 pl-3 text-xs">
                   {sources[i] === "input" ? (
                     "직접 입력"
                   ) : (
                     <span className="text-muted-foreground">자동 배분</span>
                   )}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-2.5 text-right">
                   <Amount value={actuals[i]} />
                 </td>
-                <td className="py-1.5 text-right tabular-nums">
+                <td className="py-2.5 text-right tabular-nums">
                   {target === 0n
                     ? "-"
                     : pct(Number(actuals[i]) / Number(target))}
@@ -279,17 +279,17 @@ export function QuarterTargetsTable({
             );
           })}
           <tr className={totalRowClass}>
-            <td className="py-1.5">합계</td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5">합계</td>
+            <td className="py-2.5 text-right">
               <Amount value={quarterSum} />
             </td>
-            <td className="py-1.5 pl-3 text-xs font-normal text-muted-foreground">
+            <td className="py-2.5 pl-3 text-xs font-normal text-muted-foreground">
               연간 목표 <Amount value={annualTarget} />
             </td>
-            <td className="py-1.5 text-right">
+            <td className="py-2.5 text-right">
               <Amount value={actualSum} />
             </td>
-            <td className="py-1.5 text-right tabular-nums">
+            <td className="py-2.5 text-right tabular-nums">
               {pct(Number(actualSum) / Number(annualTarget))}
             </td>
           </tr>

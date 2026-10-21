@@ -4,6 +4,7 @@ import "server-only";
 import Link from "next/link";
 
 import { serializeBigInt } from "@/shared/format/bigint";
+import { periodMonths } from "@/shared/period/period";
 import { toPeriodParam } from "@/shared/period/url";
 import { Won } from "@/shared/ui/won";
 
@@ -37,27 +38,27 @@ function ReceivablesTop({ summary }: { summary: ManagementSummary }) {
           미수금이 없습니다.
         </p>
       ) : (
-        <table className="w-full text-sm">
+        <table className="w-full text-sm [&_td]:px-3 [&_th]:px-3">
           <caption className="sr-only">미수금 상위 거래처</caption>
-          <thead className="text-xs text-muted-foreground">
+          <thead className="bg-muted text-xs text-muted-foreground">
             <tr className="border-b">
-              <th className="py-1.5 text-left font-normal">순위</th>
-              <th className="py-1.5 text-left font-normal">거래처</th>
-              <th className="py-1.5 text-right font-normal">금액</th>
-              <th className="py-1.5 text-right font-normal">건수</th>
+              <th className="py-2.5 text-left font-medium">순위</th>
+              <th className="py-2.5 text-left font-medium">거래처</th>
+              <th className="py-2.5 text-right font-medium">금액</th>
+              <th className="py-2.5 text-right font-medium">건수</th>
             </tr>
           </thead>
           <tbody>
             {top.map((c, i) => (
               <tr key={c.customerName} className="border-b last:border-0">
-                <td className="py-1.5 text-muted-foreground">{i + 1}</td>
-                <td className="max-w-0 truncate py-1.5" title={c.customerName}>
+                <td className="py-2.5 text-muted-foreground">{i + 1}</td>
+                <td className="max-w-0 truncate py-2.5" title={c.customerName}>
                   {c.customerName}
                 </td>
-                <td className="py-1.5 text-right tabular-nums">
+                <td className="py-2.5 text-right tabular-nums">
                   <Won value={c.amount} />
                 </td>
-                <td className="py-1.5 text-right tabular-nums">{c.count}</td>
+                <td className="py-2.5 text-right tabular-nums">{c.count}</td>
               </tr>
             ))}
           </tbody>
@@ -78,8 +79,9 @@ export function MainBottom({
   trend: TrendPoint[];
 }) {
   return (
-    <section aria-label="추이와 미수금" className="space-y-3">
+    <section aria-label="추이와 미수금" className="space-y-5">
       <FlowChart
+        highlight={periodMonths(summary.period)}
         points={serializeBigInt(
           trend.map(
             ({ year, month, status, revenue, expense, profit, margin }) => ({

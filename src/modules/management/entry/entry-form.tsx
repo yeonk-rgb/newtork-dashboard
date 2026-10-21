@@ -76,7 +76,7 @@ function HelpTip({ id, text }: { id: string; text: string }) {
       <span
         id={id}
         role="tooltip"
-        className="pointer-events-none absolute top-5 left-0 z-20 hidden w-64 rounded-md border bg-popover p-2 text-xs leading-relaxed text-popover-foreground shadow-md group-focus-within:block group-hover:block"
+        className="pointer-events-none absolute top-5 left-0 z-20 hidden w-64 rounded-lg border bg-popover p-2 text-xs leading-relaxed text-popover-foreground shadow-sm group-focus-within:block group-hover:block"
       >
         {text}
       </span>
@@ -135,7 +135,7 @@ function AmountInput({
         {anomaly && (
           <span
             id={`${id}-warn`}
-            className="ml-2 inline-flex items-center gap-1 font-medium text-amber-900"
+            className="ml-2 inline-flex items-center gap-1 font-medium text-warning-strong"
           >
             <TriangleAlert className="size-3.5" aria-hidden />
             전월의 10배 이상이거나 1/10 이하 — 자릿수를 확인하세요
@@ -381,7 +381,7 @@ export function EntryForm({
   };
 
   const selectClass =
-    "h-8 rounded-md border border-input bg-background px-2 text-sm";
+    "h-8 rounded-lg border border-input bg-background px-2 text-sm";
   const yearMonthIndex = (y: number, m: number) => y * 12 + (m - 1);
 
   return (
@@ -389,10 +389,10 @@ export function EntryForm({
       <form
         onSubmit={(e) => e.preventDefault()}
         onKeyDown={onKeyDown}
-        className="space-y-4 pb-28"
+        className="space-y-5 pb-28"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold">월간 실적 입력</h1>
+          <h1 className="text-2xl font-bold tracking-tight">월간 실적 입력</h1>
           <div className="flex items-center gap-2">
             <label className="sr-only" htmlFor="entry-year">
               연도
@@ -438,10 +438,10 @@ export function EntryForm({
           </div>
         </div>
 
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border bg-card px-3 py-2 text-sm">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border bg-card px-3 py-2 text-sm">
           <span
             className={cn(
-              "rounded px-1.5 py-0.5 text-xs font-medium",
+              "rounded-full px-2.5 py-0.5 text-xs font-medium",
               data.status === "CONFIRMED"
                 ? "bg-primary text-primary-foreground"
                 : "border",
@@ -461,7 +461,7 @@ export function EntryForm({
         {pendingDraft && (
           <div
             role="alert"
-            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-primary/40 bg-sidebar-accent/40 px-3 py-2 text-sm"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-primary/40 bg-sidebar-accent/40 px-3 py-2 text-sm"
           >
             <Info className="size-4 shrink-0" aria-hidden />
             <span className="flex-1">
@@ -477,14 +477,14 @@ export function EntryForm({
             <button
               type="button"
               onClick={restoreDraft}
-              className="rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground hover:bg-primary/90"
+              className="rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground hover:bg-primary/90"
             >
               복구
             </button>
             <button
               type="button"
               onClick={discardDraft}
-              className="rounded-md border px-3 py-1 text-sm hover:bg-muted"
+              className="rounded-lg border px-3 py-1 text-sm hover:bg-muted"
             >
               버리기
             </button>
@@ -494,7 +494,7 @@ export function EntryForm({
         {abilities.notice && (
           <p
             role="status"
-            className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+            className="flex items-center gap-2 rounded-lg border border-warning/50 bg-warning-soft px-3 py-2 text-sm text-warning-strong"
           >
             <CircleAlert className="size-4 shrink-0" aria-hidden />
             {abilities.notice}
@@ -504,7 +504,7 @@ export function EntryForm({
         {SECTIONS.map((section) => (
           <fieldset
             key={section.title}
-            className="rounded-lg border bg-card px-4 py-3"
+            className="rounded-card border bg-card px-5 py-4"
           >
             <legend className="px-1 text-sm font-semibold">
               {section.title}
@@ -530,7 +530,7 @@ export function EntryForm({
           </fieldset>
         ))}
 
-        <fieldset className="rounded-lg border bg-card px-4 py-3">
+        <fieldset className="rounded-card border bg-card px-5 py-4">
           <legend className="px-1 text-sm font-semibold">그 외 지출</legend>
           {data.categories.length === 0 ? (
             <p className="py-2 text-sm text-muted-foreground">
@@ -584,7 +584,9 @@ export function EntryForm({
               </dd>
             </div>
             {dirty && (
-              <div className="text-amber-900">· 저장하지 않은 변경 있음</div>
+              <div className="text-warning-strong">
+                · 저장하지 않은 변경 있음
+              </div>
             )}
           </dl>
           <div className="flex flex-wrap gap-2">
@@ -593,7 +595,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending}
                 onClick={onUnconfirm}
-                className="rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                className="rounded-lg border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
               >
                 확정 취소
               </button>
@@ -603,7 +605,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => saveMonthlyEntry(payload("draft")))}
-                className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
               >
                 임시저장
               </button>
@@ -613,7 +615,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending}
                 onClick={onConfirm}
-                className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="rounded-lg bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 확정
               </button>
@@ -623,7 +625,7 @@ export function EntryForm({
                 type="button"
                 disabled={pending || !dirty}
                 onClick={onUpdateConfirmed}
-                className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                className="rounded-lg bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
                 수정 저장
               </button>

@@ -125,10 +125,10 @@ export function CategoryManager({
   };
 
   const selectClass =
-    "h-8 rounded-md border border-input bg-background px-2 text-sm";
+    "h-8 rounded-lg border border-input bg-background px-2 text-sm";
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-4">
+    <section className="space-y-3 rounded-card border bg-card p-5">
       <div>
         <h2 className="text-sm font-semibold">그 외 지출 항목</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
@@ -140,18 +140,18 @@ export function CategoryManager({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-sm">
+        <table className="w-full min-w-[640px] text-sm [&_td]:px-3 [&_th]:px-3">
           <caption className="sr-only">그 외 지출 항목 목록</caption>
-          <thead className="text-xs text-muted-foreground">
+          <thead className="bg-muted text-xs text-muted-foreground">
             <tr className="border-b">
-              <th className="py-1.5 text-left font-normal">순서</th>
-              <th className="py-1.5 text-left font-normal">항목명</th>
-              <th className="py-1.5 text-left font-normal">
+              <th className="py-2.5 text-left font-medium">순서</th>
+              <th className="py-2.5 text-left font-medium">항목명</th>
+              <th className="py-2.5 text-left font-medium">
                 고정/변동 (BEP용)
               </th>
-              <th className="py-1.5 text-left font-normal">상태</th>
-              <th className="py-1.5 text-right font-normal">사용</th>
-              <th className="py-1.5" />
+              <th className="py-2.5 text-left font-medium">상태</th>
+              <th className="py-2.5 text-right font-medium">사용</th>
+              <th className="py-2.5" />
             </tr>
           </thead>
           <tbody>
@@ -165,7 +165,7 @@ export function CategoryManager({
                     !row.isActive && "bg-muted/40",
                   )}
                 >
-                  <td className="py-1.5">
+                  <td className="py-2.5">
                     <div className="flex gap-0.5">
                       <button
                         type="button"
@@ -187,7 +187,7 @@ export function CategoryManager({
                       </button>
                     </div>
                   </td>
-                  <td className="py-1.5 pr-2">
+                  <td className="py-2.5 pr-2">
                     <input
                       id={`cat-name-${row.key}`}
                       value={row.name}
@@ -202,7 +202,7 @@ export function CategoryManager({
                       aria-label="항목명"
                       placeholder="예: 연구개발비"
                       className={cn(
-                        "h-8 w-full rounded-md border border-input bg-background px-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                        "h-8 w-full rounded-lg border border-input bg-background px-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                         error && "border-destructive",
                       )}
                     />
@@ -216,7 +216,7 @@ export function CategoryManager({
                       </p>
                     )}
                   </td>
-                  <td className="py-1.5 pr-2">
+                  <td className="py-2.5 pr-2">
                     <select
                       aria-label="고정비/변동비"
                       className={selectClass}
@@ -235,24 +235,24 @@ export function CategoryManager({
                       <option value="VARIABLE">변동비</option>
                     </select>
                   </td>
-                  <td className="py-1.5 pr-2">
+                  <td className="py-2.5 pr-2">
                     <button
                       type="button"
                       onClick={() =>
                         update(row.key, { isActive: !row.isActive })
                       }
                       aria-pressed={!row.isActive}
-                      className="rounded-md border px-2 py-1 text-xs hover:bg-muted"
+                      className="rounded-lg border px-2 py-1 text-xs hover:bg-muted"
                     >
                       {row.isActive
                         ? "● 사용 중 → 비활성화"
                         : "○ 비활성 → 다시 사용"}
                     </button>
                   </td>
-                  <td className="py-1.5 text-right text-xs text-muted-foreground tabular-nums">
+                  <td className="py-2.5 text-right text-xs text-muted-foreground tabular-nums">
                     {row.isNew ? "새 항목" : `${row.usedMonths}개월`}
                   </td>
-                  <td className="py-1.5 text-right">
+                  <td className="py-2.5 text-right">
                     {(row.isNew || row.usedMonths === 0) && (
                       <button
                         type="button"
@@ -275,7 +275,7 @@ export function CategoryManager({
         <button
           type="button"
           onClick={add}
-          className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+          className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:bg-muted"
         >
           <Plus className="size-3.5" aria-hidden />
           항목 추가
@@ -284,7 +284,7 @@ export function CategoryManager({
           type="button"
           disabled={pending || !dirty || errors.size > 0}
           onClick={save}
-          className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
         >
           변경 저장
         </button>
@@ -294,7 +294,7 @@ export function CategoryManager({
           </span>
         )}
         {dirty && errors.size === 0 && (
-          <span className="text-xs text-amber-900">
+          <span className="text-xs text-warning-strong">
             저장하지 않은 변경 있음
           </span>
         )}

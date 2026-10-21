@@ -40,8 +40,8 @@ export async function SettingsScreen({
       : thisYear;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">목표·항목 설정</h1>
+    <div className="space-y-5">
+      <h1 className="text-2xl font-bold tracking-tight">목표·항목 설정</h1>
       <nav aria-label="설정 종류" className="flex gap-1 border-b">
         {TABS.map((t) => (
           <Link

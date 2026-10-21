@@ -35,7 +35,7 @@ export function TempPasswordDialog({
       ref={ref}
       onClose={onClose}
       aria-labelledby="temp-password-title"
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-lg border bg-card p-5 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground shadow-lg backdrop:bg-black/30"
     >
       {value && (
         <>
@@ -43,13 +43,13 @@ export function TempPasswordDialog({
             {value.title}
           </h2>
           <div className="mt-3 flex items-center gap-2">
-            <code className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-lg tracking-wider select-all">
+            <code className="flex-1 rounded-lg border bg-muted px-3 py-2 font-mono text-lg tracking-wider select-all">
               {value.password}
             </code>
             <button
               type="button"
               onClick={copy}
-              className="rounded-md border bg-background px-3 py-2 text-sm hover:bg-muted"
+              className="rounded-lg border bg-background px-3 py-2 text-sm hover:bg-muted"
             >
               {copied ? "복사됨" : "복사"}
             </button>
@@ -63,7 +63,7 @@ export function TempPasswordDialog({
               type="button"
               autoFocus
               onClick={onClose}
-              className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
+              className="rounded-lg bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
             >
               확인했습니다
             </button>
