@@ -16,9 +16,10 @@ vi.mock("@/shared/auth", () => ({ userDisplayName: (id: string) => id }));
 const { todayKst } = await import("../data/load-summary-input");
 const { dateTimeLabel } = await import("./load-comment");
 const { aiAbilities } = await import("./rules");
-const { DEV_USERS } = await import("@/shared/auth/dev-users");
+const { FAKE_USERS } = await import("@/shared/auth/testing/fake-users");
 
-const leader = DEV_USERS.find((u) => u.id === "dev-mgmt-leader")!;
+// 경영지원팀 = 확정(confirm) 권한 — 인증 시리즈에서 개발용 DEV_USERS 가 테스트용 FAKE_USERS 로 바뀜
+const leader = FAKE_USERS.mgmt;
 const q4: { unit: "quarter"; year: number; quarter: 4 } = {
   unit: "quarter",
   year: 2026,
