@@ -99,6 +99,11 @@ export async function UploadScreen() {
                   <td className="py-3">{nameOf(u.createdById)}</td>
                   <td className="py-3">
                     {(u.fileNames as string[]).join(", ")}
+                    {ledgerUploadLabel(u.detail) && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {ledgerUploadLabel(u.detail)}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 text-right tabular-nums">
                     {u.savedRows}행
@@ -111,4 +116,24 @@ export async function UploadScreen() {
       </section>
     </div>
   );
+}
+
+/** 채권·채무 엑셀 이관 이력이면 "채권·채무 2026-10 · 덮어쓰기" (mgmt_data_upload.detail) */
+function ledgerUploadLabel(detail: unknown): string | null {
+  if (!detail || typeof detail !== "object") return null;
+  const d = detail as {
+    kind?: unknown;
+    year?: unknown;
+    month?: unknown;
+    mode?: unknown;
+  };
+  if (
+    d.kind !== "ledger" ||
+    typeof d.year !== "number" ||
+    typeof d.month !== "number"
+  ) {
+    return null;
+  }
+  const month = `${d.year}-${String(d.month).padStart(2, "0")}`;
+  return `채권·채무 ${month} · ${d.mode === "overwrite" ? "덮어쓰기" : "추가"}`;
 }

@@ -26,6 +26,8 @@ export type LedgerRow = {
   /** 동시 수정 확인용 (ISO) */
   updatedAt: string;
   updatedBy: string;
+  /** 엑셀 이관으로 들어온 행 */
+  fromUpload: boolean;
   hidden: boolean;
   /** 숨긴 일시 (ISO) */
   deletedAt: string | null;

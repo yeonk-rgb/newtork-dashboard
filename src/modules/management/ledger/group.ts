@@ -35,3 +35,18 @@ export function kindCounts(rows: LedgerRow[]): Record<LedgerKind, number> {
     LEDGER_KINDS.map((k) => [k, rowsOfKind(rows, k).length]),
   ) as Record<LedgerKind, number>;
 }
+
+export type VendorTotals = {
+  /** 엑셀 F열 SUM 과 같은 값 (원본 SUM(D67:D79)이 66행 자동이체를 뺌) — '당월 그 외 지출' */
+  excludingAutoTransfer: bigint;
+  autoTransfer: bigint;
+  all: bigint;
+};
+
+/** 미지급비용-업체 합계 3줄 (2026-10-25 결정: 금액이 빠져 보이지 않게 셋 다 표시, 의도 확인 05-25) */
+export function vendorTotals(rows: LedgerRow[]): VendorTotals {
+  const vendor = rowsOfKind(rows, "ACCRUED_VENDOR");
+  const autoTransfer = sumAmount(vendor.filter((r) => r.autoTransfer));
+  const all = sumAmount(vendor);
+  return { excludingAutoTransfer: all - autoTransfer, autoTransfer, all };
+}

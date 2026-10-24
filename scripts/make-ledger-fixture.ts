@@ -1,12 +1,19 @@
 // 채권·채무 엑셀 이관 테스트용 픽스처 만들기 (가짜 거래처 — 실제 거래처명 사용 금지)
 // 고객사 원본 빈 양식(ledger-template.xlsx)을 열어 서식·병합·수식·H열 메모는 그대로 두고 값만 채운다
-// 실행: npx tsx scripts/make-ledger-fixture.ts  → src/modules/management/ledger/__fixtures__/ledger-sample.xlsx
+// 실행: npx tsx scripts/make-ledger-fixture.ts  → src/modules/management/ledger/__fixtures__/
 //
-// 일부러 넣은 경우 (파서 테스트용)
+// ledger-sample.xlsx — 정상 파일. 일부러 넣은 경우:
 // - A6 코드를 숫자 118 로 저장 → "0000000118" 로 0 채움
-// - 7행·27행 사이 빈 행, 27행은 코드 없는 거래처
+// - 7행·27행 빈 행, 28행은 코드 없는 거래처
+// - E8 적요 = 날짜 10/15 (당월수금완료 그룹 → 완료일 후보)
 // - 66행(연두 배경, 적요 "자동이체") 업체 — 원본 SUM(D67:D79) 범위 밖
 // - F열 수식에 계산값(result)을 넣어 원본 총액 비교가 되게 함 (원본 양식은 계산값이 없음)
+//
+// ledger-sample-issues.xlsx — 미리보기 경고 확인용 (위 파일에서):
+// - H31 메모 삭제 → 당월수금예정 그룹(25·26·28행) 미분류
+// - F41 계산값 6,000,000 → 외상매입금 총액 불일치 (행 합계 6,180,000)
+// - 29행 0원 → 제외, A30 코드만 → 건너뜀
+// - E26 적요 = 날짜 10/20 (당월수금예정 그룹 → 완료일로 쓰지 않고 글자 "10/20"으로만)
 import ExcelJS from "exceljs";
 import path from "node:path";
 
@@ -78,11 +85,27 @@ async function main() {
     ws.getCell(cell).value = { formula: `SUM(D${from}:D${to})`, result };
   }
 
-  const out = path.join(DIR, "ledger-sample.xlsx");
+  // 수금완료 그룹 적요에 날짜 (원본 E5:E13 은 날짜 서식 m/d)
+  ws.getCell("E8").value = new Date(Date.UTC(2026, 9, 15));
+
+  await save(wb, "ledger-sample.xlsx");
+
+  // 경고 확인용
+  ws.getCell("H31").value = null;
+  ws.getCell("F41").value = { formula: "SUM(D41:D49)", result: 6_000_000 };
+  ws.getCell("C29").value = "차파상사(가상)";
+  ws.getCell("D29").value = 0;
+  ws.getCell("A30").value = "0000000300";
+  const e26 = ws.getCell("E26");
+  e26.value = new Date(Date.UTC(2026, 9, 20));
+  e26.numFmt = 'm"/"d;@';
+  await save(wb, "ledger-sample-issues.xlsx");
+}
+
+async function save(wb: ExcelJS.Workbook, name: string) {
+  const out = path.join(DIR, name);
   await wb.xlsx.writeFile(out);
-  console.log(
-    `만들었습니다: ${path.relative(process.cwd(), out)} (${ROWS.length}행)`,
-  );
+  console.log(`만들었습니다: ${path.relative(process.cwd(), out)}`);
 }
 
 main().catch((error) => {

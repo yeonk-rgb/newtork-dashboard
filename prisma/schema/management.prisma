@@ -167,6 +167,8 @@ model DataUpload {
   sheets    Json
   /// 저장한 행 수 합계
   savedRows Int
+  /// 업로드 종류별 추가 정보 — 채권·채무 이관: { kind: "ledger", year, month, mode, hiddenRows, blocks, fileSha256 }
+  detail    Json?
 
   createdById String
   createdAt   DateTime @default(now())
@@ -239,6 +241,8 @@ model LedgerEntry {
   dueOn        DateTime?              @db.Date
   /// 수금(지급) 완료일 — 외상매출금 당월수금완료는 필수
   settledOn    DateTime?              @db.Date
+  /// 엑셀 이관으로 들어온 행 (mgmt_data_upload.id)
+  uploadId     String?
 
   /// 숨김(삭제 대신) — 조회할 때는 반드시 deletedAt: null
   deletedAt   DateTime?
@@ -251,5 +255,6 @@ model LedgerEntry {
 
   @@index([year, month, kind])
   @@index([deletedAt])
+  @@index([uploadId])
   @@map("mgmt_ledger_entry")
 }

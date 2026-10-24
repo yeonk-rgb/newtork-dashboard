@@ -27,6 +27,7 @@ function toRow(r: DbLedgerEntry, nameOf: NameOf): LedgerRow {
     settledOn: r.settledOn ? toDateOnly(r.settledOn) : null,
     updatedAt: r.updatedAt.toISOString(),
     updatedBy: nameOf(r.updatedById),
+    fromUpload: r.uploadId !== null,
     hidden: r.deletedAt !== null,
     deletedAt: r.deletedAt?.toISOString() ?? null,
     deletedBy: r.deletedById ? nameOf(r.deletedById) : null,
