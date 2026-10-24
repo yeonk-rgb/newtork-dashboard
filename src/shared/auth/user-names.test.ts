@@ -21,6 +21,7 @@ describe("loadUserNames — 작성자 id → 이름", () => {
     ]);
     expect(nameOf("u1")).toBe("윤경영");
     expect(nameOf("seed")).toBe("샘플 데이터");
+    expect(nameOf("seed-ledger")).toBe("샘플 데이터");
     expect(nameOf("dev-mgmt-leader")).toBe("이전 개발 사용자");
     expect(nameOf("gone")).toBe("알 수 없는 사용자");
     expect(nameOf(null)).toBe("-");

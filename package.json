@@ -23,6 +23,7 @@
     "metrics:report": "tsx --conditions=react-server scripts/metrics-report.ts",
     "env:set-key": "bash scripts/set-anthropic-key.sh",
     "seed:ai-examples": "tsx --conditions=react-server scripts/seed-ai-examples.ts",
+    "seed:ledger": "tsx --conditions=react-server scripts/seed-ledger.ts",
     "db:smoke": "tsx --conditions=react-server scripts/db-smoke.ts"
   },
   "dependencies": {
