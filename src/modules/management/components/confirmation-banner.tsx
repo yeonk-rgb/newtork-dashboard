@@ -19,9 +19,9 @@ export function ConfirmationBanner({
     <p
       role="status"
       className={cn(
-        "flex items-start gap-2 rounded-md border px-3 py-2 text-sm",
+        "flex items-start gap-2 rounded-xl border px-4 py-3 text-sm",
         notice.tone === "warning"
-          ? "border-amber-300 bg-amber-50 text-amber-950"
+          ? "border-transparent bg-warning-soft text-warning-strong"
           : "border-border bg-card text-foreground",
       )}
     >

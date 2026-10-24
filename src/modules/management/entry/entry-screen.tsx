@@ -40,7 +40,7 @@ export async function EntryScreen({
 
   if (state === "future") {
     return (
-      <p className="rounded-md border bg-card px-4 py-6 text-center text-sm">
+      <p className="rounded-card border bg-card p-6 text-center text-sm">
         미래 달({ym.year}년 {ym.month}월)은 입력할 수 없습니다.{" "}
         <a className="text-primary underline" href="/management/entry">
           지난달 입력으로 이동

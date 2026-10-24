@@ -4,6 +4,7 @@ import { Forbidden } from "@/shared/ui/forbidden";
 
 import { loadAdminUsers } from "./load-users";
 import { UserTable } from "./user-table";
+import { pageTitleClass } from "@/shared/ui/styles";
 
 export async function AdminScreen() {
   const user = await getCurrentUser();
@@ -11,8 +12,8 @@ export async function AdminScreen() {
   const users = await loadAdminUsers();
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl">관리자 설정</h1>
+    <div className="space-y-6">
+      <h1 className={pageTitleClass}>관리자 설정</h1>
       <UserTable actorId={user.id} users={users} />
     </div>
   );

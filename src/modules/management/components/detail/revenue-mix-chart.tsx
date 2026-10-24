@@ -17,9 +17,15 @@ import {
   formatWon,
   formatWonCompact,
 } from "@/shared/format/money";
-import { CHART_SURFACE, REVENUE_COLORS } from "@/shared/ui/chart-colors";
+import {
+  CHART_GRID,
+  CHART_INK,
+  CHART_SURFACE,
+  REVENUE_COLORS,
+} from "@/shared/ui/chart-colors";
 
 import { ChartCard } from "../donuts/chart-card";
+import { chipClass } from "@/shared/ui/styles";
 
 /** serializeBigInt 결과 */
 export type MixPoint = {
@@ -37,8 +43,8 @@ const SERIES = [
   { key: "service", label: "용역" },
 ] as const;
 
-const GRID = "#e7e6e2";
-const INK = "#52514e";
+const GRID = CHART_GRID;
+const INK = CHART_INK;
 const STATUS_TEXT = {
   CONFIRMED: "확정",
   DRAFT: "미확정",
@@ -84,7 +90,7 @@ function MixTooltip({
         BigInt(row.goods ?? "0") +
         BigInt(row.service ?? "0");
   return (
-    <div className="rounded-md border bg-popover px-3 py-2 text-xs shadow-md">
+    <div className="rounded-lg border bg-popover px-3 py-2 text-xs">
       <p className="font-medium">
         {row.year}년 {row.month}월{" "}
         <span className="font-normal text-muted-foreground">
@@ -97,7 +103,7 @@ function MixTooltip({
         <dl className="mt-1 grid grid-cols-[auto_auto] gap-x-3 tabular-nums">
           {SERIES.map((s) => (
             <div key={s.key} className="contents">
-              <dt className="flex items-center gap-1.5">
+              <dt className="flex items-center gap-2">
                 <span
                   aria-hidden
                   className="size-2.5 rounded-sm"
@@ -142,7 +148,7 @@ export function RevenueMixChart({ points }: { points: MixPoint[] }) {
       type="button"
       onClick={() => setShowTable((v) => !v)}
       aria-pressed={showTable}
-      className="shrink-0 rounded px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+      className={chipClass}
     >
       {showTable ? "그래프로 보기" : "표로 보기"}
     </button>
@@ -152,9 +158,9 @@ export function RevenueMixChart({ points }: { points: MixPoint[] }) {
     <ChartCard title={title} action={toggle}>
       {showTable ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[560px] text-sm [&_td]:px-3 [&_th]:px-3">
             <caption className="sr-only">매출 구성 월별</caption>
-            <thead className="text-xs text-muted-foreground">
+            <thead className="bg-muted text-xs text-muted-foreground">
               <tr className="border-b">
                 {[
                   "월",
@@ -166,7 +172,7 @@ export function RevenueMixChart({ points }: { points: MixPoint[] }) {
                 ].map((h, i) => (
                   <th
                     key={h}
-                    className={`py-1.5 font-normal ${i < 2 ? "text-left" : "text-right"}`}
+                    className={`py-3 font-medium ${i < 2 ? "text-left" : "text-right"}`}
                   >
                     {h}
                   </th>
@@ -176,16 +182,16 @@ export function RevenueMixChart({ points }: { points: MixPoint[] }) {
             <tbody className="tabular-nums">
               {rows.map((r) => (
                 <tr key={r.key} className="border-b">
-                  <td className="py-1.5">
+                  <td className="py-3">
                     {r.year}-{String(r.month).padStart(2, "0")}
                   </td>
-                  <td className="py-1.5">{STATUS_TEXT[r.status]}</td>
+                  <td className="py-3">{STATUS_TEXT[r.status]}</td>
                   {(["product", "goods", "service"] as const).map((k) => (
-                    <td key={k} className="py-1.5 text-right">
+                    <td key={k} className="py-3 text-right">
                       {r[k] === null ? "-" : formatAmount(r[k]!)}
                     </td>
                   ))}
-                  <td className="py-1.5 text-right">
+                  <td className="py-3 text-right">
                     {r.product === null
                       ? "-"
                       : formatAmount(
@@ -196,8 +202,8 @@ export function RevenueMixChart({ points }: { points: MixPoint[] }) {
                   </td>
                 </tr>
               ))}
-              <tr className="border-t-2 font-semibold">
-                <td className="py-1.5" colSpan={2}>
+              <tr className="border-t font-semibold">
+                <td className="py-3" colSpan={2}>
                   합계
                   {hasDraft && (
                     <span className="ml-1 text-xs font-normal text-muted-foreground">
@@ -205,16 +211,16 @@ export function RevenueMixChart({ points }: { points: MixPoint[] }) {
                     </span>
                   )}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-3 text-right">
                   {formatAmount(totals.product)}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-3 text-right">
                   {formatAmount(totals.goods)}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-3 text-right">
                   {formatAmount(totals.service)}
                 </td>
-                <td className="py-1.5 text-right">
+                <td className="py-3 text-right">
                   {formatAmount(totals.product + totals.goods + totals.service)}
                 </td>
               </tr>
@@ -225,7 +231,7 @@ export function RevenueMixChart({ points }: { points: MixPoint[] }) {
         <>
           <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {SERIES.map((s) => (
-              <li key={s.key} className="flex items-center gap-1.5">
+              <li key={s.key} className="flex items-center gap-2">
                 <span
                   aria-hidden
                   className="size-2.5 rounded-sm"

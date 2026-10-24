@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Pretendard: src/app/layout.tsx 의 next/font/local 이 --font-pretendard 를 정의 */
   --font-sans:
-    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui,
-    sans-serif;
+    var(--font-pretendard), "Noto Sans KR", "Apple SD Gothic Neo",
+    "Malgun Gothic", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -130,23 +131,165 @@
     @apply font-sans;
   }
 }
-/* 다우오피스풍 색상 토큰 (라이트 모드) — 위 shadcn 기본값을 덮어쓴다 */
+/* 디자인 토큰 (라이트 모드) — 위 shadcn 기본값을 덮어쓴다. 기준: docs/design-guide.md
+   따뜻한 회색 바탕(canvas) + 흰 카드(rounded-card, 1px 연한 보더, 그림자 없음)
+   브랜드: 딥 네이비(primary) + 번트 오렌지·코퍼(copper, 강조 카드 1개에만). 광택·네온·진한 그림자 없음 */
 :root {
-  --primary: oklch(0.53 0.17 256);
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.53 0.17 256);
-  --sidebar: oklch(0.975 0.004 250);
-  --sidebar-foreground: oklch(0.3 0.02 255);
-  --sidebar-primary: oklch(0.53 0.17 256);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.93 0.03 256);
-  --sidebar-accent-foreground: oklch(0.4 0.15 256);
-  --sidebar-border: oklch(0.91 0.005 250);
-  --header: oklch(0.36 0.1 258);
-  --header-foreground: oklch(0.985 0 0);
+  /* 딥 네이비 — 50~900: OKLCH 에서 색상 고정, 명도만 조절(채도는 기준 이하). 기준 700 */
+  --primary-50: #eef2f7;
+  --primary-100: #d5deea; /* 차트 비선택 막대 */
+  --primary-200: #b4c1d2;
+  --primary-300: #94a4ba;
+  --primary-400: #7588a3;
+  --primary-500: #576d8c;
+  --primary-600: #3b5375;
+  --primary-700: #1f3a5f;
+  --primary-800: #172c48; /* hover */
+  --primary-900: #0c1e36;
+
+  /* 번트 오렌지·코퍼 — 같은 방식. 기준 500 */
+  --copper-50: #f8eee7;
+  --copper-100: #f3dccb;
+  --copper-200: #e7bca6;
+  --copper-300: #d89e80;
+  --copper-400: #c98059;
+  --copper-500: #b8612e;
+  --copper-600: #9a4f24;
+  --copper-700: #7e3d15;
+  --copper-800: #652a01;
+  --copper-900: #481c01;
+
+  /* 강조 카드 바탕: 코퍼 기준값(500)보다 한 단계 진한 곳에서 시작 → 흰 글씨 최저 4.91:1 (500 은 4.39:1 로 미달)
+     코퍼 500 은 차트 등 다른 곳에서 그대로 쓴다 */
+  --emphasis-from: #ad5a2a;
+  --emphasis-to: var(--copper-600);
+
+  --primary: var(--primary-700);
+  --primary-foreground: #ffffff;
+  --brand-soft: var(--primary-50); /* 브랜드 연한 배경 (선택 상태·안내 영역) */
+  --brand-soft-foreground: var(--primary-700);
+  --ring: var(--primary-700);
+
+  /* 바탕·카드: 입력칸은 bg-background(흰색)를 쓰므로 바탕 회색은 canvas 로 따로 둔다 */
+  --canvas: #f5f4f1;
+  --background: #ffffff;
+  --card: #ffffff;
+  --popover: #ffffff;
+
+  /* 글자: 제목 / 본문 / 보조(작은 글자 대비 4.5:1 이상) / 흐린 보조(축·자리표시 등 큰 글자·장식용) */
+  --foreground: #1a1d23;
+  --card-foreground: #1a1d23;
+  --popover-foreground: #1a1d23;
+  --body: #4a4f57;
+  --muted-foreground: #6b6f76;
+  --subtle: #9a9ea5;
+
+  /* 면·선 (따뜻한 회색) — muted 위 보조 글자도 4.5:1 이 되도록 아주 옅게 */
+  --muted: #f5f4f1;
+  --secondary: #f5f4f1;
+  --secondary-foreground: #1a1d23;
+  --accent: #f5f4f1; /* shadcn 의 hover 면 (코퍼 아님) */
+  --accent-foreground: #1a1d23;
+  --border: #e7e5e0;
+  --input: #e7e5e0;
+
+  /* 상태 (채도 낮춤): 증가·정상 / 감소 / 경고·진행 중
+     감소·경고는 코퍼와 나란히 있어도 구분되게 조정 (색각 검증: 코퍼↔감소 ΔE 14.4, 코퍼↔경고 ΔE 14.8) */
+  --success: #2f7d57;
+  --destructive: #952c44;
+  --warning: #c9a43a;
+  /* 배지(pill)·안내 띠: 옅은 바탕 + 진한 글자 (작은 글자 대비 6:1 이상) */
+  --success-soft: #e8f2ec;
+  --success-strong: #24613f;
+  --danger-soft: #f6e8eb;
+  --danger-strong: #7c2438;
+  --warning-soft: #f8f1dd;
+  --warning-strong: #6b5413;
+  /* 구분용 보조 색(정보 배지) — 상태 색·브랜드 외에 하나 더 필요할 때만 (스틸블루) */
+  --info-soft: #edf2f8;
+  --info-strong: #3b5d86;
+
+  /* 카드 라운드 18px (버튼·입력칸은 --radius 10px 유지) */
+  --radius-card-size: 1.125rem;
+
+  /* 사이드바: 흰 면 + 활성 메뉴는 네이비 pill */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #4a4f57;
+  --sidebar-primary: var(--primary-700);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f4f1;
+  --sidebar-accent-foreground: #1a1d23;
+  --sidebar-border: #e7e5e0;
+
+  /* 상단 헤더: 흰 면 */
+  --header: #ffffff;
+  --header-foreground: #1a1d23;
 }
 
 @theme inline {
   --color-header: var(--header);
   --color-header-foreground: var(--header-foreground);
+  --color-canvas: var(--canvas);
+  --color-body: var(--body);
+  --color-subtle: var(--subtle);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-success-soft: var(--success-soft);
+  --color-success-strong: var(--success-strong);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-strong: var(--danger-strong);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-strong: var(--warning-strong);
+  --color-info-soft: var(--info-soft);
+  --color-info-strong: var(--info-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-foreground: var(--brand-soft-foreground);
+  --color-primary-50: var(--primary-50);
+  --color-primary-100: var(--primary-100);
+  --color-primary-200: var(--primary-200);
+  --color-primary-300: var(--primary-300);
+  --color-primary-400: var(--primary-400);
+  --color-primary-500: var(--primary-500);
+  --color-primary-600: var(--primary-600);
+  --color-primary-700: var(--primary-700);
+  --color-primary-800: var(--primary-800);
+  --color-primary-900: var(--primary-900);
+  --color-copper-50: var(--copper-50);
+  --color-copper-100: var(--copper-100);
+  --color-copper-200: var(--copper-200);
+  --color-copper-300: var(--copper-300);
+  --color-copper-400: var(--copper-400);
+  --color-copper-500: var(--copper-500);
+  --color-copper-600: var(--copper-600);
+  --color-copper-700: var(--copper-700);
+  --color-copper-800: var(--copper-800);
+  --color-copper-900: var(--copper-900);
+  --color-emphasis-from: var(--emphasis-from);
+  --color-emphasis-to: var(--emphasis-to);
+  --radius-card: var(--radius-card-size);
+}
+
+@layer base {
+  body {
+    /* 숫자는 자릿수 폭을 맞춰 표·카드에서 세로로 정렬되게 */
+    font-variant-numeric: tabular-nums;
+  }
+  /* 체크박스·라디오는 브라우저 기본 모양 + 브랜드 색 */
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--primary);
+  }
+  /* 아이콘(lucide): 선 굵기 1.5 로 통일 — 크기는 size-4(16px)·size-5(20px) 두 가지만 */
+  svg.lucide {
+    stroke-width: 1.5;
+  }
+  /* 호버·포커스는 배경색만 150ms 로 바뀐다 (그 밖의 움직임 없음) */
+  a,
+  button,
+  summary,
+  [role="switch"],
+  [role="menuitem"] {
+    transition-property: color, background-color, border-color;
+    transition-duration: 150ms;
+  }
 }

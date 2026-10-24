@@ -12,6 +12,7 @@ import { loadYearRange } from "../data/queries";
 import { CategoryManager } from "./category-manager";
 import { loadCategories, loadTarget } from "./load-settings";
 import { TargetForm } from "./target-form";
+import { pageTitleClass } from "@/shared/ui/styles";
 
 const TABS = [
   { key: "target", label: "연간 목표" },
@@ -40,8 +41,8 @@ export async function SettingsScreen({
       : thisYear;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">목표·항목 설정</h1>
+    <div className="space-y-6">
+      <h1 className={pageTitleClass}>목표·항목 설정</h1>
       <nav aria-label="설정 종류" className="flex gap-1 border-b">
         {TABS.map((t) => (
           <Link
@@ -53,7 +54,7 @@ export async function SettingsScreen({
             }
             aria-current={active === t.key ? "page" : undefined}
             className={cn(
-              "-mb-px border-b-2 px-3 py-2 text-sm",
+              "-mb-px rounded-t-lg border-b-2 px-4 py-2 text-sm hover:bg-primary-50",
               active === t.key
                 ? "border-primary font-semibold text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground",

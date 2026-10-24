@@ -43,7 +43,7 @@ async function ManagementContent({
   ]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <DashboardTop
         title="경영지원 상세"
         summary={summary}

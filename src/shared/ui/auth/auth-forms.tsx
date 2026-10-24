@@ -7,11 +7,12 @@ import {
   login,
   type AuthFormState,
 } from "@/shared/auth/actions";
+import { buttonPrimaryClass } from "@/shared/ui/styles";
 
 const INITIAL: AuthFormState = { error: null };
 
 const fieldClass =
-  "h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive";
+  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm transition-colors duration-150 outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-destructive";
 
 function Field({
   label,
@@ -30,7 +31,7 @@ function Field({
 }) {
   return (
     <label className="block text-sm">
-      <span className="mb-1 block font-medium">{label}</span>
+      <span className="mb-2 block font-medium text-foreground">{label}</span>
       <input
         name={name}
         type={type}
@@ -76,7 +77,7 @@ export function LoginForm({ next }: { next: string | null }) {
       <button
         type="submit"
         disabled={pending}
-        className="h-10 w-full rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        className={`${buttonPrimaryClass} w-full`}
       >
         {pending ? "로그인 중…" : "로그인"}
       </button>
@@ -116,7 +117,7 @@ export function ChangePasswordForm({ next }: { next: string | null }) {
       <button
         type="submit"
         disabled={pending}
-        className="h-10 w-full rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+        className={`${buttonPrimaryClass} w-full`}
       >
         {pending ? "변경 중…" : "비밀번호 변경"}
       </button>

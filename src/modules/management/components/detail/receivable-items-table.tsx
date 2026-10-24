@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { formatAmount } from "@/shared/format/money";
 import { cn } from "@/shared/lib/utils";
+import { pillClass } from "@/shared/ui/styles";
 
 /** 서버에서 날짜는 YYYY-MM-DD 문자열, 금액은 정수 문자열로 받음 */
 export type ReceivableRow = {
@@ -39,12 +40,12 @@ function SortButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-0.5 rounded px-1 hover:bg-muted",
+        "inline-flex items-center gap-0.5 rounded px-1 hover:bg-primary-50",
         active && "font-medium text-foreground",
       )}
     >
       {label}
-      <Icon className="size-3" aria-hidden />
+      <Icon className="size-4" aria-hidden />
     </button>
   );
 }
@@ -92,16 +93,16 @@ export function ReceivableItemsTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] text-sm">
+      <table className="w-full min-w-[720px] text-sm [&_td]:px-3 [&_th]:px-3">
         <caption className="sr-only">
           미수 건별 전체 (금액·경과일 정렬 가능)
         </caption>
-        <thead className="text-xs text-muted-foreground">
+        <thead className="bg-muted text-xs text-muted-foreground">
           <tr className="border-b">
-            <th className="py-1.5 text-left font-normal">거래처</th>
-            <th className="py-1.5 text-left font-normal">발생일</th>
+            <th className="py-3 text-left font-medium">거래처</th>
+            <th className="py-3 text-left font-medium">발생일</th>
             <th
-              className="py-1.5 text-right font-normal"
+              className="py-3 text-right font-medium"
               aria-sort={ariaSort("ageDays")}
             >
               <SortButton
@@ -112,7 +113,7 @@ export function ReceivableItemsTable({
               />
             </th>
             <th
-              className="py-1.5 text-right font-normal"
+              className="py-3 text-right font-medium"
               aria-sort={ariaSort("amount")}
             >
               <SortButton
@@ -122,54 +123,61 @@ export function ReceivableItemsTable({
                 onClick={() => toggle("amount")}
               />
             </th>
-            <th className="py-1.5 pl-3 text-left font-normal">수금 예정일</th>
-            <th className="py-1.5 text-left font-normal">상태</th>
-            <th className="py-1.5 text-left font-normal">비고</th>
+            <th className="py-3 pl-3 text-left font-medium">수금 예정일</th>
+            <th className="py-3 text-left font-medium">상태</th>
+            <th className="py-3 text-left font-medium">비고</th>
           </tr>
         </thead>
         <tbody>
           {sorted.map((r) => {
             const old = r.bucket === "90+";
             return (
-              <tr key={r.id} className={cn("border-b", old && "bg-amber-50")}>
-                <td className="py-1.5">{r.customerName}</td>
-                <td className="py-1.5 tabular-nums">{r.occurredOn}</td>
+              <tr
+                key={r.id}
+                className={cn("border-b", old && "bg-warning-soft")}
+              >
+                <td className="py-3">{r.customerName}</td>
+                <td className="py-3 tabular-nums">{r.occurredOn}</td>
                 <td
                   className={cn(
-                    "py-1.5 text-right tabular-nums",
+                    "py-3 text-right tabular-nums",
                     old && "font-semibold",
                   )}
                 >
                   {r.ageDays}일
                 </td>
-                <td className="py-1.5 text-right tabular-nums">
+                <td className="py-3 text-right tabular-nums">
                   {formatAmount(r.amount)}
                 </td>
-                <td className="py-1.5 pl-3 tabular-nums">{r.dueOn ?? "-"}</td>
-                <td className="py-1.5">
+                <td className="py-3 pl-3 tabular-nums">{r.dueOn ?? "-"}</td>
+                <td className="py-3">
                   <div className="flex flex-wrap gap-1">
                     {old && (
-                      <span className="inline-flex items-center gap-1 rounded border border-amber-400 px-1.5 text-xs font-medium text-amber-950">
-                        <TriangleAlert className="size-3" aria-hidden />
+                      <span
+                        className={`${pillClass} bg-warning-soft text-warning-strong`}
+                      >
+                        <TriangleAlert className="size-4" aria-hidden />
                         90일 초과
                       </span>
                     )}
                     {r.isOverdue && (
-                      <span className="rounded border px-1.5 text-xs text-muted-foreground">
+                      <span
+                        className={`${pillClass} bg-muted text-muted-foreground`}
+                      >
                         예정일 지남
                       </span>
                     )}
                   </div>
                 </td>
-                <td className="py-1.5 text-muted-foreground">{r.note ?? ""}</td>
+                <td className="py-3 text-muted-foreground">{r.note ?? ""}</td>
               </tr>
             );
           })}
-          <tr className="border-t-2 font-semibold">
-            <td className="py-1.5" colSpan={3}>
+          <tr className="border-t font-semibold">
+            <td className="py-3" colSpan={3}>
               합계 ({rows.length}건)
             </td>
-            <td className="py-1.5 text-right tabular-nums">
+            <td className="py-3 text-right tabular-nums">
               {formatAmount(total)}
             </td>
             <td colSpan={3} />

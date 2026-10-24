@@ -1,6 +1,11 @@
 "use client";
 // 임시 비밀번호 1회 표시 (닫으면 다시 볼 수 없다 — DB에는 해시만 있음)
 import { useEffect, useRef, useState } from "react";
+import {
+  buttonPrimaryClass,
+  buttonSecondaryClass,
+  cardTitleClass,
+} from "@/shared/ui/styles";
 
 export function TempPasswordDialog({
   value,
@@ -35,35 +40,35 @@ export function TempPasswordDialog({
       ref={ref}
       onClose={onClose}
       aria-labelledby="temp-password-title"
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-lg border bg-card p-5 text-card-foreground shadow-lg backdrop:bg-black/30"
+      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground backdrop:bg-black/30"
     >
       {value && (
         <>
-          <h2 id="temp-password-title" className="text-base font-semibold">
+          <h2 id="temp-password-title" className={cardTitleClass}>
             {value.title}
           </h2>
-          <div className="mt-3 flex items-center gap-2">
-            <code className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-lg tracking-wider select-all">
+          <div className="mt-4 flex items-center gap-2">
+            <code className="flex-1 rounded-lg border bg-muted px-3 py-2 font-mono text-lg tracking-wider select-all">
               {value.password}
             </code>
             <button
               type="button"
               onClick={copy}
-              className="rounded-md border bg-background px-3 py-2 text-sm hover:bg-muted"
+              className={buttonSecondaryClass}
             >
               {copied ? "복사됨" : "복사"}
             </button>
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-4 text-sm text-muted-foreground">
             이 창을 닫으면 다시 볼 수 없습니다. 직원에게 직접 전달하세요. 직원은
             이 비밀번호로 로그인한 뒤 새 비밀번호로 바꾸게 됩니다.
           </p>
-          <div className="mt-5 flex justify-end">
+          <div className="mt-6 flex justify-end">
             <button
               type="button"
               autoFocus
               onClick={onClose}
-              className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
+              className={buttonPrimaryClass}
             >
               확인했습니다
             </button>

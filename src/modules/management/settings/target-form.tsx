@@ -13,6 +13,11 @@ import { LEAVE_MESSAGE, useUnsavedGuard } from "../entry/use-unsaved-guard";
 import { allocateQuarterTargets } from "../metrics/targets";
 import { saveAnnualTarget, type SettingsActionResult } from "./actions";
 import type { TargetData } from "./load-settings";
+import {
+  buttonPrimaryClass,
+  cardTitleClass,
+  labelClass,
+} from "@/shared/ui/styles";
 
 const won = (v: bigint) => `${formatDigits(v.toString())}원`;
 
@@ -93,9 +98,9 @@ export function TargetForm({
   };
 
   return (
-    <section className="space-y-4 rounded-lg border bg-card p-4">
+    <section className="space-y-4 rounded-card border bg-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">
+        <h2 className={cardTitleClass}>
           {data.year}년 목표{" "}
           <span className="font-normal text-muted-foreground">
             ({data.updatedAt ? "설정됨" : "아직 설정되지 않음"})
@@ -104,7 +109,7 @@ export function TargetForm({
         <label className="flex items-center gap-2 text-sm">
           <span className="sr-only">연도</span>
           <select
-            className="h-8 rounded-md border border-input bg-background px-2"
+            className="h-10 rounded-lg border border-input bg-background px-3 hover:bg-primary-50"
             value={data.year}
             onChange={(e) => {
               if (dirty && !window.confirm(LEAVE_MESSAGE)) return;
@@ -133,15 +138,13 @@ export function TargetForm({
       </div>
 
       <div>
-        <h3 className="text-sm font-medium">
+        <h3 className={labelClass}>
           분기 목표{" "}
-          <span className="font-normal text-muted-foreground">
-            (선택 — 비우면 자동 배분)
-          </span>
+          <span className="font-normal">(선택 — 비우면 자동 배분)</span>
         </h3>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {quarters.map((q, i) => (
-            <div key={i} className="rounded-md border p-2">
+            <div key={i} className="rounded-lg border p-3">
               <label
                 htmlFor={`target-q${i + 1}`}
                 className="text-xs text-muted-foreground"
@@ -186,10 +189,10 @@ export function TargetForm({
         <p
           role="status"
           className={cn(
-            "flex items-center gap-2 rounded-md border px-3 py-2 text-sm",
+            "flex items-center gap-2 rounded-lg px-4 py-3 text-sm",
             preview.warning
-              ? "border-amber-300 bg-amber-50 text-amber-950"
-              : "bg-muted/30",
+              ? "bg-warning-soft text-warning-strong"
+              : "bg-muted",
           )}
         >
           {preview.warning ? (
@@ -212,12 +215,12 @@ export function TargetForm({
           type="button"
           disabled={pending || !dirty || annualValue === 0n}
           onClick={onSave}
-          className="rounded-md bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className={buttonPrimaryClass}
         >
           저장
         </button>
         {dirty && (
-          <span className="text-xs text-amber-900">
+          <span className="text-xs text-warning-strong">
             저장하지 않은 변경 있음
           </span>
         )}

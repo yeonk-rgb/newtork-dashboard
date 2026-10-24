@@ -9,7 +9,12 @@ import { INDUSTRIES } from "@/shared/contracts/production";
 import { formatWonShort } from "@/shared/format/money";
 import { periodMonths } from "@/shared/period/period";
 import { toPeriodParam } from "@/shared/period/url";
-import { INDUSTRY_COLORS, SERIES_COLORS } from "@/shared/ui/chart-colors";
+import {
+  INDUSTRY_COLORS,
+  METER_ON_ACCENT,
+  PALETTE,
+  SERIES_COLORS,
+} from "@/shared/ui/chart-colors";
 import { DonutCard } from "@/shared/ui/donut-card";
 
 import { alignMockToTotal } from "../../external/align-mock";
@@ -58,7 +63,8 @@ export async function DashboardDonuts({
   const periodTarget = periodTargetDonut(summary);
   const profitData = profitDonut(summary);
   const receivablesData = receivablesDonut(summary);
-  const annual = annualTargetDonut(summary);
+  // 연간 목표 = 메인의 강조 카드 1개 (코퍼 바탕) — docs/design-guide.md
+  const annual = annualTargetDonut(summary, METER_ON_ACCENT);
   const over90 = receivables.aging.find((a) => a.bucket === "90+");
 
   const shownComparisons =
@@ -78,8 +84,8 @@ export async function DashboardDonuts({
     monthsText(list.map((month) => ({ year: period.year, month })));
 
   return (
-    <section aria-label="원형 그래프" className="space-y-3">
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <section aria-label="원형 그래프" className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <DonutCard
           title={`${summary.label} 매출`}
           {...revenue}
@@ -124,7 +130,7 @@ export async function DashboardDonuts({
                   {formatWonShort(targets.period.actual)}
                 </p>
                 {targets.annual && period.unit !== "year" && (
-                  <p className="mt-0.5">
+                  <p className="mt-1">
                     {period.year}년 연간{" "}
                     <span className="text-foreground">
                       {targets.annual.rate === null
@@ -177,7 +183,7 @@ export async function DashboardDonuts({
             </Link>
           }
           footer={
-            <dl className="space-y-0.5">
+            <dl className="space-y-1">
               <div className="flex justify-between gap-2">
                 <dt>90일 초과</dt>
                 <dd className="text-foreground">
@@ -203,10 +209,11 @@ export async function DashboardDonuts({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
         <DonutCard
           title={`${period.year}년 연간 목표 달성률`}
           {...annual}
+          tone="accent"
           csvName={csv("연간목표")}
           footer={
             progress && (
@@ -214,13 +221,13 @@ export async function DashboardDonuts({
                 <p>
                   <span
                     aria-hidden
-                    className="mr-1 inline-block h-3 w-0.5 bg-foreground align-middle"
+                    className="mr-1 inline-block h-3 w-0.5 bg-current align-middle"
                   />
                   {progress.basisMonth > 0 ? (
                     <>
                       연간 경과율 {pct(progress.elapsedRatio)} (
                       {progress.basisMonth}월까지 확정 기준) ·{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="font-semibold text-white">
                         진도 대비 {gap > 0 ? "▲" : gap < 0 ? "▼" : ""}
                         {Math.abs(gap * 100).toFixed(1)}%p
                         {gap > 0 ? " 앞섬" : gap < 0 ? " 뒤처짐" : ""}
@@ -231,13 +238,13 @@ export async function DashboardDonuts({
                   )}
                 </p>
                 {progress.excludedMonths.length > 0 && (
-                  <p className="mt-0.5">
+                  <p className="mt-1">
                     {yearMonths(progress.excludedMonths)}은 미확정이라 진도
                     비교에서 제외
                   </p>
                 )}
                 {progress.gapMonths.length > 0 && (
-                  <p className="mt-0.5">
+                  <p className="mt-1">
                     {yearMonths(progress.gapMonths)}은 미확정이라 누적 실적에서
                     빠져 있습니다
                   </p>
@@ -311,7 +318,7 @@ function orderedShare(
       key: i.key,
       label: i.label,
       value: i.amount.toString(),
-      color: colors[i.key] ?? "#8c8b86",
+      color: colors[i.key] ?? PALETTE.slate,
       extra: `${i.quantity.toLocaleString("ko-KR")}대`,
     }));
 }

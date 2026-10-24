@@ -9,7 +9,8 @@ import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { formatAmount, formatWon, formatWonShort } from "@/shared/format/money";
 import { cn } from "@/shared/lib/utils";
 
-import { CHART_SURFACE } from "./chart-colors";
+import { ACCENT_SURFACE, CHART_SURFACE } from "./chart-colors";
+import { cardTitleClass, chipClass, pillClass } from "./styles";
 import {
   donutCsv,
   donutPct,
@@ -23,9 +24,44 @@ export type { DonutSlice } from "./donut-data";
 /** 도넛 위 얇은 눈금 (예: 연간 경과율) — 12시에서 시계 방향 ratio(0~1) 위치 */
 export type DonutMarker = { ratio: number; label: string };
 
-/** 크기(176px)에 맞춘 반지름 비율 (Pie innerRadius 62%, outerRadius 95%) */
-const INNER = 0.62;
+/** 크기(176px)에 맞춘 반지름 비율 — 두께 = 지름의 약 20% ((0.95-0.57)/(2×0.95)) */
+const INNER = 0.57;
 const OUTER = 0.95;
+
+/**
+ * 카드 색 (docs/design-guide.md)
+ * - default: 흰 카드
+ * - accent: 강조 카드 (#AD5A2A → 코퍼 600 아주 옅은 그라데이션, 흰 글씨) — 화면당 1개만 (메인 연간 목표)
+ *   흰 글씨 대비: 시작 #AD5A2A 4.91:1 · 끝 600 5.97:1 → 작은 글씨도 흰색 100% (투명도로 흐리게 하지 않음)
+ *   선택 줄·배지·호버 면은 흰색을 겹치면 대비가 떨어지므로(흰 15% 3.7:1) 검정을 옅게 겹친다 (검정 10% 5.8:1)
+ */
+const TONES = {
+  default: {
+    card: "border bg-card text-card-foreground",
+    surface: CHART_SURFACE,
+    muted: "text-muted-foreground",
+    line: "border-border",
+    rowActive: "bg-primary-50",
+    badge: "bg-muted text-muted-foreground",
+    control: "",
+    switchOn: "bg-primary",
+    switchOff: "bg-border",
+    marker: "stroke-foreground",
+  },
+  accent: {
+    card: "border border-emphasis-to bg-linear-to-br from-emphasis-from to-emphasis-to text-white",
+    surface: ACCENT_SURFACE,
+    muted: "text-white",
+    line: "border-white/20",
+    rowActive: "bg-black/10",
+    badge: "bg-black/15 text-white",
+    control: "border-white/40 text-white hover:bg-black/10",
+    switchOn: "bg-white/85",
+    switchOff: "bg-white/30",
+    marker: "stroke-white",
+  },
+} as const;
+export type DonutTone = keyof typeof TONES;
 
 export function DonutCard({
   title,
@@ -42,6 +78,7 @@ export function DonutCard({
   note,
   emptyText,
   csvName,
+  tone = "default",
 }: {
   title: string;
   /** 제목 옆 작은 배지 (예: 샘플 데이터) */
@@ -66,7 +103,10 @@ export function DonutCard({
   emptyText?: string | null;
   /** 내보내기 파일 이름 (확장자 제외) */
   csvName: string;
+  /** 강조 카드면 "accent" (조각 색은 호출하는 쪽에서 METER_ON_ACCENT 등으로 맞춘다) */
+  tone?: DonutTone;
 }) {
+  const t = TONES[tone];
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [showTable, setShowTable] = useState(false);
   const switchId = useId();
@@ -93,51 +133,53 @@ export function DonutCard({
   };
 
   return (
-    <section className="flex flex-col rounded-lg border bg-card shadow-xs">
-      <header className="flex items-start justify-between gap-2 border-b px-4 py-3">
-        <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-          {title}
-          {badge && (
-            <span className="rounded border border-dashed border-muted-foreground/50 px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
-              {badge}
-            </span>
+    <section className={cn("flex flex-col rounded-card", t.card)}>
+      <header className="flex items-start justify-between gap-2 px-6 pt-6">
+        <h2
+          className={cn(
+            cardTitleClass,
+            "flex flex-wrap items-center gap-2 text-inherit",
           )}
+        >
+          {title}
+          {badge && <span className={cn(pillClass, t.badge)}>{badge}</span>}
         </h2>
         {action}
       </header>
 
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 p-6">
         {emptyText ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
+          <p className={cn("py-12 text-center text-sm", t.muted)}>
             {emptyText}
           </p>
         ) : showTable ? (
           <table className="w-full text-sm">
             <caption className="sr-only">{title}</caption>
-            <thead className="text-xs text-muted-foreground">
-              <tr className="border-b">
-                <th className="py-1.5 text-left font-normal">항목</th>
-                <th className="py-1.5 text-right font-normal">{valueHeader}</th>
-                <th className="py-1.5 text-right font-normal">비율</th>
+            <thead className={cn("text-xs", t.muted)}>
+              <tr className={cn("border-b", t.line)}>
+                <th className="py-2 text-left font-medium">항목</th>
+                <th className="py-2 text-right font-medium">{valueHeader}</th>
+                <th className="py-2 text-right font-medium">비율</th>
                 {extraHeader && (
-                  <th className="py-1.5 text-right font-normal">
-                    {extraHeader}
-                  </th>
+                  <th className="py-2 text-right font-medium">{extraHeader}</th>
                 )}
               </tr>
             </thead>
             <tbody className="tabular-nums">
               {list.map((row) => (
-                <tr key={row.key} className="border-b last:border-0">
-                  <td className="py-1.5">{row.label}</td>
-                  <td className="py-1.5 text-right">
+                <tr
+                  key={row.key}
+                  className={cn("border-b last:border-0", t.line)}
+                >
+                  <td className="py-2">{row.label}</td>
+                  <td className="py-2 text-right">
                     {valueKind === "money"
                       ? formatAmount(row.value)
                       : row.value}
                   </td>
-                  <td className="py-1.5 text-right">{donutPct(row.ratio)}</td>
+                  <td className="py-2 text-right">{donutPct(row.ratio)}</td>
                   {extraHeader && (
-                    <td className="py-1.5 text-right">{row.extra}</td>
+                    <td className="py-2 text-right">{row.extra}</td>
                   )}
                 </tr>
               ))}
@@ -160,8 +202,9 @@ export function DonutCard({
                     outerRadius={`${OUTER * 100}%`}
                     startAngle={90}
                     endAngle={-270}
-                    stroke={CHART_SURFACE}
+                    stroke={t.surface}
                     strokeWidth={2}
+                    cornerRadius={4}
                     isAnimationActive={false}
                     onMouseLeave={() => setActiveKey(null)}
                   >
@@ -177,16 +220,20 @@ export function DonutCard({
                 </PieChart>
               </ResponsiveContainer>
               {marker && marker.ratio > 0 && marker.ratio < 1 && (
-                <MarkerLine ratio={marker.ratio} label={marker.label} />
+                <MarkerLine
+                  ratio={marker.ratio}
+                  label={marker.label}
+                  className={t.marker}
+                />
               )}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
                 <span
-                  className="text-3xl font-semibold tracking-tight tabular-nums"
+                  className="text-[28px] leading-tight font-bold tracking-[-0.02em] tabular-nums"
                   title={active ? formatWon(active.value) : center.title}
                 >
                   {active ? donutPct(active.ratio) : center.value}
                 </span>
-                <span className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                <span className={cn("mt-1 line-clamp-2 text-xs", t.muted)}>
                   {active ? active.label : center.label}
                 </span>
               </div>
@@ -204,15 +251,14 @@ export function DonutCard({
                   onFocus={() => setActiveKey(row.key)}
                   onBlur={() => setActiveKey(null)}
                   className={cn(
-                    "flex items-center gap-2 rounded-md border border-transparent px-2 py-1.5 outline-none",
-                    activeKey === row.key &&
-                      "border-border bg-muted/60 shadow-xs",
-                    row.muted && "text-muted-foreground",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                    activeKey === row.key && t.rowActive,
+                    row.muted && t.muted,
                   )}
                 >
                   <span
                     aria-hidden
-                    className="size-3 shrink-0 rounded-full"
+                    className="size-2.5 shrink-0 rounded-full"
                     style={{ background: row.color }}
                   />
                   <span className="min-w-0 flex-1 truncate">{row.label}</span>
@@ -220,7 +266,10 @@ export function DonutCard({
                     {donutPct(row.ratio)}
                   </span>
                   <span
-                    className="w-20 text-right text-xs text-muted-foreground tabular-nums"
+                    className={cn(
+                      "w-20 text-right text-xs tabular-nums",
+                      t.muted,
+                    )}
                     title={
                       valueKind === "money" ? formatWon(row.value) : undefined
                     }
@@ -233,22 +282,25 @@ export function DonutCard({
             </ul>
           </div>
         )}
-        {footer && (
-          <div className="mt-3 text-xs text-muted-foreground">{footer}</div>
-        )}
-        {note && (
-          <p className="mt-2 text-[11px] text-muted-foreground">{note}</p>
-        )}
+        {footer && <div className={cn("mt-4 text-xs", t.muted)}>{footer}</div>}
+        {note && <p className={cn("mt-2 text-xs", t.muted)}>{note}</p>}
       </div>
 
       {!emptyText && (
-        <footer className="flex items-center justify-between gap-2 border-t px-4 py-2">
+        <footer
+          className={cn(
+            "flex items-center justify-between gap-2 border-t px-6 py-3",
+            t.line,
+          )}
+        >
           <details className="relative">
-            <summary className="flex cursor-pointer list-none items-center gap-1 rounded-md border px-2.5 py-1 text-xs text-primary hover:bg-muted">
+            <summary
+              className={cn(chipClass, "cursor-pointer list-none", t.control)}
+            >
               내보내기
-              <ChevronDown className="size-3.5" aria-hidden />
+              <ChevronDown className="size-4" aria-hidden />
             </summary>
-            <div className="absolute bottom-full left-0 z-10 mb-1 rounded-md border bg-popover p-1 shadow-md">
+            <div className="absolute bottom-full left-0 z-10 mb-1 rounded-lg border bg-popover p-1 text-popover-foreground">
               <button
                 type="button"
                 onClick={(e) => {
@@ -257,16 +309,16 @@ export function DonutCard({
                     e.currentTarget.closest("details") as HTMLDetailsElement
                   ).open = false;
                 }}
-                className="flex w-max items-center gap-1.5 rounded px-2 py-1 text-xs hover:bg-muted"
+                className="flex h-8 w-max items-center gap-2 rounded-lg px-2 text-xs hover:bg-primary-50"
               >
-                <Download className="size-3.5" aria-hidden />
+                <Download className="size-4" aria-hidden />
                 CSV로 저장
               </button>
             </div>
           </details>
           <label
             htmlFor={switchId}
-            className="flex cursor-pointer items-center gap-2 text-xs text-primary"
+            className="flex cursor-pointer items-center gap-2 text-xs font-medium"
           >
             표로 보기
             <button
@@ -276,13 +328,14 @@ export function DonutCard({
               aria-checked={showTable}
               onClick={() => setShowTable((v) => !v)}
               className={cn(
-                "relative h-5 w-9 rounded-full transition-colors",
-                showTable ? "bg-primary" : "bg-muted-foreground/30",
+                "relative h-5 w-9 rounded-full transition-colors duration-150",
+                showTable ? t.switchOn : t.switchOff,
               )}
             >
               <span
                 className={cn(
-                  "absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform",
+                  "absolute top-0.5 left-0.5 size-4 rounded-full bg-white transition-transform duration-150",
+                  tone === "accent" && showTable && "bg-copper-600",
                   showTable && "translate-x-4",
                 )}
               />
@@ -295,7 +348,15 @@ export function DonutCard({
 }
 
 /** 진도 눈금: 도넛 두께를 가로지르는 짧은 선 */
-function MarkerLine({ ratio, label }: { ratio: number; label: string }) {
+function MarkerLine({
+  ratio,
+  label,
+  className,
+}: {
+  ratio: number;
+  label: string;
+  className: string;
+}) {
   const angle = ratio * 2 * Math.PI - Math.PI / 2;
   const at = (r: number) => ({
     x: 50 + r * Math.cos(angle),
@@ -315,7 +376,7 @@ function MarkerLine({ ratio, label }: { ratio: number; label: string }) {
         y1={inner.y}
         x2={outer.x}
         y2={outer.y}
-        className="stroke-foreground"
+        className={className}
         strokeWidth={1.4}
       />
     </svg>
