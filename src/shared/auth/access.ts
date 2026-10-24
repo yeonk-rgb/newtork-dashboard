@@ -27,6 +27,11 @@ const NAV_RULES: NavRule[] = [
         action: "view",
       },
       {
+        href: "/management/ledger",
+        label: "채권·채무 관리",
+        action: "view",
+      },
+      {
         href: "/management/upload",
         label: "엑셀 업로드·데이터 이관",
         action: "view",

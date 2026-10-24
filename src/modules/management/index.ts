@@ -63,6 +63,7 @@ export { ManagementDetail } from "./components/detail/management-detail";
 export { EntryScreen } from "./entry/entry-screen";
 export { SettingsScreen } from "./settings/settings-screen";
 export { ReceivablesScreen } from "./receivables/receivables-screen";
+export { LedgerScreen } from "./ledger/ledger-screen";
 export { UploadScreen } from "./upload/upload-screen";
 export { buildTemplate, TEMPLATE_FILE_NAME } from "./upload/template";
 

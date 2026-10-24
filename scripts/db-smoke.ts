@@ -12,6 +12,7 @@ import {
   loadSummaryInput,
   todayKst,
 } from "@/modules/management/data/load-summary-input";
+import { loadLedgerData } from "@/modules/management/ledger/load-ledger";
 import { loadReceivablesData } from "@/modules/management/receivables/load-receivables";
 import {
   loadExistingData,
@@ -67,6 +68,9 @@ async function main() {
   );
   await check("미수금 관리 목록 (loadReceivablesData)", () =>
     loadReceivablesData(true),
+  );
+  await check("채권·채무 관리 (loadLedgerData)", () =>
+    loadLedgerData({ year: 2026, month: 10 }, true),
   );
   await check("엑셀 업로드: 기존 데이터·이력", () =>
     Promise.all([loadExistingData(), loadRecentUploads()]),

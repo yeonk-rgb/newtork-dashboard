@@ -111,6 +111,12 @@
 - **미수금 관리(6단계 ③)**: `modules/management/receivables/`, `/management/receivables` — 규칙은 `rules.ts`의 `receivableAbilities()`(화면·Server Action 공용). 등록·미수 건 수정·수금 처리 = edit, 수금 완료 건 수정·수금 취소·숨김·복구 = confirm
   - **삭제 대신 숨김**(`deletedAt`·`deletedById`): 미수금을 새로 조회할 때는 **반드시 `deletedAt: null` 조건**을 넣는다 (지표용 `loadReceivables()`는 이미 제외). 숨긴 건은 복구 외 모든 동작 불가
   - 날짜: 발생일·수금일은 오늘 이후 불가, 예정일·수금일은 발생일 이후 (`receivableDateErrors()`), 오늘 = `getTodayKst()`
+- **채권·채무 관리(2026-10-24 1단계)**: `modules/management/ledger/`, `/management/ledger`, 테이블 `mgmt_ledger_entry`(모델 `LedgerEntry`) — 고객사 엑셀 `경영지원_관리.xlsx`를 옮긴 화면이라 **항목명·구분·열 순서는 엑셀과 같게** 둔다 (`labels.ts`)
+  - 기준년월(`year`·`month`)별 거래처 잔액. 구분 4개(외상매출금 / 외상매입금 / 미지급비용-직원 / 미지급비용-업체)를 한 테이블에 두고, 구분마다 쓰는 칸(`arStatus`·`partnerCode` / `purchaseType` / `expenseType`·`autoTransfer`)은 `schemas.ts`의 discriminated union + `toLedgerData()`로 나머지를 null 처리
+  - 거래처코드는 외상매출금만, 선택, 입력하면 숫자 10자리 **문자열**(앞자리 0 유지). 당월수금완료는 완료일 필수(오늘 이후 불가), 다른 외상매출금 상태엔 완료일 불가 (`ledgerDateErrors()`)
+  - 권한 `ledgerAbilities()`(화면·Server Action 공용): 열람 = 경영지원 view, 추가·수정 = edit, 숨김·복구 = confirm. 고객사 원문 "경영지원팀장만 수정"은 05-14·15에 확인 대기
+  - 삭제 대신 숨김(`deletedAt`) — 조회 시 `deletedAt: null`. 샘플은 `npm run seed:ledger`(작성자 `seed-ledger`, `-- --remove`로 삭제)
+  - **기존 미수금 관리·대시보드와 연결하지 않는다** — 외상매출금 vs 미수금 기준은 05-22번(대시보드 연결 전 필수), 전월 이월 05-23번, 총액 ↔ 월간 입력 05-24번
 
 ## 공통 정책
 

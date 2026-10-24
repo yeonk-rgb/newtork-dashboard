@@ -174,3 +174,82 @@ model DataUpload {
   @@index([createdAt])
   @@map("mgmt_data_upload")
 }
+
+/// 채권·채무 관리 구분 (경영지원_관리.xlsx 블록 4개)
+enum MgmtLedgerKind {
+  /// 외상매출금
+  AR
+  /// 외상매입금
+  AP
+  /// 미지급비용-직원
+  ACCRUED_STAFF
+  /// 미지급비용-업체
+  ACCRUED_VENDOR
+}
+
+/// 외상매출금 상태 (엑셀 F열 그룹)
+enum MgmtArStatus {
+  /// 장기미수
+  LONG_OVERDUE
+  /// 당월수금완료
+  COLLECTED
+  /// 당월수금예정
+  SCHEDULED
+}
+
+/// 외상매입금 매입유형
+enum MgmtPurchaseType {
+  /// 상품매입
+  GOODS
+  /// 원재료매입
+  RAW_MATERIAL
+}
+
+/// 미지급비용-업체 비용유형
+enum MgmtVendorExpenseType {
+  /// 광고선전비
+  ADVERTISING
+  /// 접대비
+  ENTERTAINMENT
+  /// 기타
+  OTHER
+}
+
+/// 채권·채무 (기준년월별 거래처 잔액 — 엑셀 양식 그대로). 구분마다 쓰는 칸이 다르며 검증은 ledger/schemas.ts
+/// 기존 미수금(mgmt_receivable, 건별)과는 별개 — 대시보드 미연결 (05-22번 정리 전까지)
+model LedgerEntry {
+  id           String                 @id @default(cuid())
+  year         Int
+  month        Int
+  kind         MgmtLedgerKind
+  /// 외상매출금만 (필수)
+  arStatus     MgmtArStatus?
+  /// 외상매입금만 (필수)
+  purchaseType MgmtPurchaseType?
+  /// 미지급비용-업체만 (필수)
+  expenseType  MgmtVendorExpenseType?
+  /// 미지급비용-업체만 의미 있음
+  autoTransfer Boolean                @default(false)
+  /// 외상매출금만, 숫자 10자리 문자열 (앞자리 0 유지)
+  partnerCode  String?
+  partnerName  String
+  amount       BigInt
+  note         String?
+  /// 수금(지급) 예정일
+  dueOn        DateTime?              @db.Date
+  /// 수금(지급) 완료일 — 외상매출금 당월수금완료는 필수
+  settledOn    DateTime?              @db.Date
+
+  /// 숨김(삭제 대신) — 조회할 때는 반드시 deletedAt: null
+  deletedAt   DateTime?
+  deletedById String?
+
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([year, month, kind])
+  @@index([deletedAt])
+  @@map("mgmt_ledger_entry")
+}
