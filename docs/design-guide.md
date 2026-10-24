@@ -82,7 +82,7 @@ OKLCH 에서 색상(hue)은 고정하고 명도만 조절, 채도는 기준값�
 | 숫자 | 크기 | 클래스 |
 |---|---|---|
 | 핵심 숫자 (KPI) | 30px Bold, 자간 -0.02em, `tabular-nums` | `text-[30px] leading-tight font-bold tracking-[-0.02em] tabular-nums` |
-| 도넛 가운데 숫자 | 28px Bold, 자간 -0.02em | `text-[28px] font-bold tracking-[-0.02em]` |
+| 도넛 가운데 숫자 | 글자 수에 따라 22px(5자 이하) · 18px(7자 이하) · 16px, Bold, 자간 -0.02em | `DonutCard` 안 `centerValueSize()` — 도넛 구멍 안쪽 88px 폭(`px-11`)을 넘지 않게 |
 | 보조 텍스트 | 12px | `text-xs text-muted-foreground` |
 
 - KPI 큰 금액의 단위 "원"은 숫자보다 작고 연하게: `<Won value={…} unit="subtle" />` ("4.8억" + 작은 회색 "원")
@@ -178,7 +178,7 @@ import { cardTitleClass } from "@/shared/ui/styles";
 비중·달성률 = **도넛**(`src/shared/ui/donut-card.tsx`의 `DonutCard` 재사용), 시계열 = 막대.
 
 - 도넛 두께: 지름의 약 20%, 조각 끝 라운드(4px), 조각 사이 2px 간격(카드 배경색)
-- 가운데 핵심 값(28px Bold) + 아래 작은 이름, 오른쪽 범례 [색 점 · 항목명 · % · 값], 마우스·키보드로 조각 강조
+- 가운데 핵심 값(22·18·16px Bold, 도넛 선과 겹치지 않게 글자 수로 크기 조절) + 아래 작은 이름, 오른쪽 범례 [색 점 · 항목명 · % · 값], 마우스·키보드로 조각 강조
 - **"표로 보기" 전환은 항상 둔다** (금색·주황은 흰 배경 대비가 낮아 값은 글자로도 보여야 함)
 - 강조 카드 위 도넛: `tone="accent"` + `METER_ON_ACCENT`
 - 막대: 위쪽 라운드, 선택 기간만 진한 색, 나머지는 연한 단계(`FLOW_COLORS.*Soft`), 미확정은 빗금

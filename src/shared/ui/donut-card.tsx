@@ -226,9 +226,15 @@ export function DonutCard({
                   className={t.marker}
                 />
               )}
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
+              {/* 가운데 글자는 도넛 구멍(지름 약 100px) 안쪽 88px 폭에만 놓는다 */}
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-11 text-center">
                 <span
-                  className="text-[28px] leading-tight font-bold tracking-[-0.02em] tabular-nums"
+                  className={cn(
+                    "leading-tight font-bold tracking-[-0.02em] whitespace-nowrap tabular-nums",
+                    centerValueSize(
+                      active ? donutPct(active.ratio) : center.value,
+                    ),
+                  )}
                   title={active ? formatWon(active.value) : center.title}
                 >
                   {active ? donutPct(active.ratio) : center.value}
@@ -345,6 +351,16 @@ export function DonutCard({
       )}
     </section>
   );
+}
+
+/**
+ * 가운데 숫자 크기: 글자 수에 따라 줄여 도넛 구멍(88px 폭)을 넘지 않게
+ * "82.4%" 22px · "7.09억원"·"1,234만원" 18px · 그보다 긴 값 16px
+ */
+function centerValueSize(text: string) {
+  if (text.length <= 5) return "text-[22px]";
+  if (text.length <= 7) return "text-lg";
+  return "text-base";
 }
 
 /** 진도 눈금: 도넛 두께를 가로지르는 짧은 선 */
