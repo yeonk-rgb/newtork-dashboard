@@ -194,6 +194,6 @@ export async function saveProduction(input: Input) {
   - 키는 `npm run env:set-key`로 넣습니다 (입력 숨김, 길이만 표시).
   - **예시 분석(`npm run seed:ai-examples`)은 시드(가짜) 데이터용입니다.** 고객사 실제 데이터를 넣기 전(05-19번 답변 후)에는 반드시 `npm run seed:ai-examples -- --remove`로 지워 주세요. 예시는 `model = "example"`, id `ai-example-*`로 저장되어 다른 기록과 구분됩니다.
   - ⚠️ 외부 AI로 재무 집계값을 보내는 것은 고객사 확인 전입니다 (05-19번). 답변 전까지 **샘플 시드 데이터로만** 사용하고, 실제 데이터를 넣은 DB에서는 AI 분석을 실행하지 않습니다.
-- **파일 업로드 공통**: `src/shared/upload/read-table.ts`의 `readTableFile(fileName, ArrayBuffer)` → 시트별 셀 표(문자열·숫자·null). .xlsx(exceljs 4.4.0 고정)·.csv(UTF-8/EUC-KR 자동 판별) 지원, .xls는 안내 메시지. 팀별 열 인식·검증은 각 모듈에서 합니다(경영지원: `modules/management/upload/`).
+- **파일 업로드 공통**: `src/shared/upload/read-table.ts`의 `readTableFile(fileName, ArrayBuffer)` → 시트별 셀 표(문자열·숫자·null). .xlsx(exceljs 4.4.0 고정)·.csv(UTF-8/EUC-KR 자동 판별) 지원, .xls는 안내 메시지. 팀별 열 인식·검증은 각 모듈에서 합니다(경영지원: `modules/management/upload/`). 병합 셀·글자색·배경색·수식으로 의미를 나타내는 양식은 `src/shared/upload/read-styled-sheet.ts`의 `readStyledXlsx(fileName, ArrayBuffer)`로 읽습니다(셀 값·수식·계산값 유무·표시 형식·글자색·배경색(직접 색 ARGB / 테마 색 번호·tint)·병합 범위·숨김 열). 경영지원 사용처: `modules/management/ledger/import/`.
 - `npm run check` (lint + typecheck + test)가 통과하는 상태로 합칩니다.
 - **배포(Render)**: 루트 `render.yaml` 한 개로 웹 서비스 + PostgreSQL을 만듭니다 (README 8번). 빌드는 `prisma migrate deploy` → `db:seed:if-empty`(빈 DB일 때만) → `next build`. 팀 테이블을 추가하면 마이그레이션 파일만 있으면 자동 반영되고, 팀 시드를 넣는다면 **재배포 때 사용자 데이터를 덮어쓰지 않게** 빈 DB일 때만 실행해 주세요. 헬스체크 `/api/health`는 로그인 없이 열려 있습니다(`proxy.ts`의 `PUBLIC_PATHS`).

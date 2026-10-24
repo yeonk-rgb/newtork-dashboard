@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { groupArRows, kindCounts, rowsOfKind, sumAmount } from "./group";
+import {
+  groupArRows,
+  kindCounts,
+  rowsOfKind,
+  sumAmount,
+  vendorTotals,
+} from "./group";
 import type { LedgerRow } from "./rules";
 
 const row = (patch: Partial<LedgerRow>): LedgerRow => ({
@@ -18,6 +24,7 @@ const row = (patch: Partial<LedgerRow>): LedgerRow => ({
   settledOn: null,
   updatedAt: "2026-10-24T00:00:00.000Z",
   updatedBy: "seed",
+  fromUpload: false,
   hidden: false,
   deletedAt: null,
   deletedBy: null,
@@ -77,6 +84,27 @@ describe("합계·건수", () => {
       AP: 1,
       ACCRUED_STAFF: 1,
       ACCRUED_VENDOR: 0,
+    });
+  });
+});
+
+describe("vendorTotals — 미지급비용-업체 3줄", () => {
+  it("총액(자동이체 제외) + 자동이체 합계 = 전체 합계", () => {
+    const vendor = [
+      row({ kind: "ACCRUED_VENDOR", autoTransfer: true, amount: "165000" }),
+      row({ kind: "ACCRUED_VENDOR", amount: "2200000" }),
+      row({ kind: "ACCRUED_VENDOR", amount: "380000" }),
+      row({ kind: "AR", autoTransfer: true, amount: "999" }),
+    ];
+    expect(vendorTotals(vendor)).toEqual({
+      excludingAutoTransfer: 2_580_000n,
+      autoTransfer: 165_000n,
+      all: 2_745_000n,
+    });
+    expect(vendorTotals([])).toEqual({
+      excludingAutoTransfer: 0n,
+      autoTransfer: 0n,
+      all: 0n,
     });
   });
 });

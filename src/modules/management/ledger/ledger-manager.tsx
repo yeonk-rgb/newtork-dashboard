@@ -1,7 +1,8 @@
 "use client";
 // 채권·채무 표: 기준년월·구분 탭·숨긴 항목 보기, 표 안에서 바로 행 추가·수정, 숨김·복구
 // 열 순서는 엑셀과 같게: (코드) | 거래처명 | 잔액 | 적요 | (상태)
-import { EyeOff, Plus } from "lucide-react";
+import { EyeOff, Plus, Upload } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useState, useTransition } from "react";
 
@@ -31,7 +32,13 @@ import {
   withArStatus,
   type LedgerDraft,
 } from "./draft";
-import { groupArRows, kindCounts, rowsOfKind, sumAmount } from "./group";
+import {
+  groupArRows,
+  kindCounts,
+  rowsOfKind,
+  sumAmount,
+  vendorTotals,
+} from "./group";
 import {
   AR_GROUP_TOTAL_LABEL,
   AR_STATUS_LABEL,
@@ -57,6 +64,7 @@ import {
   type LedgerRow,
 } from "./rules";
 import { ledgerFieldsSchema } from "./schemas";
+import { importAbilities } from "./import/rules";
 import { SettleDialog, type SettleRequest } from "./settle-dialog";
 
 /** 입력 중인 행: 기존 행 id 또는 "new" */
@@ -326,7 +334,9 @@ export function LedgerManager({
         <td className="py-3 text-xs whitespace-nowrap text-muted-foreground">
           {row.hidden
             ? `숨김 ${row.deletedAt?.slice(0, 10)} · ${row.deletedBy}`
-            : row.updatedBy}
+            : row.fromUpload
+              ? `${row.updatedBy} · 엑셀`
+              : row.updatedBy}
         </td>
         <td className="py-2 text-right whitespace-nowrap">
           <div className="flex justify-end gap-1">
@@ -565,17 +575,44 @@ export function LedgerManager({
   const renderRow = (row: LedgerRow) =>
     editing?.id === row.id ? editRow(row.id, editing.draft) : viewRow(row);
 
-  /** '총액' 줄 (엑셀 F열) — 숨긴 항목 보기에서는 표시하지 않음 */
-  const totalRow = (key: string, label: string, total: bigint) => (
+  /** '총액' 줄 (엑셀 F열, memo = H열 메모) — 숨긴 항목 보기에서는 표시하지 않음 */
+  const totalRow = (
+    key: string,
+    total: bigint,
+    memo: string | null,
+    title = "총액",
+  ) => (
     <tr key={key} className="border-b bg-muted/60 font-medium">
       {hasCode && <td className="py-2" />}
-      <td className="py-2 text-xs">
-        총액 <span className="text-muted-foreground">← {label}</span>
+      <td className="py-2 text-xs whitespace-nowrap">
+        {title}
+        {memo && <span className="text-muted-foreground"> ← {memo}</span>}
       </td>
       <td className="py-2 text-right tabular-nums">{formatAmount(total)}</td>
       <td colSpan={columnCount - (hasCode ? 3 : 2)} />
     </tr>
   );
+
+  /**
+   * 외상매출금 외 탭의 합계. 미지급비용-업체는 엑셀 SUM 이 자동이체 행을 빼므로
+   * 금액이 빠져 보이지 않게 3줄: 총액(자동이체 제외) / 자동이체 합계 / 전체 합계 (05-25)
+   */
+  const kindTotalRows = (k: Exclude<LedgerKind, "AR">) => {
+    if (k !== "ACCRUED_VENDOR") {
+      return [totalRow("total", sumAmount(tabRows), KIND_TOTAL_LABEL[k])];
+    }
+    const t = vendorTotals(tabRows);
+    return [
+      totalRow(
+        "total",
+        t.excludingAutoTransfer,
+        KIND_TOTAL_LABEL[k],
+        "총액(자동이체 제외)",
+      ),
+      totalRow("auto", t.autoTransfer, null, "자동이체 합계"),
+      totalRow("all", t.all, null, "전체 합계"),
+    ];
+  };
 
   const emptyRow = (key: string, text: string) => (
     <tr key={key} className="border-b">
@@ -609,8 +646,8 @@ export function LedgerManager({
             : group.rows.map(renderRow)),
           totalRow(
             `${group.status}-total`,
-            AR_GROUP_TOTAL_LABEL[group.status],
             group.total,
+            AR_GROUP_TOTAL_LABEL[group.status],
           ),
         ])
       : [
@@ -624,9 +661,7 @@ export function LedgerManager({
                 ),
               ]
             : tabRows.map(renderRow)),
-          ...(showHidden || kind === "AR"
-            ? []
-            : [totalRow("total", KIND_TOTAL_LABEL[kind], sumAmount(tabRows))]),
+          ...(showHidden || kind === "AR" ? [] : kindTotalRows(kind)),
         ];
 
   return (
@@ -643,19 +678,30 @@ export function LedgerManager({
               className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </label>
-          {canManageHiddenLedger(user) && (
-            <label className="ml-auto flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={showHidden}
-                onChange={(e) => toggleHidden(e.target.checked)}
-              />
-              숨긴 항목 보기
-              <span className="text-xs text-muted-foreground">
-                ({hiddenRows.length})
-              </span>
-            </label>
-          )}
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            {canManageHiddenLedger(user) && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={showHidden}
+                  onChange={(e) => toggleHidden(e.target.checked)}
+                />
+                숨긴 항목 보기
+                <span className="text-xs text-muted-foreground">
+                  ({hiddenRows.length})
+                </span>
+              </label>
+            )}
+            {importAbilities(user).canImport && (
+              <Link
+                href={`/management/ledger/import?month=${month}`}
+                className={buttonSecondaryClass}
+              >
+                <Upload className="size-4" aria-hidden />
+                엑셀 업로드
+              </Link>
+            )}
+          </div>
         </div>
 
         <div role="tablist" aria-label="구분" className="flex flex-wrap gap-1">

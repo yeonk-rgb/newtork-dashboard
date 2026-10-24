@@ -13,6 +13,7 @@ import {
   todayKst,
 } from "@/modules/management/data/load-summary-input";
 import { loadLedgerData } from "@/modules/management/ledger/load-ledger";
+import { countExisting } from "@/modules/management/ledger/import/save-import";
 import { loadReceivablesData } from "@/modules/management/receivables/load-receivables";
 import {
   loadExistingData,
@@ -71,6 +72,9 @@ async function main() {
   );
   await check("채권·채무 관리 (loadLedgerData)", () =>
     loadLedgerData({ year: 2026, month: 10 }, true),
+  );
+  await check("채권·채무 이관: 같은 달 기존 행 수 (countExisting)", () =>
+    countExisting(2026, 10),
   );
   await check("엑셀 업로드: 기존 데이터·이력", () =>
     Promise.all([loadExistingData(), loadRecentUploads()]),
