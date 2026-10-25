@@ -11,7 +11,7 @@ import { parseLedgerMonth } from "../rules";
 import { exportPeriodsFor } from "./period";
 
 /** Content-Disposition 의 filename*=UTF-8''… (없으면 filename="…") */
-function fileNameFrom(header: string | null, fallback: string): string {
+export function fileNameFrom(header: string | null, fallback: string): string {
   const star = /filename\*=UTF-8''([^;]+)/i.exec(header ?? "");
   if (star) return decodeURIComponent(star[1]);
   const plain = /filename="([^"]+)"/i.exec(header ?? "");

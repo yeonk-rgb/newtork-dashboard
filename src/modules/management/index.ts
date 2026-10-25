@@ -65,11 +65,10 @@ export { SettingsScreen } from "./settings/settings-screen";
 export { ReceivablesScreen } from "./receivables/receivables-screen";
 export { LedgerScreen } from "./ledger/ledger-screen";
 export { LedgerImportScreen } from "./ledger/import/import-screen";
-export {
-  exportLedger,
-  LedgerExportError,
-} from "./ledger/export/export-ledger";
+export { exportLedger, LedgerExportError } from "./ledger/export/export-ledger";
 export { LedgerTemplateMissingError } from "./ledger/export/template";
+export { HistoryScreen } from "./history/history-screen";
+export { exportHistory, HistoryExportError } from "./history/export-history";
 export { UploadScreen } from "./upload/upload-screen";
 export { buildTemplate, TEMPLATE_FILE_NAME } from "./upload/template";
 

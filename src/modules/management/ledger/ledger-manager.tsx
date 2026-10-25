@@ -17,6 +17,7 @@ import {
 } from "@/shared/ui/styles";
 
 import { MoneyTextInput } from "../entry/money-text-input";
+import { RowHistoryButton } from "../history/row-history-button";
 import { ConfirmDialog, type ConfirmRequest } from "../entry/confirm-dialog";
 import {
   createLedgerEntry,
@@ -341,6 +342,11 @@ export function LedgerManager({
         </td>
         <td className="py-2 text-right whitespace-nowrap">
           <div className="flex justify-end gap-1">
+            <RowHistoryButton
+              type="LedgerEntry"
+              id={row.id}
+              label={`${KIND_LABEL[row.kind]} · ${row.partnerName}`}
+            />
             {can.canEdit && (
               <button
                 type="button"

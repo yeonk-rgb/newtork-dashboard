@@ -143,7 +143,11 @@
   - 확인용: `npm run audit:recent [건수] [화면]` (읽기만, 한국 시간). 보는 화면은 PR ③
   - **PR ②(2026-10-25)**: 월간 입력(`entry` — 확정·확정 후 수정·확정 취소만, 임시저장 제외, 바뀌기 전 값은 같은 트랜잭션에서 그 달 값 조회, 그 외 지출은 "그 외 지출 · 항목명")·목표(`targets`, 빈 분기 "자동 배분")·지출 항목(`expense-categories`, 추가·수정·삭제 각각 + 순서 1건)·엑셀 이관 2곳(`ledger-import`·`upload` — 요약 1건, `targetId`·`meta.uploadId` = `mgmt_data_upload.id`)·채권·채무 다운로드(`ledger-export` — 기록 실패 시 503으로 다운로드 막음, 서버 로그 유지)
   - **관리자 화면 기록은 `area: "admin"`, `screen: "admin-users"`** (권한 변경 사람별 1건·비밀번호 초기화 `meta.result = "초기화함"`만·계정 생성 아이디·이름·역할만·비활성화·복구, 칸 목록 `modules/admin/audit-fields.ts`). PR ③ 보는 화면은 **`area = "admin"` 행을 관리자(대표)만** 보이게 조회 조건에서 거른다
-  - 다음: PR ③ `/management/history`(관리자(대표)+경영지원팀, 관리자 화면 기록은 관리자(대표)만), 채권·채무·미수금 행 [이력](이관 행은 "엑셀 이관으로 생성 — 파일명, 이관한 사람, 날짜" 먼저), 이력 엑셀(관리자(대표)만)
+  - **PR ③(2026-10-25) 보는 화면**: `modules/management/history/`, `/management/history`(사이드바 경영지원 > 변경 이력). 권한·필터는 `rules.ts`(`historyAbilities()` — 열람 = 경영지원 view, 관리자 기록·엑셀 = `canManageUsers()`), **관리자(대표)가 아니면 `historyWhere()`가 어떤 필터에도 `area: "management"`를 붙인다** (화면 목록에서 숨기는 것과 별개로 서버 조회 조건에서 거름)
+    - 표기는 `labels.ts`만: 화면 이름 한글(`HISTORY_SCREENS` — 새 화면을 기록하면 여기에 추가), 바뀐 내용 "잔액: A → B"(빈 값 "(없음)"), 추가 정보(meta)는 `metaSummary()`가 한글 문장으로 — **JSON 을 화면·엑셀에 그대로 보여 주지 않는다** (모르는 형식은 표시 안 함)
+    - 필터: 기간(기본 오늘 포함 최근 30일, 한국 날짜)·사람·화면·동작·대상 검색(대상 이름, 대소문자 무시), 최신순 50건씩, 주소(GET 폼)로
+    - 행 [이력]: `RowHistoryButton`(채권·채무·미수금 모든 행, 숨긴 행 포함) → Server Action `getRowHistory()`(경영지원 view, 대상 종류 `LedgerEntry`·`Receivable`만, `area: "management"`만). 이관 행은 맨 아래 "엑셀 이관으로 생성 — 파일명, 이름(아이디), 일시" (이관 요약 기록, 없으면 `mgmt_data_upload` 값)
+    - 엑셀: `GET /api/management/history/export?…`(지금 필터 그대로, 관리자(대표)만 — 경영지원팀이 주소로 와도 403, `no-store`, 최대 10,000건), 원본 양식 스타일(맑은 고딕 10·머리글 E7E6E6 굵게·테두리·첫 행 고정·자동 필터·열 너비 자동), 일시는 엑셀 날짜(한국 시각) `yyyy-mm-dd hh:mm`. 내려받기도 기록(`area: "admin"`, `screen: "history-export"`) — 기록 실패 시 503으로 막음
 
 ## 공통 정책
 
