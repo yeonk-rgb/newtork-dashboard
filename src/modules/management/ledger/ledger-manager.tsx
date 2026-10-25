@@ -64,6 +64,7 @@ import {
   type LedgerRow,
 } from "./rules";
 import { ledgerFieldsSchema } from "./schemas";
+import { ExportMenu } from "./export/export-menu";
 import { importAbilities } from "./import/rules";
 import { SettleDialog, type SettleRequest } from "./settle-dialog";
 
@@ -692,6 +693,7 @@ export function LedgerManager({
                 </span>
               </label>
             )}
+            <ExportMenu month={month} />
             {importAbilities(user).canImport && (
               <Link
                 href={`/management/ledger/import?month=${month}`}

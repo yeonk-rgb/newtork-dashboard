@@ -118,14 +118,22 @@
   - 삭제 대신 숨김(`deletedAt`) — 조회 시 `deletedAt: null`. 샘플은 `npm run seed:ledger`(작성자 `seed-ledger`, `-- --remove`로 삭제)
   - **기존 미수금 관리·대시보드와 연결하지 않는다** — 외상매출금 vs 미수금 기준은 05-22번(대시보드 연결 전 필수), 전월 이월 05-23번, 총액 ↔ 월간 입력 05-24번
   - 미지급비용-업체 합계는 3줄: 총액(자동이체 제외 = 엑셀 F열 SUM(D67:D79)과 같은 값) / 자동이체 합계 / 전체 합계 (`vendorTotals()`, 05-25)
-- **채권·채무 엑셀 이관(2026-10-25 2단계)**: `ledger/import/`, `/management/ledger/import` — 고객사 원본 양식 기준 (`ledger/__fixtures__/ledger-template.xlsx`, 가짜 데이터 `ledger-sample.xlsx`·경고 확인용 `ledger-sample-issues.xlsx`는 `scripts/make-ledger-fixture.ts`로 생성). **PDF 변환본은 병합·색·수식이 없어 기준 자료로 쓰지 않는다**
+- **채권·채무 엑셀 이관(2026-10-25 2단계)**: `ledger/import/`, `/management/ledger/import` — 고객사 원본 양식 기준 (`ledger/export/ledger-template.xlsx` — 3단계 다운로드가 실행 중에 읽는 원본, 가짜 데이터 `ledger-sample.xlsx`·경고 확인용 `ledger-sample-issues.xlsx`는 `scripts/make-ledger-fixture.ts`로 생성). **PDF 변환본은 병합·색·수식이 없어 기준 자료로 쓰지 않는다**
   - 읽기는 `shared/upload/read-styled-sheet.ts`(병합·글자색·배경·수식·숨김 열), 해석은 `parse-ledger-sheet.ts`(순수 함수): C열 제목 글자로 블록 찾기(행 번호 고정 아님), 다음 행 머리글 확인, 거래처명·잔액 둘 다 비면 건너뜀(코드만 있으면 "코드만 있는 행"으로 안내), 0원 제외, 음수·소수·글자 금액은 오류
-  - 외상매출금 상태 = F열 병합 범위의 H열 메모(공백 무시) → 빨간 글씨(FF0000)는 장기미수(다른 그룹이면 경고). 판별 안 되면 미분류 → 미리보기에서 골라야 가져오기 가능. **빨간 글씨 판별은 외상매출금 블록에서만** (업체 D77:E79는 무시, 05-28)
+  - 외상매출금 상태 = 그룹(F열 병합 범위, 또는 병합 없는 F열 SUM 칸 = 1행 그룹 — 다운로드 파일)의 H열 메모(공백 무시) → 빨간 글씨(FF0000)는 장기미수(다른 그룹이면 경고). 판별 안 되면 미분류 → 미리보기에서 골라야 가져오기 가능. **빨간 글씨 판별은 외상매출금 블록에서만** (업체 D77:E79는 무시, 05-28)
   - 당월수금완료 완료일: 그 그룹 적요가 날짜면 기준년도 날짜로 후보 — **기준월 안·오늘 이전일 때만**(밖이면 "적요 날짜(10/15)가 기준월 밖이라 사용하지 않음" 표시), 아니면 min(기준월 말일, 오늘) — 모두 "확인 필요" 표시. 적요 원문은 날짜면 엑셀 표시대로 글자("10/15")로 보존
   - 자동이체 = 적요에 "자동이체" 또는 연두 배경(원본은 **테마 색 9번**, 직접 색이면 초록 성분이 가장 큰 색)
   - 원본 총액은 F열 병합 첫 칸의 계산값과 그 범위 행 합계 비교(`match`/`mismatch`/`noResult` 파일에 계산값 없음/`noTotal` 장기미수 F3:F4처럼 수식 없음). **원본 빈 양식의 F열 수식은 계산값 0이 저장돼 있다** — exceljs는 계산값 0을 `cell.value`에서 빼므로 `read-styled-sheet.ts`는 `cell.result`로 읽는다 (2026-10-25 정정)
   - 미리보기는 DB 쓰기 없음. 가져오기는 파일을 다시 보내 서버가 다시 읽고(파일 sha256·기존 행 수가 미리보기 때와 같아야 함) `buildImportPlan()`으로 다시 검증 → Serializable 트랜잭션: 덮어쓰기면 같은 달 행 숨김 → `mgmt_data_upload`(detail: 기준년월·방식·블록 합계·해시) → 행 저장(`uploadId`, 엑셀 순서대로 createdAt +1ms)
   - 권한 `importAbilities()`: 올리기·미리보기·추가 = edit, 덮어쓰기 = confirm
+  - 여러 시트 파일: 양식 시트(C열 "외상매출금" 제목)만 후보, 1장이면 그 시트 → 기준년월과 같은 이름("2026-10") → 없으면 선택 (`selectLedgerSheet()`), 고른 시트 이름이 기준년월과 다르면 안내
+- **채권·채무 엑셀 다운로드(2026-10-25 3단계)**: `ledger/export/`, `GET /api/management/ledger/export?period=2026-10|2026-Q4|2026` (경영지원 view, `Cache-Control: no-store`, 서버 로그 `[ledger-export]`), 화면 [엑셀 다운로드 ▾]
+  - 서식은 **원본 양식 파일 `ledger/export/ledger-template.xlsx`를 실행 중에 읽어** 역할 → 원본 셀 표(`template.ts`의 `ROLE_CELLS`)로 복사한다. 원본 시트를 고치지 않고 새 시트를 그린다(행 삽입은 병합을 못 옮김). 병합은 `mergeCellsWithoutStyle`(그냥 `mergeCells`는 첫 칸 서식을 범위 전체에 복사해 총액 테두리가 깨짐)
+  - 배포 결과물 포함: `next.config.ts`의 `outputFileTracingIncludes` + 읽는 경로를 문자열 그대로(`readTemplateFile`) — 변수 경로면 Turbopack이 프로젝트 전체를 trace. 파일이 없으면 503 "양식 파일을 찾을 수 없습니다"
+  - 배치(`layout.ts`, 순수 함수): 그룹마다 max(데이터 수, 1)행, F열 그룹 병합 + `=SUM` + 계산값, H열 메모는 그룹 가운데 행, 장기미수 F열에도 SUM, 업체는 자동이체 행 위(E:F 병합, 적요 원문을 텍스트 `@`로)·총액은 자동이체 제외·H·I열에 "자동이체 합계 / 전체 합계"(I열 너비는 금액에 맞춰 넓힘). A열 숨김 + 텍스트 서식. 사용 열에 맑은 고딕 열 서식(exceljs 기본 글꼴 Calibri 대신)
+  - 인쇄: A4, 너비 1페이지에 맞춤·높이 자동 — 월별 시트 세로, 상세 시트 가로 (`printSetup()`). 통합 문서 기본 글꼴은 exceljs가 Calibri로 고정해 못 바꿈(후속 과제) — 사용 열에 맑은 고딕 열 서식으로 대신
+  - 시트: 당월 1장 / 분기·연간은 데이터 있는 달만(없으면 빈 양식 1장, 이름 = 기간) + 맨 뒤 "상세"(원본에 없는 칸). 숨긴 행 제외. 파일명 `경영지원_관리_{기간}.xlsx`
+  - 테스트: 원본 서식 대조(역할별), 왕복(다운로드 → `parseLedgerSheet` → 같은 행·상태·금액·코드, 총액 전부 match)
 
 ## 공통 정책
 

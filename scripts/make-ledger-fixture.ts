@@ -17,6 +17,10 @@
 import ExcelJS from "exceljs";
 import path from "node:path";
 
+const TEMPLATE = path.join(
+  process.cwd(),
+  "src/modules/management/ledger/export/ledger-template.xlsx",
+);
 const DIR = path.join(
   process.cwd(),
   "src/modules/management/ledger/__fixtures__",
@@ -66,7 +70,7 @@ const TOTALS: [cell: string, from: number, to: number][] = [
 
 async function main() {
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.readFile(path.join(DIR, "ledger-template.xlsx"));
+  await wb.xlsx.readFile(TEMPLATE);
   const ws = wb.worksheets[0];
 
   for (const [r, code, name, amount, note] of ROWS) {

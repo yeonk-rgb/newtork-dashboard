@@ -17,10 +17,15 @@ import {
   PURCHASE_TYPES,
   type LedgerKind,
 } from "../labels";
-import { isFutureMonth, parseLedgerMonth, toDateOnly } from "../rules";
+import {
+  formatLedgerMonth,
+  isFutureMonth,
+  parseLedgerMonth,
+  toDateOnly,
+} from "../rules";
 import {
   parseLedgerSheet,
-  pickLedgerSheet,
+  selectLedgerSheet,
   type ParsedLedgerSheet,
 } from "./parse-ledger-sheet";
 import {
@@ -37,8 +42,14 @@ import {
   saveLedgerImport,
 } from "./save-import";
 
-export type PreviewResult =
-  { ok: true; preview: LedgerPreview } | { ok: false; error: string };
+type LoadError = {
+  ok: false;
+  error: string;
+  /** 양식 시트가 여러 장인데 기준년월과 같은 이름이 없을 때 — 이 중에서 고르게 한다 */
+  sheetChoices?: string[];
+};
+
+export type PreviewResult = { ok: true; preview: LedgerPreview } | LoadError;
 
 export type ImportResult =
   | {
@@ -48,7 +59,7 @@ export type ImportResult =
       hidden: number;
       blocks: { kind: LedgerKind; count: number; sum: string }[];
     }
-  | { ok: false; error: string; blockers?: Blocker[] };
+  | (LoadError & { blockers?: Blocker[] });
 
 type Loaded = {
   userId: string;
@@ -59,13 +70,13 @@ type Loaded = {
   fileName: string;
   fileSha256: string;
   parsed: ParsedLedgerSheet;
+  sheetCandidates: string[];
+  sheetNote: string | null;
   existing: Record<LedgerKind, number>;
 };
 
 /** 권한 → 기준년월 → 파일 검사 → 읽기 → 양식 해석 (미리보기·가져오기 공용) */
-async function loadUpload(
-  formData: FormData,
-): Promise<Loaded | { ok: false; error: string }> {
+async function loadUpload(formData: FormData): Promise<Loaded | LoadError> {
   const user = await getCurrentUser();
   const abilities = user ? importAbilities(user) : null;
   if (!user || !abilities?.canImport) {
@@ -93,14 +104,25 @@ async function loadUpload(
   const data = await file.arrayBuffer();
   const read = await readStyledXlsx(file.name, data);
   if (!read.ok) return { ok: false, error: read.error };
-  const sheet = pickLedgerSheet(read.sheets);
-  if (!sheet) {
-    return {
-      ok: false,
-      error:
-        '경영지원_관리 양식이 아닙니다. C열에 "외상매출금" 같은 블록 제목이 있는 파일을 올려 주세요.',
-    };
+  const requested = String(formData.get("sheet") ?? "") || null;
+  const selection = selectLedgerSheet(read.sheets, {
+    month: formatLedgerMonth(ym),
+    requested,
+  });
+  if (!selection.ok) {
+    return selection.reason === "none"
+      ? {
+          ok: false,
+          error:
+            '경영지원_관리 양식이 아닙니다. C열에 "외상매출금" 같은 블록 제목이 있는 파일을 올려 주세요.',
+        }
+      : {
+          ok: false,
+          error: `이 파일에는 양식 시트가 여러 장 있고 기준년월(${formatLedgerMonth(ym)})과 같은 이름이 없습니다. 가져올 시트를 고르세요.`,
+          sheetChoices: selection.candidates,
+        };
   }
+  const sheet = selection.sheet;
 
   return {
     userId: user.id,
@@ -111,6 +133,8 @@ async function loadUpload(
     fileName: file.name,
     fileSha256: createHash("sha256").update(Buffer.from(data)).digest("hex"),
     parsed: parseLedgerSheet(sheet, { ...ym, today }),
+    sheetCandidates: selection.candidates,
+    sheetNote: selection.note,
     existing: await countExisting(ym.year, ym.month),
   };
 }
@@ -129,6 +153,8 @@ export async function previewLedgerImport(
       month: loaded.month,
       today: loaded.today,
       existing: loaded.existing,
+      sheetCandidates: loaded.sheetCandidates,
+      sheetNote: loaded.sheetNote,
     }),
   };
 }

@@ -13,7 +13,7 @@ import {
 
 const TEMPLATE = path.join(
   __dirname,
-  "../../modules/management/ledger/__fixtures__/ledger-template.xlsx",
+  "../../modules/management/ledger/export/ledger-template.xlsx",
 );
 
 async function readTemplate() {

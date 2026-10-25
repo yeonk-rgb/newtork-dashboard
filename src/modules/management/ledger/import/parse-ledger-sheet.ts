@@ -1,5 +1,5 @@
 // 경영지원_관리.xlsx(고객사 원본 양식) → 블록·행 (순수 함수, DB·화면 모름)
-// 원본 구조 (2026-10-25 확인, __fixtures__/ledger-template.xlsx)
+// 원본 구조 (2026-10-25 확인, ledger/export/ledger-template.xlsx — 3단계 다운로드도 이 파일로 서식을 맞춘다)
 // - Sheet1 하나에 블록 4개가 세로로: C열 제목(외상매출금·외상매입금·미지급비용-직원·미지급비용-업체) → 다음 행이 헤더
 // - 헤더: 코드(A, 외상매출금만·숨김 열) | 거래처명(C) | 잔액(D) | 적요(E) | 총액(F)
 // - F열 총액은 그룹마다 세로 병합 + =SUM(D..:D..). 데이터로 저장하지 않고 검증에만 쓴다
@@ -9,6 +9,7 @@
 import {
   columnLetter,
   getCell,
+  mergeAt,
   type MergeRange,
   type SheetColor,
   type StyledCell,
@@ -302,17 +303,27 @@ function findTitles(sheet: StyledSheet) {
   return found.sort((a, b) => a.row - b.row);
 }
 
-/** F열 세로 병합 범위 (블록 데이터 행 안에 있는 것만) */
+/**
+ * 그룹(총액) 범위: F열 세로 병합 + 병합되지 않은 F열 SUM 칸 (블록 데이터 행 안에 있는 것만)
+ * 그룹에 행이 1개뿐이면 병합할 수 없어 SUM 칸 하나가 그룹이다 (3단계 다운로드 파일 — 2026-10-25 왕복 점검에서 발견)
+ */
 function totalRanges(sheet: StyledSheet, firstRow: number, lastRow: number) {
-  return sheet.merges
-    .filter(
-      (m) =>
-        m.left === COL.total &&
-        m.right === COL.total &&
-        m.top >= firstRow &&
-        m.bottom <= lastRow,
-    )
-    .sort((a, b) => a.top - b.top);
+  const merged = sheet.merges.filter(
+    (m) =>
+      m.left === COL.total &&
+      m.right === COL.total &&
+      m.top >= firstRow &&
+      m.bottom <= lastRow,
+  );
+  const single: MergeRange[] = [];
+  for (let r = firstRow; r <= lastRow; r++) {
+    const formula = getCell(sheet, r, COL.total)?.formula;
+    if (!formula || !/^SUM\(/i.test(formula) || mergeAt(sheet, r, COL.total)) {
+      continue;
+    }
+    single.push({ top: r, left: COL.total, bottom: r, right: COL.total });
+  }
+  return [...merged, ...single].sort((a, b) => a.top - b.top);
 }
 
 function memoOf(sheet: StyledSheet, range: MergeRange): string {
@@ -532,5 +543,53 @@ export function parseLedgerSheet(
 
 /** 여러 시트 중 양식 시트 고르기: 블록 제목이 있는 첫 시트 */
 export function pickLedgerSheet(sheets: StyledSheet[]): StyledSheet | null {
-  return sheets.find((s) => findTitles(s).some((t) => t.kind === "AR")) ?? null;
+  return ledgerSheets(sheets)[0] ?? null;
+}
+
+/** 양식 시트(C열에 "외상매출금" 제목이 있는 시트)만 — 다운로드 파일의 "상세" 시트 등은 빠진다 */
+export function ledgerSheets(sheets: StyledSheet[]): StyledSheet[] {
+  return sheets.filter((s) => findTitles(s).some((t) => t.kind === "AR"));
+}
+
+export type SheetSelection =
+  | {
+      ok: true;
+      sheet: StyledSheet;
+      /** 파일 안 양식 시트 이름 전체 */
+      candidates: string[];
+      /** 기준년월과 시트 이름("YYYY-MM")이 다를 때 안내 */
+      note: string | null;
+    }
+  | { ok: false; reason: "none" }
+  | { ok: false; reason: "choose"; candidates: string[] };
+
+/**
+ * 여러 시트 파일(3단계 분기·연간 다운로드 등) 처리 (2026-10-25 결정)
+ * 1) 사용자가 고른 시트 2) 양식 시트가 1장이면 그 시트 3) 기준년월과 같은 이름("2026-10") 시트 4) 없으면 고르게 한다
+ */
+export function selectLedgerSheet(
+  sheets: StyledSheet[],
+  opts: { month: string; requested: string | null },
+): SheetSelection {
+  const found = ledgerSheets(sheets);
+  if (found.length === 0) return { ok: false, reason: "none" };
+  const candidates = found.map((s) => s.name);
+  const pick = (sheet: StyledSheet) => ({
+    ok: true as const,
+    sheet,
+    candidates,
+    note:
+      /^\d{4}-\d{2}$/.test(sheet.name) && sheet.name !== opts.month
+        ? `시트 이름(${sheet.name})과 기준년월(${opts.month})이 다릅니다. 맞는지 확인하세요.`
+        : null,
+  });
+  if (opts.requested) {
+    const sheet = found.find((s) => s.name === opts.requested);
+    return sheet ? pick(sheet) : { ok: false, reason: "choose", candidates };
+  }
+  if (found.length === 1) return pick(found[0]);
+  const sameMonth = found.find((s) => s.name === opts.month);
+  return sameMonth
+    ? pick(sameMonth)
+    : { ok: false, reason: "choose", candidates };
 }
