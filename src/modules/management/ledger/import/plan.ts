@@ -55,6 +55,10 @@ export type LedgerPreview = {
   existingTotal: number;
   /** 완료일이 없는 당월수금완료 행의 기본값 min(기준월 말일, 오늘) — 미분류를 수금완료로 고를 때도 */
   defaultSettledOn: string;
+  /** 파일 안 양식 시트 이름 (여러 장이면 다른 시트로 바꿀 수 있게) */
+  sheetCandidates: string[];
+  /** 시트 이름과 기준년월이 다를 때 안내 */
+  sheetNote: string | null;
 };
 
 const sumOf = (rows: { amount: bigint | null }[]) =>
@@ -70,6 +74,8 @@ export function toPreview(
     /** "YYYY-MM-DD" (한국 날짜) */
     today: string;
     existing: Record<LedgerKind, number>;
+    sheetCandidates?: string[];
+    sheetNote?: string | null;
   },
 ): LedgerPreview {
   return {
@@ -96,6 +102,8 @@ export function toPreview(
     })),
     existing: meta.existing,
     defaultSettledOn: defaultSettledOn(meta),
+    sheetCandidates: meta.sheetCandidates ?? [parsed.sheetName],
+    sheetNote: meta.sheetNote ?? null,
     existingTotal: LEDGER_KINDS.reduce((n, k) => n + meta.existing[k], 0),
   };
 }

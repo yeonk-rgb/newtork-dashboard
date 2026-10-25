@@ -65,6 +65,9 @@ export function ImportPanel({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [month, setMonth] = useState(initialMonth);
+  /** 양식 시트가 여러 장인 파일: 고른 시트(null = 자동 — 기준년월과 같은 이름)와 고를 수 있는 시트 */
+  const [sheet, setSheet] = useState<string | null>(null);
+  const [sheetChoices, setSheetChoices] = useState<string[]>([]);
   const [preview, setPreview] = useState<LedgerPreview | null>(null);
   const [choices, setChoices] = useState<ImportChoices>(EMPTY_CHOICES);
   const [mode, setMode] = useState<ImportMode | null>(null);
@@ -80,14 +83,15 @@ export function ImportPanel({
     setError(null);
   };
 
-  const formData = () => {
+  const formData = (sheetName = sheet) => {
     const data = new FormData();
     data.set("file", file!);
     data.set("month", month);
+    if (sheetName) data.set("sheet", sheetName);
     return data;
   };
 
-  const runPreview = () => {
+  const runPreview = (sheetName = sheet) => {
     if (!file) return;
     const fileError = importFileError(file);
     if (fileError) {
@@ -96,10 +100,21 @@ export function ImportPanel({
     }
     reset();
     startTransition(async () => {
-      const res = await previewLedgerImport(formData());
-      if (res.ok) setPreview(res.preview);
-      else setError(res.error);
+      const res = await previewLedgerImport(formData(sheetName));
+      if (res.ok) {
+        setPreview(res.preview);
+        setSheetChoices(res.preview.sheetCandidates);
+      } else {
+        setError(res.error);
+        if (res.sheetChoices) setSheetChoices(res.sheetChoices);
+      }
     });
+  };
+
+  const changeFileOrMonth = () => {
+    setSheet(null);
+    setSheetChoices([]);
+    reset();
   };
 
   const runImport = () => {
@@ -145,7 +160,7 @@ export function ImportPanel({
               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={(e) => {
                 setFile(e.target.files?.[0] ?? null);
-                reset();
+                changeFileOrMonth();
               }}
               className="block text-sm file:mr-3 file:h-10 file:rounded-lg file:border file:bg-card file:px-4 file:text-sm file:font-medium"
             />
@@ -159,16 +174,37 @@ export function ImportPanel({
               onChange={(e) => {
                 if (e.target.value && e.target.value <= maxMonth) {
                   setMonth(e.target.value);
-                  reset();
+                  changeFileOrMonth();
                 }
               }}
               className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </label>
+          {sheetChoices.length > 1 && (
+            <label className="block text-sm">
+              <span className="mb-2 block font-medium">시트</span>
+              <select
+                value={sheet ?? preview?.sheetName ?? ""}
+                onChange={(e) => {
+                  const next = e.target.value || null;
+                  setSheet(next);
+                  if (next) runPreview(next);
+                }}
+                className="h-10 min-w-32 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <option value="">시트를 고르세요</option>
+                {sheetChoices.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             type="button"
             disabled={!file || pending}
-            onClick={runPreview}
+            onClick={() => runPreview()}
             className={buttonPrimaryClass}
           >
             <FileSpreadsheet className="size-4" aria-hidden />
@@ -207,6 +243,15 @@ export function ImportPanel({
                 {preview.month}월로 가져옵니다
               </p>
             </div>
+
+            {preview.sheetNote && (
+              <p
+                role="status"
+                className="rounded-lg bg-warning-soft p-3 text-sm"
+              >
+                {preview.sheetNote}
+              </p>
+            )}
 
             {preview.fatal.length > 0 && (
               <div
