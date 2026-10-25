@@ -12,6 +12,8 @@ import { ReceivablesManager } from "./receivables-manager";
 import { canManageHidden, parseReceivableTab, toDateOnly } from "./rules";
 import { pageTitleClass } from "@/shared/ui/styles";
 
+import { ManagementExportMenu } from "../export/management-export-menu";
+
 export async function ReceivablesScreen({
   tab,
   query,
@@ -42,12 +44,21 @@ export async function ReceivablesScreen({
             화면에 반영됩니다.
           </p>
         </div>
-        <Link
-          href="/management#receivables"
-          className="shrink-0 text-xs text-primary hover:underline"
-        >
-          미수금 통계 보기 →
-        </Link>
+        <div className="flex shrink-0 items-center gap-3">
+          <Link
+            href="/management#receivables"
+            className="text-xs text-primary hover:underline"
+          >
+            미수금 통계 보기 →
+          </Link>
+          {/* 미수금 엑셀 — 기준일 = 기간 말일(진행 중이면 오늘), 대시보드 KPI 와 같음 */}
+          <ManagementExportMenu
+            kind="receivables"
+            file={{ ko: "미수금", ascii: "receivables" }}
+            options={receivablesExportOptions(today)}
+            note="기준일 = 기간 말일 (진행 중인 기간은 오늘). 숨긴 건은 빠집니다."
+          />
+        </div>
       </div>
       <ReceivablesManager
         user={user}
@@ -61,4 +72,31 @@ export async function ReceivablesScreen({
       />
     </div>
   );
+}
+
+/** 미수금 엑셀 메뉴: 이번 달(오늘 기준) / 지난달(말일 기준) / 지난 분기(말일 기준) — 기준일은 서버가 min(기간 말일, 오늘) */
+function receivablesExportOptions(today: Date) {
+  const year = today.getUTCFullYear();
+  const month = today.getUTCMonth() + 1;
+  const prev =
+    month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+  const quarter = Math.ceil(month / 3);
+  const lastQuarter =
+    quarter === 1
+      ? { year: year - 1, quarter: 4 as const }
+      : { year, quarter: (quarter - 1) as 1 | 2 | 3 };
+  return [
+    {
+      label: "이번 달 · 오늘 기준",
+      period: { unit: "month" as const, year, month },
+    },
+    {
+      label: `지난달 · ${prev.month}월 말`,
+      period: { unit: "month" as const, ...prev },
+    },
+    {
+      label: `지난 분기 · ${lastQuarter.quarter}분기 말`,
+      period: { unit: "quarter" as const, ...lastQuarter },
+    },
+  ];
 }

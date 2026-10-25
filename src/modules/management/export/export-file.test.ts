@@ -2,11 +2,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SAMPLE_CATEGORIES, SAMPLE_MONTHS } from "../entry/export/test-data";
+import { fixtureInput } from "./testing/summary-fixture";
 
 vi.mock("server-only", () => ({}));
+const loadSummary = vi.fn(async (period: Parameters<typeof fixtureInput>[0]) =>
+  fixtureInput(period),
+);
 vi.mock("../data/load-summary-input", () => ({
   getNow: async () => new Date("2026-10-25T03:00:00Z"),
   getTodayKst: async () => new Date("2026-10-25T00:00:00Z"),
+  loadSummaryInput: loadSummary,
 }));
 const loadEntry = vi.fn(async () => ({
   data: SAMPLE_MONTHS,
@@ -30,6 +35,7 @@ beforeEach(() => {
   failAudit = false;
   create.mockClear();
   loadEntry.mockClear();
+  loadSummary.mockClear();
 });
 
 describe("월간 입력 엑셀 다운로드", () => {
@@ -92,5 +98,54 @@ describe("월간 입력 엑셀 다운로드", () => {
       ).rejects.toMatchObject({ status: 400 });
     }
     expect(create).not.toHaveBeenCalled();
+  });
+});
+
+describe("목표 대비 실적·미수금 엑셀 다운로드", () => {
+  it("목표 대비 실적: 어떤 기간을 골라도 그 해 시트 1장, 파일·기록은 연도", async () => {
+    const file = await exportManagementFile("targets", "2026-Q3", ACTOR);
+    expect(file).toMatchObject({
+      kind: "targets",
+      fileName: "경영지원_목표실적_2026.xlsx",
+      asciiName: "targets-2026.xlsx",
+      period: "2026",
+      sheetNames: ["2026"],
+    });
+    expect(loadSummary.mock.calls[0][0]).toEqual({ unit: "year", year: 2026 });
+    expect(create.mock.calls[0][0].data).toMatchObject({
+      screen: "targets-export",
+      action: "EXPORT",
+      targetType: "TargetsExport",
+      targetLabel: "목표 대비 실적 엑셀 다운로드 · 2026",
+      meta: {
+        period: "2026",
+        fileName: "경영지원_목표실적_2026.xlsx",
+        sheetCount: 1,
+      },
+    });
+  });
+
+  it("미수금: 시트 이름 = 기간 + 미수금 상세, 기록 남김", async () => {
+    const file = await exportManagementFile("receivables", "2026-Q3", ACTOR);
+    expect(file).toMatchObject({
+      fileName: "경영지원_미수금_2026-Q3.xlsx",
+      sheetNames: ["2026-Q3", "미수금 상세"],
+    });
+    expect(create.mock.calls[0][0].data).toMatchObject({
+      screen: "receivables-export",
+      targetType: "ReceivablesExport",
+      targetLabel: "미수금 엑셀 다운로드 · 2026-Q3",
+    });
+  });
+
+  it("기록이 실패하면 막고(503), 미래 연도는 400", async () => {
+    failAudit = true;
+    await expect(
+      exportManagementFile("receivables", "2026-10", ACTOR),
+    ).rejects.toMatchObject({ status: 503 });
+    failAudit = false;
+    await expect(
+      exportManagementFile("targets", "2027", ACTOR),
+    ).rejects.toMatchObject({ status: 400 });
   });
 });
