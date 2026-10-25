@@ -166,6 +166,10 @@ export type TargetResult = {
   quarterTargets: QuarterTargets | null;
   /** 해당 연도 분기별 확정 매출 (분기별 목표 표용) */
   quarterActuals: [bigint, bigint, bigint, bigint] | null;
+  /** 1~12월 월 목표 = 분기 목표 ÷ 3 자동 (나머지 원은 분기 마지막 달) — allocateMonthTargets */
+  monthTargets: bigint[] | null;
+  /** (월 보기만) 그 달 월 목표 대비 그 달 확정 매출 */
+  month: (TargetProgress & { month: number }) | null;
 };
 
 /**
@@ -256,6 +260,8 @@ export type Comparison = {
   revenue: Change;
   expense: Change;
   profit: Change;
+  /** 이익 금액 차이 (현재 − 비교, 원). 이익이 작거나 적자이면 증감률이 크게 튀어 대시보드는 금액 차이로 보여 준다 */
+  profitDiff: AmountDiff;
   /** 이익률 차이 (%p, 0.05 = +5%p). 비율끼리라 증감률 대신 차이로 비교 */
   margin: MarginChange;
   /**
@@ -267,6 +273,11 @@ export type Comparison = {
   /** 항목별 증감률 (key = AmountShare.key) — 상세 표용 */
   revenueItems: Record<string, Change>;
   expenseItems: Record<string, Change>;
+};
+
+export type AmountDiff = {
+  diff: bigint | null;
+  reason?: "no-current-data" | "no-data";
 };
 
 export type MarginChange = {

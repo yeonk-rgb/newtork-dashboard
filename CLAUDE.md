@@ -106,6 +106,10 @@
   - 분류·임시 기준은 **`metrics/settings.ts`의 `breakEven` 한 곳**: 매입 = 변동비(④-3), 경비 지출 = 고정비(①-2·05-36), 미분류 그 외 지출 = 고정비(05-35), `provisionalNotes`(화면 "임시 기준" 배지 + [계산 기준] 4줄 — 비우면 배지 사라짐). 그 외 지출 항목은 목표·항목 설정의 고정비/변동비
   - 예외(`reason`): no-data / no-revenue / no-fixed-cost / not-reachable(공헌이익 ≤ 0 → 가운데 "도달 불가", 변동비 한 조각 매출 대비)
   - 이전 기간 대비 변화(%p)·AI 연결은 후속 (06)
+- **경영 대시보드 재구성(2026-10-25 담당자 요청, 대시보드 PR 1 = 계산·표시 모델)**: 메인 순서 KPI 4개(매출·지출·추정 이익·미수금) → 분기별 목표 달성 현황(목표매출 달성률·매출 구성·지출 구성 도넛) → 추이 및 분석(매출·지출 추이 막대+선, 산업 분야별·제품별 매출 도넛) → AI 분석(맨 아래). 빠지는 카드(연간 목표·BEP·이익 구조·미수금 원형)는 상세 `/management`로 옮긴다(삭제 없음) — 화면 적용은 대시보드 PR 2
+  - 표시 모델 `components/dashboard/model.ts`(순수 함수, summary 값 그대로 — `model.test.ts`가 같은 값인지 고정), **이름은 `labels.ts` 한 곳**·화면 표시 층에서만(metrics 이름표 그대로 → AI 입력 해시 유지)
+  - 월 목표 = 분기 목표 ÷ 3 자동(`allocateMonthTargets`, 나머지 원은 분기 마지막 달 — 분기 배분과 같은 `splitEvenly`), `TargetResult.monthTargets`·`month`(월 보기만). 05-16(정리본 ④-5) 답이 오면 직접 입력 칸 검토
+  - 추정 이익 = `profit.profit`(지금 비용 기준에서 매출 − 지출과 정확히 같음, 테스트 고정), 비교는 금액 차이 `Comparison.profitDiff`. 목표 분기 목록은 끝났고 3개월 모두 확정인데 미달일 때만 빨강(미확정 달이 있으면 안내만)
 - 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`

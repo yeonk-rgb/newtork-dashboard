@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  allocateMonthTargets,
   allocateQuarterTargets,
   computeAnnualProgress,
   computeTargets,
+  splitEvenly,
 } from "./targets";
 import { financeMonth } from "./test-fixtures";
 import type { AnnualTargetInput } from "./types";
@@ -61,6 +63,42 @@ describe("allocateQuarterTargets", () => {
   });
 });
 
+describe("월 목표 = 분기 목표 ÷ 3 자동 (2026-10-25 A안)", () => {
+  it("나머지 원은 그 분기 마지막 달에", () => {
+    expect(allocateMonthTargets([300n, 100n, 2n, 0n])).toEqual([
+      100n,
+      100n,
+      100n,
+      33n,
+      33n,
+      34n,
+      0n,
+      0n,
+      2n,
+      0n,
+      0n,
+      0n,
+    ]);
+  });
+
+  it("분기 배분과 같은 규칙 (splitEvenly: 똑같이 나누고 나머지는 마지막 몫)", () => {
+    expect(splitEvenly(10n, 3)).toEqual([3n, 3n, 4n]);
+    expect(splitEvenly(10n, 4)).toEqual([2n, 2n, 2n, 4n]);
+    // 분기 목표 배분(빈 분기 4개)도 같은 함수 결과
+    expect(allocateQuarterTargets(target(10n)).quarters).toEqual(
+      splitEvenly(10n, 4),
+    );
+    // 월 목표 합 = 분기 목표 (원 단위까지)
+    const quarters = allocateQuarterTargets(target(1_000_000_001n)).quarters;
+    const months = allocateMonthTargets(quarters);
+    for (let q = 0; q < 4; q++) {
+      expect(months.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b)).toBe(
+        quarters[q],
+      );
+    }
+  });
+});
+
 describe("computeTargets", () => {
   // 1~9월 각 100 매출, 9월은 DRAFT
   const months = Array.from({ length: 9 }, (_, i) =>
@@ -79,6 +117,8 @@ describe("computeTargets", () => {
       period: null,
       quarterTargets: null,
       quarterActuals: null,
+      monthTargets: null,
+      month: null,
     });
   });
 
@@ -101,7 +141,7 @@ describe("computeTargets", () => {
     });
   });
 
-  it("월: 분기 목표 대비 분기 첫 달~해당 월 누적", () => {
+  it("월: 분기 목표 대비 분기 첫 달~해당 월 누적 + 그 달 월 목표(분기 ÷ 3) 대비", () => {
     const result = computeTargets(
       { unit: "month", year: 2026, month: 8 },
       t,
@@ -113,6 +153,27 @@ describe("computeTargets", () => {
       actual: 200n,
       rate: 200 / 600,
     });
+    expect(result.month).toEqual({
+      month: 8,
+      target: 200n,
+      actual: 100n,
+      rate: 0.5,
+    });
+    // 9월은 임시저장 → 월 실적 0 (확정 월만)
+    const sep = computeTargets(
+      { unit: "month", year: 2026, month: 9 },
+      t,
+      months,
+    );
+    expect(sep.month).toEqual({ month: 9, target: 200n, actual: 0n, rate: 0 });
+    // 분기·연간 보기에는 월 달성률 없음, 월 목표 12개는 늘 있음
+    const q = computeTargets(
+      { unit: "quarter", year: 2026, quarter: 3 },
+      t,
+      months,
+    );
+    expect(q.month).toBeNull();
+    expect(q.monthTargets).toHaveLength(12);
   });
 
   it("연간 / YTD(경과월 비례 목표)", () => {

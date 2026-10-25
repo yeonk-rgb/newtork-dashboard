@@ -63,7 +63,7 @@ const TARGET_LABELS: ProgressLabels = {
  * 목표 대비 실적 (분기·연간 공용): 실적 / 남은 목표, 초과면 목표 달성분 / 초과분 — 비율은 목표 대비
  * @param meter 색 (강조 카드 위에서는 METER_ON_ACCENT)
  */
-function progressSlices(
+export function progressSlices(
   target: bigint,
   actual: bigint,
   meter: MeterColors,

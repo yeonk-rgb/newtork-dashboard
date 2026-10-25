@@ -66,6 +66,17 @@ export const REVENUE_COLORS: Record<string, string> = {
   service: PALETTE.sage,
 };
 
+/**
+ * 지출 구성: 상품 매입·원재료 매입·경비·기타 (2026-10-25 메인 재구성)
+ * 원형이라 기타(마지막)가 상품 매입(첫째)과 맞닿음 → 코퍼↔모브를 피해 기타는 세이지. 화면 적용(대시보드 PR 2) 때 색 대비 다시 검증
+ */
+export const EXPENSE_COLORS: Record<string, string> = {
+  goodsPurchase: PALETTE.copper,
+  materialPurchase: PALETTE.sand,
+  operatingExpense: PALETTE.steel,
+  otherExpense: PALETTE.sage,
+};
+
 /** 이익 구조: 매입·경비·이익 (코퍼↔모브가 맞닿으면 구분이 약해 경비는 샌드) */
 export const PROFIT_COLORS = {
   purchase: PALETTE.copper,
