@@ -31,7 +31,7 @@ export type ExportSheet = {
 
 export const DETAIL_SHEET_NAME = "상세";
 
-// 인쇄(printSetup): 월별 시트는 세로(I열을 넓혀 H·I열이 둘째 페이지로 넘어가지 않게), 상세 시트는 가로
+// 인쇄(printSetup): 월별 시트·상세 시트 모두 A4 가로 + 너비 1페이지 맞춤 (2026-10-26 월별 시트를 세로에서 가로로)
 
 function drawLedgerSheet(
   ws: ExcelJS.Worksheet,
@@ -143,6 +143,33 @@ function drawDetailSheet(
  * 원본 양식 파일(bytes) + 월별 행 → .xlsx
  * - 월별 시트("2026-10") + 맨 뒤 "상세" 시트
  */
+/**
+ * 채권·채무 월별 시트 + "상세" 시트를 이미 열린 통합 문서에 그린다 (월별 종합 리포트도 같은 함수를 쓴다)
+ * @param detailName 상세 시트 이름 (단독 다운로드 "상세", 리포트 안 "채권·채무 상세")
+ */
+export function addLedgerSheets(
+  wb: ExcelJS.Workbook,
+  styles: TemplateStyles,
+  sheets: ExportSheet[],
+  detailName: string = DETAIL_SHEET_NAME,
+) {
+  for (const sheet of sheets) {
+    // A4 가로 + 너비 1페이지 맞춤 (2026-10-26 — 세로는 약 60%·글자 6pt, 가로는 100%. 월간 입력과 같은 기준)
+    const ws = wb.addWorksheet(sheet.sheetName, {
+      views: [sheetView()],
+      pageSetup: printSetup(styles.pageSetup, "landscape"),
+    });
+    drawLedgerSheet(ws, sheet.rows, styles);
+  }
+  drawDetailSheet(
+    wb.addWorksheet(detailName, {
+      pageSetup: printSetup(styles.pageSetup, "landscape"),
+    }),
+    sheets,
+    styles,
+  );
+}
+
 export async function buildLedgerWorkbook(input: {
   template: Buffer;
   sheets: ExportSheet[];
@@ -151,20 +178,6 @@ export async function buildLedgerWorkbook(input: {
   const { wb, source, dropSource } = await openTemplateWorkbook(input.template);
   const styles = readTemplateStyles(source);
   dropSource();
-
-  for (const sheet of input.sheets) {
-    const ws = wb.addWorksheet(sheet.sheetName, {
-      views: [sheetView()],
-      pageSetup: printSetup(styles.pageSetup, "portrait"),
-    });
-    drawLedgerSheet(ws, sheet.rows, styles);
-  }
-  drawDetailSheet(
-    wb.addWorksheet(DETAIL_SHEET_NAME, {
-      pageSetup: printSetup(styles.pageSetup, "landscape"),
-    }),
-    input.sheets,
-    styles,
-  );
+  addLedgerSheets(wb, styles, input.sheets);
   return writeWorkbook(wb, input.now);
 }

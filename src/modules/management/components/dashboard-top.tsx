@@ -6,6 +6,7 @@ import { lastCompletedQuarter, parsePeriodParam } from "@/shared/period/url";
 import { getTodayKst } from "../data/load-summary-input";
 import { loadYearRange } from "../data/queries";
 import type { ManagementSummary } from "../metrics/types";
+import { ReportDownloadButton } from "../export/report-download-button";
 import { ConfirmationBanner } from "./confirmation-banner";
 import { KpiCards } from "./kpi-cards";
 import { PeriodSelector } from "./period-selector";
@@ -37,7 +38,11 @@ export async function DashboardTop({
     <section className="space-y-6" aria-label="기간 요약">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className={pageTitleClass}>{title}</h1>
-        <PeriodSelector period={summary.period} years={years} />
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodSelector period={summary.period} years={years} />
+          {/* 월별 종합 리포트 엑셀 — 지금 보고 있는 기간 (경영지원 열람 권한, 서버가 다시 확인) */}
+          <ReportDownloadButton period={summary.period} />
+        </div>
       </div>
       <ConfirmationBanner confirmation={summary.confirmation} />
       {aboveKpis}

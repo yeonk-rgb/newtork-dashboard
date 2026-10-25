@@ -196,6 +196,11 @@ export type QuarterRow = {
   state: "ended" | "current" | "future";
   /** 그 분기 달 중 확정 안 된 달 (끝난 분기여도 실적이 다 들어오지 않음) */
   unconfirmedMonths: number[];
+  /**
+   * 분기에 확정된 달이 하나도 없을 때 금액·달성률(0.0%) 대신 보여 줄 글 — 엑셀(목표 대비 실적·월별 리포트)과 같은 문장 (2026-10-26)
+   * 진행 중 "진행 중 (경과 1/3개월, 확정된 달 없음)" / 끝남 "(7·8·9월 미확정, 확정된 달 없음)" / 그 밖에는 null
+   */
+  noConfirmedText: string | null;
   /** 끝났고 3개월 모두 확정인데 목표 미달 → 빨강 (확정 안 된 달이 있으면 빨강 대신 "미확정" 안내) */
   warn: boolean;
   /** 지금 보고 있는 기간의 분기 */
@@ -296,12 +301,30 @@ export function targetCardModel(
       const rate = target === 0n ? null : Number(actual) / Number(target);
       const state = quarterState(period.year, quarter, today);
       const confirmed = annualProgress?.confirmedMonths ?? [];
+      const quarterMonths = [1, 2, 3].map((k) => (quarter - 1) * 3 + k);
       const unconfirmedMonths =
         state === "ended"
-          ? [1, 2, 3]
-              .map((k) => (quarter - 1) * 3 + k)
-              .filter((m) => !confirmed.includes(m))
+          ? quarterMonths.filter((m) => !confirmed.includes(m))
           : [];
+      const confirmedCount = quarterMonths.filter((m) =>
+        confirmed.includes(m),
+      ).length;
+      const thisMonth = monthIndex({
+        year: today.getUTCFullYear(),
+        month: today.getUTCMonth() + 1,
+      });
+      const elapsed =
+        thisMonth -
+        monthIndex({ year: period.year, month: quarterMonths[0] }) +
+        1;
+      const noConfirmedText =
+        confirmedCount > 0
+          ? null
+          : state === "current"
+            ? `진행 중 (경과 ${elapsed}/3개월, 확정된 달 없음)`
+            : state === "ended"
+              ? `(${unconfirmedMonths.join("·")}월 미확정, 확정된 달 없음)`
+              : null;
       return {
         quarter,
         target,
@@ -310,6 +333,7 @@ export function targetCardModel(
         source: targets.quarterTargets!.sources[i],
         state,
         unconfirmedMonths,
+        noConfirmedText,
         warn:
           state === "ended" &&
           unconfirmedMonths.length === 0 &&

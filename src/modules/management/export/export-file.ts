@@ -17,7 +17,14 @@ import {
 import { buildEntryWorkbook } from "../entry/export/build-entry-workbook";
 import { loadEntryExportData } from "../entry/export/load-entry-export";
 import { planEntrySheets } from "../entry/export/plan";
+import { loadFinanceMonths } from "../data/queries";
+import { planExportSheets } from "../ledger/export/period";
+import { loadLedgerRowsByMonth } from "../ledger/load-ledger";
+import { formatLedgerMonth } from "../ledger/rules";
+import { DEFAULT_METRICS_SETTINGS } from "../metrics/settings";
 import { computeManagementSummary } from "../metrics/summary";
+import { computeTrend, trendRange } from "../metrics/trend";
+import { buildReportLayout } from "../report/report-layout";
 import {
   buildReceivablesLayout,
   receivablesListSheet,
@@ -29,6 +36,7 @@ import {
   parseExportPeriod,
   periodSheetName,
 } from "./period";
+import { monthIndex } from "@/shared/period/period";
 import { buildStackedWorkbook } from "./stacked";
 import { readExportTemplate } from "./template";
 
@@ -64,7 +72,18 @@ const KINDS = {
     label: "미수금 엑셀 다운로드",
     file: { ko: "미수금", ascii: "receivables" },
   },
+  /** 월별 종합 리포트 — 리포트 시트 + 채권·채무 월 시트 + 채권·채무 상세 + 미수금 상세 */
+  report: {
+    screen: "report-export",
+    targetType: "ReportExport",
+    label: "월별 리포트 엑셀 다운로드",
+    file: { ko: "리포트", ascii: "report" },
+  },
 } as const;
+
+/** 리포트 안 채권·채무 시트 이름 — 다시 올리면 이름 끝 기준년월로 자동 선택 (selectLedgerSheet) */
+export const REPORT_LEDGER_PREFIX = "채권·채무 ";
+export const REPORT_LEDGER_DETAIL = "채권·채무 상세";
 
 /** 파일 이름·기록의 기간: 목표 대비 실적은 늘 연도 */
 const filePeriodOf = (kind: ExportKind, period: Period): Period =>
@@ -84,14 +103,76 @@ export type ManagementExportFile = {
 const isKind = (v: string | null): v is ExportKind =>
   v !== null && Object.hasOwn(KINDS, v);
 
-async function buildFile(
+/** 파일 만들기만 (기록 없음) — 다운로드와 검산 스크립트(npm run export:report)가 같은 함수를 쓴다 */
+export async function buildExportFile(
   kind: ExportKind,
   period: Period,
   thisMonth: { year: number; month: number },
   today: Date,
   now: Date,
+  author: string,
 ) {
   switch (kind) {
+    case "report": {
+      const year: Period = { unit: "year", year: period.year };
+      const months = monthsUpTo(period, thisMonth);
+      const range = trendRange(period).map(monthIndex);
+      const [template, input, yearInput, trendMonths, ledgerByMonth] =
+        await Promise.all([
+          readExportTemplate(),
+          loadSummaryInput(period, today),
+          loadSummaryInput(year, today),
+          loadFinanceMonths(range[0], range.at(-1)!),
+          loadLedgerRowsByMonth(months),
+        ]);
+      const summary = computeManagementSummary(input);
+      const report = buildReportLayout({
+        summary,
+        yearSummary: computeManagementSummary(yearInput),
+        yearMonths: yearInput.financeMonths,
+        trend: computeTrend(
+          period,
+          trendMonths,
+          today,
+          DEFAULT_METRICS_SETTINGS.costMode,
+        ),
+        today,
+        writtenOn: today.toISOString().slice(0, 10),
+        author,
+      });
+      const ledger = planExportSheets(
+        period,
+        months,
+        (ym) => ledgerByMonth.get(formatLedgerMonth(ym)) ?? [],
+      ).map((s) => ({
+        ...s,
+        sheetName: `${REPORT_LEDGER_PREFIX}${s.sheetName}`,
+      }));
+      const list = receivablesListSheet(summary.receivables);
+      const name = periodSheetName(period);
+      return {
+        body: await buildStackedWorkbook({
+          template,
+          sheets: [
+            {
+              name,
+              layout: report.layout,
+              maxAux: report.maxAux,
+              print: { blocks: report.blocks },
+            },
+          ],
+          ledger: { sheets: ledger, detailName: REPORT_LEDGER_DETAIL },
+          lists: [list],
+          now,
+        }),
+        sheetNames: [
+          name,
+          ...ledger.map((s) => s.sheetName),
+          REPORT_LEDGER_DETAIL,
+          list.name,
+        ],
+      };
+    }
     case "targets": {
       const year: Period = { unit: "year", year: period.year };
       const [template, input] = await Promise.all([
@@ -151,7 +232,7 @@ async function buildFile(
 export async function exportManagementFile(
   kindParam: string | null,
   periodParam: string | null,
-  actor: { id: string; loginId: string },
+  actor: { id: string; loginId: string; name?: string },
 ): Promise<ManagementExportFile> {
   if (!isKind(kindParam)) {
     throw new ManagementExportError(400, "내려받을 화면이 올바르지 않습니다.");
@@ -174,12 +255,13 @@ export async function exportManagementFile(
 
   const def = KINDS[kindParam];
   const now = await getNow();
-  const { body, sheetNames } = await buildFile(
+  const { body, sheetNames } = await buildExportFile(
     kindParam,
     period,
     thisMonth,
     today,
     now,
+    actor.name ?? actor.loginId,
   );
   const filePeriod = filePeriodOf(kindParam, period);
   const param = toPeriodParam(filePeriod);
@@ -188,7 +270,7 @@ export async function exportManagementFile(
   try {
     await recordAudit(prisma, {
       occurredAt: now,
-      actor,
+      actor: { id: actor.id, loginId: actor.loginId },
       area: "management",
       screen: def.screen,
       action: "EXPORT",

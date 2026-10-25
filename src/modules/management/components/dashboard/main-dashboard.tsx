@@ -72,6 +72,9 @@ function TargetFooter({ card }: { card: TargetCardModel }) {
               <span className="flex items-center gap-2 tabular-nums">
                 {q.state === "future" ? (
                   "-"
+                ) : q.noConfirmedText ? (
+                  // 확정된 달이 없으면 0.0% 대신 사실만 (엑셀과 같은 문장)
+                  q.noConfirmedText
                 ) : (
                   <>
                     {formatWonShort(q.actual)} / {formatWonShort(q.target)} ·{" "}
@@ -83,7 +86,7 @@ function TargetFooter({ card }: { card: TargetCardModel }) {
                     진행 중
                   </span>
                 )}
-                {q.unconfirmedMonths.length > 0 && (
+                {q.unconfirmedMonths.length > 0 && !q.noConfirmedText && (
                   <span className={cn(pillClass, "bg-black/15 text-white")}>
                     {q.unconfirmedMonths.join("·")}월 미확정
                   </span>

@@ -61,7 +61,17 @@ export type ReceivablesSheet = {
 
 export function buildReceivablesLayout(r: ReceivableResult): ReceivablesSheet {
   const b = new SheetBuilder<StackedRole, number>();
+  const { over90Row } = appendAgingBlock(b, r);
+  b.separator(0);
+  const result = appendCustomerBlock(b, r, over90Row);
+  return { layout: b.layout(), ...result };
+}
 
+/** "미수금 통계 (9/30 기준)" 경과일 그룹 블록 (단독 다운로드·월별 종합 리포트 공용) — 90일 초과 그룹 첫 행을 돌려준다 */
+export function appendAgingBlock(
+  b: SheetBuilder<StackedRole, number>,
+  r: ReceivableResult,
+): { over90Row: number } {
   // ── 미수금 통계 (경과일 그룹) ──
   b.title(`미수금 통계 (${asOfLabel(r.asOf)} 기준)`, "title");
   header(b);
@@ -84,8 +94,15 @@ export function buildReceivablesLayout(r: ReceivableResult): ReceivablesSheet {
     );
     if (bucket === "90+") over90Row = g.first;
   }
-  b.separator(0);
+  return { over90Row };
+}
 
+/** "거래처별 미수금" 블록 + H·I 90일 초과·수금 예정일 지남 */
+export function appendCustomerBlock(
+  b: SheetBuilder<StackedRole, number>,
+  r: ReceivableResult,
+  over90Row: number,
+): Omit<ReceivablesSheet, "layout"> {
   // ── 거래처별 미수금 ──
   b.title("거래처별 미수금", "title");
   header(b);
@@ -138,7 +155,6 @@ export function buildReceivablesLayout(r: ReceivableResult): ReceivablesSheet {
   });
 
   return {
-    layout: b.layout(),
     maxAux: Math.max(
       Number(over90?.amount ?? 0n),
       Number(r.expected.overdue.amount),

@@ -2,7 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SAMPLE_CATEGORIES, SAMPLE_MONTHS } from "../entry/export/test-data";
-import { fixtureInput } from "./testing/summary-fixture";
+import { SAMPLE_ROWS } from "../ledger/export/test-rows";
+import { fixtureInput, fixtureMonths } from "./testing/summary-fixture";
 
 vi.mock("server-only", () => ({}));
 const loadSummary = vi.fn(async (period: Parameters<typeof fixtureInput>[0]) =>
@@ -19,6 +20,12 @@ const loadEntry = vi.fn(async () => ({
 }));
 vi.mock("../entry/export/load-entry-export", () => ({
   loadEntryExportData: loadEntry,
+}));
+vi.mock("../data/queries", () => ({
+  loadFinanceMonths: async () => fixtureMonths(),
+}));
+vi.mock("../ledger/load-ledger", () => ({
+  loadLedgerRowsByMonth: async () => new Map([["2026-10", SAMPLE_ROWS]]),
 }));
 let failAudit = false;
 const create = vi.fn(async ({ data }: { data: unknown }) => {
@@ -147,5 +154,43 @@ describe("목표 대비 실적·미수금 엑셀 다운로드", () => {
     await expect(
       exportManagementFile("targets", "2027", ACTOR),
     ).rejects.toMatchObject({ status: 400 });
+  });
+});
+
+describe("월별 리포트 엑셀 다운로드", () => {
+  it("당월: 리포트 시트 + 채권·채무 시트 + 상세 2장, 작성자 이름, 기록", async () => {
+    const file = await exportManagementFile("report", "2026-10", {
+      ...ACTOR,
+      name: "윤경영",
+    });
+    expect(file).toMatchObject({
+      kind: "report",
+      fileName: "경영지원_리포트_2026-10.xlsx",
+      asciiName: "report-2026-10.xlsx",
+      sheetNames: [
+        "2026-10",
+        "채권·채무 2026-10",
+        "채권·채무 상세",
+        "미수금 상세",
+      ],
+    });
+    expect(create.mock.calls[0][0].data).toMatchObject({
+      screen: "report-export",
+      targetType: "ReportExport",
+      targetLabel: "월별 리포트 엑셀 다운로드 · 2026-10",
+      actorLoginId: "mgmt_member",
+      meta: { period: "2026-10", sheetCount: 4 },
+    });
+  });
+
+  it("연초 누적: 파일 _2026-01~10, 합계 리포트 1장 + 데이터 있는 달의 채권·채무 시트", async () => {
+    const file = await exportManagementFile("report", "2026-YTD10", ACTOR);
+    expect(file.fileName).toBe("경영지원_리포트_2026-01~10.xlsx");
+    expect(file.sheetNames).toEqual([
+      "2026-01~10",
+      "채권·채무 2026-10",
+      "채권·채무 상세",
+      "미수금 상세",
+    ]);
   });
 });

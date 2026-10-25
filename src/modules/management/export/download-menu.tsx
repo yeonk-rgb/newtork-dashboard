@@ -15,6 +15,66 @@ export function fileNameFrom(header: string | null, fallback: string): string {
   return plain ? plain[1] : fallback;
 }
 
+/** 받아서 저장 — 실패하면 화면에 보여 줄 문구, 성공이면 null */
+export async function downloadFile(item: DownloadItem): Promise<string | null> {
+  try {
+    const res = await fetch(item.href, { cache: "no-store" });
+    if (!res.ok) return await res.text();
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileNameFrom(
+      res.headers.get("Content-Disposition"),
+      item.fallbackName,
+    );
+    a.click();
+    URL.revokeObjectURL(url);
+    return null;
+  } catch {
+    return "내려받지 못했습니다. 네트워크를 확인하고 다시 시도하세요.";
+  }
+}
+
+/** 항목이 하나뿐인 다운로드 버튼 (예: [월별 리포트 엑셀] — 지금 보고 있는 기간) */
+export function DownloadButton({
+  item,
+  label,
+}: {
+  item: DownloadItem;
+  label: string;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        disabled={pending}
+        title={item.fileName}
+        onClick={async () => {
+          setPending(true);
+          setError(null);
+          setError(await downloadFile(item));
+          setPending(false);
+        }}
+        className={buttonSecondaryClass}
+      >
+        <Download className="size-4" aria-hidden />
+        {pending ? "만드는 중…" : label}
+      </button>
+      {error && (
+        <p
+          role="alert"
+          className="absolute right-0 z-10 mt-1 w-72 rounded-lg bg-danger-soft p-2 text-xs text-danger-strong"
+        >
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export type DownloadItem = {
   label: string;
   /** 요청 주소 (/api/management/…) */
@@ -43,27 +103,8 @@ export function DownloadMenu({
     setOpen(false);
     setError(null);
     setPending(item.href);
-    try {
-      const res = await fetch(item.href, { cache: "no-store" });
-      if (!res.ok) {
-        setError(await res.text());
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileNameFrom(
-        res.headers.get("Content-Disposition"),
-        item.fallbackName,
-      );
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      setError("내려받지 못했습니다. 네트워크를 확인하고 다시 시도하세요.");
-    } finally {
-      setPending(null);
-    }
+    setError(await downloadFile(item));
+    setPending(null);
   };
 
   return (

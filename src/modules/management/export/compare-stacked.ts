@@ -30,11 +30,15 @@ const TOTAL_SOURCE: Record<"total" | "warnTotal", Record<TotalPart, string>> = {
 const address = (row: number, col: number) =>
   `${String.fromCharCode(64 + col)}${row}`;
 
+const PAGED_PRINT_REASON =
+  "블록 단위 쪽 나눔 — Excel 은 '페이지에 맞춤'이면 수동 쪽 나눔을 무시해서, 너비가 1페이지에 들어가는 고정 배율로 (2026-10-26)";
+
 export function stackedComparison(
   source: ExcelJS.Worksheet,
   out: ExcelJS.Workbook,
   sheetName: string,
   layout: StackedLayout,
+  opts: { paged?: boolean } = {},
 ): CompareRow[] {
   const cells = layout.rows.flatMap((r) =>
     r.cells.map((c) => ({ ...c, row: r.row })),
@@ -58,6 +62,10 @@ export function stackedComparison(
     "warnName",
     "warnAmount",
     "warnNote",
+    "infoLabel",
+    "infoValue",
+    "trendAmount",
+    "footnote",
   ];
   for (const role of plain) {
     const c = first((x) => x.role === role && !x.warn);
@@ -93,7 +101,14 @@ export function stackedComparison(
     }
   }
   // 빨간 안내·빨간 총액 (색만 원본 장기미수 C3 빨강으로 바꿈)
-  for (const role of ["memo", "note", "total", "auxLabel"] as const) {
+  for (const role of [
+    "memo",
+    "note",
+    "total",
+    "auxLabel",
+    "infoValue",
+    "trendAmount",
+  ] as const) {
     const c = first((x) => x.role === role && x.warn === true);
     if (!c) continue;
     const src =
@@ -109,6 +124,18 @@ export function stackedComparison(
         ...(role === "total" && c.totalPart !== "top"
           ? { border: "그룹 길이에 맞춘 위·가운데·아래 테두리" }
           : {}),
+      },
+    });
+  }
+  const reportTitle = first((x) => x.role === "reportTitle");
+  if (reportTitle) {
+    pairs.push({
+      label: "reportTitle (경 영 리 포 트)",
+      source: STACKED_ROLE_CELLS.title,
+      target: target(reportTitle),
+      intended: {
+        font: "리포트 머리말 제목 16pt (견적서 제목 배치 — 원본에 없는 크기, 2026-10-25 결정)",
+        alignment: "제목을 C~I 병합 칸 가운데로",
       },
     });
   }
@@ -155,7 +182,11 @@ export function stackedComparison(
       separatorRows: layout.rows
         .filter((r) => r.kind === "separator")
         .map((r) => r.row),
-      intended: { print: PRINT_REASON, orientation: ORIENTATION_REASON },
+      intended: {
+        print: opts.paged ? PAGED_PRINT_REASON : PRINT_REASON,
+        orientation: ORIENTATION_REASON,
+        ...(opts.paged ? { scale: PAGED_PRINT_REASON } : {}),
+      },
     }),
   );
   return rows;

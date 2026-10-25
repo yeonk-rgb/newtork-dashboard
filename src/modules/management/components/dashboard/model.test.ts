@@ -242,6 +242,42 @@ describe("목표매출 달성률 카드", () => {
     expect(card.annual?.rate).toBe(s.annualProgress!.rate);
   });
 
+  it("확정된 달이 없는 분기: 0.0% 대신 엑셀과 같은 문장 (진행 중·끝남)", () => {
+    const card = targetCardModel(summaryOf(Q3), TODAY);
+    // 4분기: 10월 진행 중, 확정된 달 없음
+    expect(card.quarters[3]).toMatchObject({
+      state: "current",
+      noConfirmedText: "진행 중 (경과 1/3개월, 확정된 달 없음)",
+    });
+    // 확정된 달이 있는 분기는 null (금액·달성률을 그대로 보여 줌)
+    expect(card.quarters.slice(0, 3).map((q) => q.noConfirmedText)).toEqual([
+      null,
+      null,
+      null,
+    ]);
+    // 3분기를 모두 임시저장으로 → 끝났지만 확정된 달 없음
+    const draftQ3 = computeManagementSummary({
+      period: Q3,
+      financeMonths: months().map((m) =>
+        m.year === 2026 && m.month >= 7
+          ? { ...m, status: "DRAFT" as const }
+          : m,
+      ),
+      annualTarget: {
+        year: 2026,
+        revenueTarget: 2_800_000_000n,
+        quarterTargets: [null, null, null, null],
+      },
+      receivables: [],
+      today: TODAY,
+    });
+    expect(targetCardModel(draftQ3, TODAY).quarters[2]).toMatchObject({
+      state: "ended",
+      noConfirmedText: "(7·8·9월 미확정, 확정된 달 없음)",
+      warn: false,
+    });
+  });
+
   it("월: 가운데 = 그 달 월 목표(분기 ÷ 3) 대비, 분기 진행률 한 줄, '월 목표 = 분기 목표 ÷ 3 (자동)'", () => {
     const s = summaryOf(AUG);
     const card = targetCardModel(s, TODAY);
