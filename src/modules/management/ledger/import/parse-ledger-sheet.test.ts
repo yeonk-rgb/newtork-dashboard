@@ -40,15 +40,26 @@ describe("원본 빈 양식 (ledger-template.xlsx)", () => {
     expect(block(p, "ACCRUED_VENDOR").skipped.codeOnly).toEqual([]);
   });
 
-  it("총액: 장기미수 F3:F4 는 원본 총액 없음, 나머지는 수식 계산값 없음", async () => {
+  it("총액: 장기미수 F3:F4 는 원본 총액 없음, 나머지는 계산값 0 = 행 합계 0 → 일치", async () => {
     const p = await parseFixture("ledger-template.xlsx");
     expect(
-      block(p, "AR").totals.map((t) => [t.range, t.state, t.formula]),
+      block(p, "AR").totals.map((t) => [
+        t.range,
+        t.state,
+        t.formula,
+        t.fileTotal,
+      ]),
     ).toEqual([
-      ["F3:F4", "noTotal", null],
-      ["F5:F24", "noResult", "SUM(D5:D24)"],
-      ["F25:F37", "noResult", "SUM(D25:D37)"],
+      ["F3:F4", "noTotal", null, null],
+      ["F5:F24", "match", "SUM(D5:D24)", 0n],
+      ["F25:F37", "match", "SUM(D25:D37)", 0n],
     ]);
+    expect(
+      p.blocks
+        .flatMap((b) => b.totals)
+        .filter((t) => t.range !== "F3:F4")
+        .map((t) => t.state),
+    ).toEqual(["match", "match", "match", "match", "match"]);
     expect(block(p, "ACCRUED_VENDOR").totals.map((t) => t.range)).toEqual([
       "F67:F79",
     ]);
@@ -215,6 +226,41 @@ describe("적요 날짜 → 완료일 후보 (기준월 안만)", () => {
       noteDateIgnored: null,
     });
     expect(rowAt(p, 5)?.noteDateIgnored).toBeNull();
+  });
+});
+
+describe("원본 총액 계산값 0 과 '계산값 없음' 구분 (2026-10-25 버그 수정)", () => {
+  it("계산값 0 + 행 합계 0 → 일치", async () => {
+    const p = await parseFixture("ledger-template.xlsx");
+    expect(block(p, "AP").totals[0]).toMatchObject({
+      state: "match",
+      fileTotal: 0n,
+      rowsSum: 0n,
+    });
+  });
+
+  it("계산값 0 + 행에 금액 있음 → 불일치 (계산값 없음으로 숨기지 않음)", async () => {
+    // 원본 빈 양식(계산값 0)에 금액만 적고 엑셀이 다시 계산하지 않은 경우
+    const sheet = await editedSheet("ledger-template.xlsx", (ws) => {
+      ws.getCell("C41").value = "가가금속(가상)";
+      ws.getCell("D41").value = 1_000_000;
+    });
+    expect(parseLedgerSheet(sheet, OPTS).blocks[1].totals[0]).toMatchObject({
+      state: "mismatch",
+      fileTotal: 0n,
+      rowsSum: 1_000_000n,
+    });
+  });
+
+  it("수식만 있고 계산값 없음 → 계산값 없음", async () => {
+    const sheet = await editedSheet("ledger-sample.xlsx", (ws) => {
+      ws.getCell("F41").value = { formula: "SUM(D41:D49)" } as never;
+    });
+    expect(parseLedgerSheet(sheet, OPTS).blocks[1].totals[0]).toMatchObject({
+      state: "noResult",
+      fileTotal: null,
+      rowsSum: 6_180_000n,
+    });
   });
 });
 

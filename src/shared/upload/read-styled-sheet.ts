@@ -100,9 +100,14 @@ function toColor(
   return undefined;
 }
 
-/** exceljs 셀 값 → 표시 값 + 수식 정보 */
+/**
+ * exceljs 셀 값 → 표시 값 + 수식 정보
+ * 수식 계산값은 cell.result 로 읽는다 — exceljs 는 계산값이 0 이면 cell.value 에서 result 를 빼므로
+ * cell.value 만 보면 "계산값 0" 과 "계산값 없음(<v> 없음)" 을 구분하지 못한다 (2026-10-25 버그 수정)
+ */
 function readValue(
   raw: ExcelJS.CellValue,
+  cellResult: unknown,
 ): Pick<StyledCell, "value" | "formula" | "hasResult"> {
   if (raw === null || raw === undefined) return { value: null };
   if (
@@ -119,7 +124,7 @@ function readValue(
       sharedFormula?: string;
       result?: unknown;
     };
-    const result = f.result;
+    const result = cellResult !== undefined ? cellResult : f.result;
     const hasResult = result !== undefined && result !== null;
     const value =
       typeof result === "string" ||
@@ -188,7 +193,9 @@ export async function readStyledXlsx(
     const cells = new Map<string, StyledCell>();
     ws.eachRow({ includeEmpty: true }, (row, r) => {
       row.eachCell({ includeEmpty: true }, (cell, c) => {
-        const read = isSlave(r, c) ? { value: null } : readValue(cell.value);
+        const read = isSlave(r, c)
+          ? { value: null }
+          : readValue(cell.value, (cell as { result?: unknown }).result);
         const font = toColor(cell.font?.color);
         const fill =
           cell.fill?.type === "pattern" && cell.fill.pattern !== "none"
