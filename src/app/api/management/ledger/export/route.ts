@@ -22,7 +22,10 @@ export async function GET(request: Request) {
   }
   const period = new URL(request.url).searchParams.get("period");
   try {
-    const file = await exportLedger(period);
+    const file = await exportLedger(period, {
+      id: user.id,
+      loginId: user.loginId,
+    });
     console.info(
       `[ledger-export] user=${user.loginId} period=${file.period} sheets=${file.sheetNames.join(",")} rows=${file.rowCount}`,
     );

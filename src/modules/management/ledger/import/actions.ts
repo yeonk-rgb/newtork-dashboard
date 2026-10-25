@@ -63,6 +63,7 @@ export type ImportResult =
 
 type Loaded = {
   userId: string;
+  loginId: string;
   canOverwrite: boolean;
   year: number;
   month: number;
@@ -126,6 +127,7 @@ async function loadUpload(formData: FormData): Promise<Loaded | LoadError> {
 
   return {
     userId: user.id,
+    loginId: user.loginId,
     canOverwrite: abilities.canOverwrite,
     year: ym.year,
     month: ym.month,
@@ -260,6 +262,7 @@ export async function importLedger(formData: FormData): Promise<ImportResult> {
   try {
     const saved = await saveLedgerImport({
       userId: loaded.userId,
+      loginId: loaded.loginId,
       now: await getNow(),
       year: loaded.year,
       month: loaded.month,

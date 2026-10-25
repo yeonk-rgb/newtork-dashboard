@@ -1,6 +1,11 @@
 "use server";
 // 관리자 설정 Server Action — 모든 동작은 서버에서 canManageUsers()로 다시 확인한다
+// 변경 기록(audit_log, 영역 "admin" — 관리자(대표)만 봄)을 같은 트랜잭션에 남긴다. 비밀번호·임시 비밀번호는 기록하지 않는다
 import { refresh } from "next/cache";
+
+import { diffFields } from "@/shared/audit/diff";
+import { recordAudit } from "@/shared/audit/record";
+import type { AuditEntry } from "@/shared/audit/types";
 
 import {
   canManageUsers,
@@ -12,6 +17,14 @@ import {
 } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
 import { getNow } from "@/shared/time/now";
+
+import {
+  ACCOUNT_CREATE_FIELDS,
+  ROLE_CHANGE_FIELDS,
+  userTargetLabel,
+  type NewUserAuditRow,
+  type UserScopeAuditRow,
+} from "./audit-fields";
 
 import {
   keepsAnAdmin,
@@ -59,6 +72,24 @@ class Abort extends Error {
   }
 }
 
+/** 관리자 화면 기록의 공통 부분 */
+const adminAudit = (actor: AppUser, now: Date) => ({
+  occurredAt: now,
+  actor: { id: actor.id, loginId: actor.loginId },
+  area: "admin" as const,
+  screen: "admin-users",
+});
+
+const userTarget = (u: {
+  id: string;
+  name?: string | null;
+  loginId?: string | null;
+}): AuditEntry["target"] => ({
+  type: "AuthUser",
+  id: u.id,
+  label: userTargetLabel(u),
+});
+
 async function requireAdmin(): Promise<AppUser | null> {
   const actor = await getCurrentUser();
   return actor && canManageUsers(actor) ? actor : null;
@@ -96,11 +127,20 @@ export async function saveUserChanges(
     if (error) return invalid(error);
   }
 
+  const now = await getNow();
   return run(() =>
     prisma.$transaction(
       async (tx) => {
         const rows = await tx.authUser.findMany({
-          select: { id: true, role: true, deactivatedAt: true },
+          select: {
+            id: true,
+            role: true,
+            deactivatedAt: true,
+            loginId: true,
+            name: true,
+            viewTeams: true,
+            editTeams: true,
+          },
         });
         const byId = new Map(rows.map((r) => [r.id, r]));
         for (const change of changes) {
@@ -134,6 +174,21 @@ export async function saveUserChanges(
             },
           });
           if (count !== 1) throw new Abort(CONFLICT);
+          // 사람별 1건 — 바뀐 칸(역할·열람 범위·수정 권한)이 있을 때만
+          const before = byId.get(change.id)!;
+          const diff = diffFields<UserScopeAuditRow>(
+            before,
+            change,
+            ROLE_CHANGE_FIELDS,
+          );
+          if (diff.length > 0) {
+            await recordAudit(tx, {
+              ...adminAudit(actor, now),
+              action: "ROLE_CHANGE",
+              target: userTarget(before),
+              changes: diff,
+            });
+          }
         }
         return {
           ok: true,
@@ -173,16 +228,26 @@ export async function resetUserPassword(input: {
 
   const tempPassword = generateTempPassword();
   const passwordHash = await hashPassword(tempPassword);
+  const now = await getNow();
   return run(async () => {
-    await prisma.authUser.update({
-      where: { id: row.id },
-      data: {
-        passwordHash,
-        mustChangePassword: true,
-        failedLoginCount: 0,
-        lockedUntil: null,
-        updatedById: actor.id,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.authUser.update({
+        where: { id: row.id },
+        data: {
+          passwordHash,
+          mustChangePassword: true,
+          failedLoginCount: 0,
+          lockedUntil: null,
+          updatedById: actor.id,
+        },
+      });
+      // 값 없이 "초기화함"만 — 임시 비밀번호·해시는 절대 넣지 않는다
+      await recordAudit(tx, {
+        ...adminAudit(actor, now),
+        action: "PASSWORD_RESET",
+        target: userTarget(row),
+        meta: { result: "초기화함" },
+      });
     });
     await deleteUserSessions(row.id);
     return {
@@ -215,17 +280,35 @@ export async function createUser(
 
   const tempPassword = generateTempPassword();
   const passwordHash = await hashPassword(tempPassword);
+  const now = await getNow();
   return run(async () => {
-    await prisma.authUser.create({
-      data: {
-        loginId: parsed.data.loginId,
-        name: parsed.data.name,
-        ...scope,
-        passwordHash,
-        mustChangePassword: true,
-        createdById: actor.id,
-        updatedById: actor.id,
-      },
+    await prisma.$transaction(async (tx) => {
+      const created = await tx.authUser.create({
+        data: {
+          loginId: parsed.data.loginId,
+          name: parsed.data.name,
+          ...scope,
+          passwordHash,
+          mustChangePassword: true,
+          createdById: actor.id,
+          updatedById: actor.id,
+        },
+      });
+      // 아이디·이름·역할만 (임시 비밀번호 제외)
+      await recordAudit(tx, {
+        ...adminAudit(actor, now),
+        action: "ACCOUNT_CREATE",
+        target: userTarget({
+          id: created?.id ?? parsed.data.loginId,
+          name: parsed.data.name,
+          loginId: parsed.data.loginId,
+        }),
+        changes: diffFields<NewUserAuditRow>(
+          null,
+          { ...parsed.data, role: scope.role },
+          ACCOUNT_CREATE_FIELDS,
+        ),
+      });
     });
     return {
       ok: true,
@@ -251,7 +334,13 @@ export async function deactivateUser(input: {
     prisma.$transaction(
       async (tx) => {
         const rows = await tx.authUser.findMany({
-          select: { id: true, role: true, deactivatedAt: true },
+          select: {
+            id: true,
+            role: true,
+            deactivatedAt: true,
+            loginId: true,
+            name: true,
+          },
         });
         const row = rows.find((r) => r.id === id);
         if (!row)
@@ -279,6 +368,19 @@ export async function deactivateUser(input: {
           },
         });
         await tx.authSession.deleteMany({ where: { userId: id } });
+        await recordAudit(tx, {
+          ...adminAudit(actor, now),
+          action: "DEACTIVATE",
+          target: userTarget(row),
+          changes: [
+            {
+              field: "status",
+              label: "상태",
+              before: "사용 중",
+              after: "비활성",
+            },
+          ],
+        });
         return { ok: true, message: "계정을 비활성화했습니다." } as const;
       },
       { isolationLevel: "Serializable" },
@@ -294,16 +396,36 @@ export async function restoreUser(input: {
   if (!actor) return FORBIDDEN;
   const parsed = rowTargetSchema.safeParse(input);
   if (!parsed.success) return invalid("대상을 확인하세요.");
-  return run(async () => {
-    const { count } = await prisma.authUser.updateMany({
-      where: { id: parsed.data.id, deactivatedAt: { not: null } },
-      data: {
-        deactivatedAt: null,
-        deactivatedById: null,
-        updatedById: actor.id,
-      },
-    });
-    if (count !== 1) return CONFLICT;
-    return { ok: true, message: "계정을 복구했습니다." };
-  });
+  const now = await getNow();
+  return run(() =>
+    prisma.$transaction(async (tx) => {
+      const row = await tx.authUser.findUnique({
+        where: { id: parsed.data.id },
+        select: { id: true, loginId: true, name: true },
+      });
+      const { count } = await tx.authUser.updateMany({
+        where: { id: parsed.data.id, deactivatedAt: { not: null } },
+        data: {
+          deactivatedAt: null,
+          deactivatedById: null,
+          updatedById: actor.id,
+        },
+      });
+      if (count !== 1) throw new Abort(CONFLICT);
+      await recordAudit(tx, {
+        ...adminAudit(actor, now),
+        action: "REACTIVATE",
+        target: userTarget(row ?? { id: parsed.data.id }),
+        changes: [
+          {
+            field: "status",
+            label: "상태",
+            before: "비활성",
+            after: "사용 중",
+          },
+        ],
+      });
+      return { ok: true, message: "계정을 복구했습니다." } as const;
+    }),
+  );
 }

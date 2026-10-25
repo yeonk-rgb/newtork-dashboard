@@ -96,3 +96,72 @@ export function createFakeTransactionalDb<
     },
   };
 }
+
+const WRITE_METHODS = new Set([
+  "create",
+  "createMany",
+  "update",
+  "updateMany",
+  "upsert",
+  "delete",
+  "deleteMany",
+]);
+
+/**
+ * 모델별 가짜 함수를 받아 트랜잭션 흉내를 씌운다.
+ * - $transaction(fn) 안의 쓰기("모델.함수")는 임시로 모았다가 fn 이 끝까지 성공하면 committed 에 반영, 에러면 버림
+ * - auditLog.create 는 setAuditFailure 로 실패시킬 수 있다
+ */
+export function transactionalFake<
+  M extends Record<string, Record<string, (...args: never[]) => unknown>>,
+>(models: M) {
+  const committed: string[] = [];
+  const audits: FakeAuditRow[] = [];
+  let failAudit: Error | null = null;
+
+  const auditLog = {
+    create: async ({ data }: { data: FakeAuditRow }) => {
+      if (failAudit) throw failAudit;
+      return data;
+    },
+  };
+
+  function wrap(pending: string[], pendingAudits: FakeAuditRow[]) {
+    const tx: Record<string, Record<string, unknown>> = {};
+    for (const [model, fns] of Object.entries({ ...models, auditLog })) {
+      tx[model] = {};
+      for (const [name, fn] of Object.entries(fns)) {
+        tx[model][name] = async (...args: unknown[]) => {
+          const result = await (fn as (...a: unknown[]) => unknown)(...args);
+          if (WRITE_METHODS.has(name)) pending.push(`${model}.${name}`);
+          if (model === "auditLog") {
+            pendingAudits.push((args[0] as { data: FakeAuditRow }).data);
+          }
+          return result;
+        };
+      }
+    }
+    return tx;
+  }
+
+  const direct = wrap(committed, audits);
+  const db = {
+    ...direct,
+    $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
+      const pending: string[] = [];
+      const pendingAudits: FakeAuditRow[] = [];
+      const result = await fn(wrap(pending, pendingAudits));
+      committed.push(...pending);
+      audits.push(...pendingAudits);
+      return result;
+    },
+  };
+  return {
+    db,
+    committed,
+    audits,
+    setAuditFailure: (e: Error | null) => {
+      failAudit = e;
+    },
+  };
+}

@@ -92,6 +92,7 @@ export async function saveUpload(formData: FormData): Promise<SaveResult> {
 
   const { savedRows } = await saveUploadPlan(parsed.plan, {
     userId: user.id,
+    loginId: user.loginId,
     fileNames: parsed.files.map((f) => f.name),
     now: await getNow(),
   });
