@@ -1,10 +1,20 @@
 "use server";
 // 채권·채무 저장 Server Action — 권한·검증·동시 수정을 모두 서버에서 다시 확인한다
+// 저장과 변경 기록(audit_log)은 한 트랜잭션: 기록이 실패하면 저장도 취소된다
 import { refresh } from "next/cache";
 
+import { recordAudit } from "@/shared/audit/record";
+import { diffFields } from "@/shared/audit/diff";
+import type { AuditAction } from "@/shared/audit/types";
 import { getCurrentUser, type AppUser } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
 
+import {
+  auditActor,
+  ledgerAuditFields,
+  ledgerTargetLabel,
+  type LedgerAuditRow,
+} from "../audit-fields";
 import { getNow, getTodayKst } from "../data/load-summary-input";
 import { KIND_LABEL } from "./labels";
 import {
@@ -47,6 +57,9 @@ const conflict: LedgerActionResult = {
   code: "CONFLICT",
   message: "다른 사람이 먼저 수정했습니다. 새로고침 후 다시 시도하세요.",
 };
+
+/** 트랜잭션 안에서 updatedAt 이 바뀌어 저장하지 못했을 때 — 트랜잭션을 취소하고 conflict 를 돌려준다 */
+class ConflictError extends Error {}
 
 function firstIssue(error: { issues: { message: string }[] }): string {
   return error.issues[0]?.message ?? "입력값을 확인하세요.";
@@ -93,14 +106,34 @@ export async function createLedgerEntry(
   const data = await checkedData(fields);
   if (typeof data === "string") return invalid(data);
 
-  await prisma.ledgerEntry.create({
-    data: {
-      year,
-      month,
-      ...withDates(data),
-      createdById: user.id,
-      updatedById: user.id,
-    },
+  const now = await getNow();
+  await prisma.$transaction(async (tx) => {
+    const row = await tx.ledgerEntry.create({
+      data: {
+        year,
+        month,
+        ...withDates(data),
+        createdById: user.id,
+        updatedById: user.id,
+      },
+    });
+    await recordAudit(tx, {
+      occurredAt: now,
+      actor: auditActor(user),
+      area: "management",
+      screen: "ledger",
+      action: "CREATE",
+      target: {
+        type: "LedgerEntry",
+        id: row.id,
+        label: ledgerTargetLabel(row),
+      },
+      changes: diffFields<LedgerAuditRow>(
+        null,
+        row,
+        ledgerAuditFields(row.kind),
+      ),
+    });
   });
 
   refresh();
@@ -140,21 +173,54 @@ async function loadForAction(
   return { user, row, abilities };
 }
 
-/** updatedAt 이 그대로일 때만 수정 (확인과 저장 사이에 끼어든 저장도 막음) */
-async function updateIfUnchanged(
+/**
+ * updatedAt 이 그대로일 때만 수정 + 변경 기록 (한 트랜잭션).
+ * 확인과 저장 사이에 끼어든 저장이 있으면 ConflictError 로 둘 다 취소
+ */
+async function updateWithAudit(
   loaded: Loaded,
   data: Parameters<typeof prisma.ledgerEntry.updateMany>[0]["data"],
+  audit: { action: AuditAction; after: LedgerAuditRow },
   hidden = false,
 ): Promise<boolean> {
-  const updated = await prisma.ledgerEntry.updateMany({
-    where: {
-      id: loaded.row.id,
-      updatedAt: loaded.row.updatedAt,
-      deletedAt: hidden ? { not: null } : null,
-    },
-    data: { ...data, updatedById: loaded.user.id },
-  });
-  return updated.count > 0;
+  const { row, user } = loaded;
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.ledgerEntry.updateMany({
+        where: {
+          id: row.id,
+          updatedAt: row.updatedAt,
+          deletedAt: hidden ? { not: null } : null,
+        },
+        data: { ...data, updatedById: user.id },
+      });
+      if (updated.count === 0) throw new ConflictError();
+      await recordAudit(tx, {
+        occurredAt: await getNow(),
+        actor: auditActor(user),
+        area: "management",
+        screen: "ledger",
+        action: audit.action,
+        target: {
+          type: "LedgerEntry",
+          id: row.id,
+          label: ledgerTargetLabel(audit.after),
+        },
+        changes:
+          audit.action === "UPDATE"
+            ? diffFields<LedgerAuditRow>(
+                row,
+                audit.after,
+                ledgerAuditFields(row.kind),
+              )
+            : [],
+      });
+    });
+    return true;
+  } catch (error) {
+    if (error instanceof ConflictError) return false;
+    throw error;
+  }
 }
 
 export async function updateLedgerEntry(
@@ -175,7 +241,12 @@ export async function updateLedgerEntry(
   const data = await checkedData(fields);
   if (typeof data === "string") return invalid(data);
 
-  if (!(await updateIfUnchanged(loaded, withDates(data)))) return conflict;
+  const next = withDates(data);
+  const saved = await updateWithAudit(loaded, next, {
+    action: "UPDATE",
+    after: { ...loaded.row, ...next },
+  });
+  if (!saved) return conflict;
 
   refresh();
   return { ok: true, message: `${fields.partnerName} 행을 저장했습니다.` };
@@ -196,10 +267,11 @@ export async function hideLedgerEntry(
     return forbidden("숨김 처리는 팀장만 할 수 있습니다.");
   }
 
-  const saved = await updateIfUnchanged(loaded, {
-    deletedAt: await getNow(),
-    deletedById: loaded.user.id,
-  });
+  const saved = await updateWithAudit(
+    loaded,
+    { deletedAt: await getNow(), deletedById: loaded.user.id },
+    { action: "HIDE", after: loaded.row },
+  );
   if (!saved) return conflict;
 
   refresh();
@@ -225,9 +297,10 @@ export async function restoreLedgerEntry(
     return forbidden("복구는 팀장만 할 수 있습니다.");
   }
 
-  const saved = await updateIfUnchanged(
+  const saved = await updateWithAudit(
     loaded,
     { deletedAt: null, deletedById: null },
+    { action: "RESTORE", after: loaded.row },
     true,
   );
   if (!saved) return conflict;

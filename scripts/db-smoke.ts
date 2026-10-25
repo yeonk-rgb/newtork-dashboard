@@ -19,6 +19,7 @@ import {
   loadExistingData,
   loadRecentUploads,
 } from "@/modules/management/upload/save-upload";
+import { recordAudit } from "@/shared/audit/record";
 import { findSessionUser } from "@/shared/auth/session";
 import { loadUserNames } from "@/shared/auth/user-names";
 import { prisma } from "@/shared/db/client";
@@ -79,6 +80,89 @@ async function main() {
   await check("엑셀 업로드: 기존 데이터·이력", () =>
     Promise.all([loadExistingData(), loadRecentUploads()]),
   );
+
+  // 3) 변경 기록(audit_log): 수정·삭제 차단 트리거, 기록이 실패하면 저장도 취소 — 모두 트랜잭션 안에서 하고 되돌린다
+  class Rollback extends Error {}
+  const inRollback = async (
+    fn: (tx: Prisma.TransactionClient) => Promise<void>,
+  ) => {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await fn(tx);
+        throw new Rollback();
+      });
+    } catch (error) {
+      if (!(error instanceof Rollback)) throw error;
+    }
+  };
+  const smokeEntry = {
+    occurredAt: new Date(),
+    actor: { id: "smoke", loginId: "smoke" },
+    area: "management" as const,
+    screen: "smoke",
+    target: { type: "Smoke", id: "smoke", label: "db:smoke 점검 (되돌림)" },
+  };
+  await check("변경 기록: 수정·삭제 차단 트리거 (되돌림)", () =>
+    inRollback(async (tx) => {
+      await recordAudit(tx, { ...smokeEntry, action: "HIDE" });
+      const row = await tx.auditLog.findFirstOrThrow({
+        where: { screen: "smoke" },
+      });
+      for (const [name, sql] of [
+        [
+          "수정",
+          tx.auditLog.update({
+            where: { id: row.id },
+            data: { targetLabel: "x" },
+          }),
+        ],
+        ["삭제", tx.auditLog.delete({ where: { id: row.id } })],
+      ] as const) {
+        await tx.$executeRawUnsafe("SAVEPOINT audit_smoke");
+        const blocked = await sql.then(
+          () => false,
+          (e: unknown) => String(e).includes("audit_log"),
+        );
+        await tx.$executeRawUnsafe("ROLLBACK TO SAVEPOINT audit_smoke");
+        if (!blocked) {
+          throw new Error(
+            `기록 ${name}이 막히지 않습니다 — db push 로만 반영했다면 트리거가 없습니다. npm run db:deploy 로 마이그레이션을 적용하세요.`,
+          );
+        }
+      }
+    }),
+  );
+  await check("변경 기록: 기록이 실패하면 저장도 취소", async () => {
+    const marker = `__audit_smoke_${Date.now()}`;
+    await prisma
+      .$transaction(async (tx) => {
+        await tx.ledgerEntry.create({
+          data: {
+            year: 2000,
+            month: 1,
+            kind: "ACCRUED_STAFF",
+            partnerName: marker,
+            amount: 1n,
+            createdById: "smoke",
+            updatedById: "smoke",
+          },
+        });
+        // 금지 칸(비밀번호) → 기록 거부 → 트랜잭션 전체 취소
+        await recordAudit(tx, {
+          ...smokeEntry,
+          action: "UPDATE",
+          changes: [
+            { field: "password", label: "비밀번호", before: null, after: "x" },
+          ],
+        });
+      })
+      .catch(() => undefined);
+    const left = await prisma.ledgerEntry.count({
+      where: { partnerName: marker },
+    });
+    if (left !== 0)
+      throw new Error(`저장이 취소되지 않았습니다 (${left}행 남음)`);
+  });
 
   if (failures.length > 0) {
     console.error(

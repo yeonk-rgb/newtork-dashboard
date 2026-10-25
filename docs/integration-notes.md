@@ -184,7 +184,15 @@ export async function saveProduction(input: Input) {
 - 테스트에서 사용자가 필요하면 `FAKE_USERS.prodLeader`, `fakeUser("prodMember", { viewTeams: [] })`처럼 씁니다. Server Action 테스트는 `vi.mock("@/shared/auth", …)`로 `getCurrentUser`를 바꿔 끼웁니다 (`src/modules/admin/actions.test.ts` 참고)
 - `.env`에서 `DEMO_MODE`는 더 이상 쓰지 않습니다 (지워도 됨). 배포 시에는 HTTPS 뒤에서 실행해야 Secure 쿠키가 동작합니다
 
-## 9. 기타
+## 9. 변경 이력 (2026-10-25 — 다른 팀도 이 방식으로 기록해 주세요)
+
+- 표 `audit_log`(`prisma/schema/audit.prisma`)는 팀 공통. 직접 쓰지 말고 `src/shared/audit/record.ts`의 `recordAudit(tx, entry)`만 쓴다
+- **원래 저장과 같은 `prisma.$transaction` 안에서** 부른다 → 기록이 실패하면 저장도 취소
+- `entry`: `occurredAt`(getNow), `actor`({ id, loginId }), `area`(팀 화면이면 새 값 추가 협의 — 지금 "management" | "admin"), `screen`(팀 화면 이름, 예: "production-output"), `action`(`src/shared/audit/types.ts` 목록), `target`({ type, id, label }), `changes`(`diffFields()` 결과), `meta`
+- 바뀐 칸은 `src/shared/audit/diff.ts`의 `diffFields(before, after, fields)`로 — 팀마다 "기록할 칸" 목록(허용 목록)을 만들고, 칸 이름·값은 화면 표기 그대로
+- 비밀번호·해시·토큰·세션 같은 칸 이름은 거부된다. 기록은 수정·삭제 불가(DB 트리거) — 마이그레이션으로 적용해야 트리거가 생김(`db push` 로는 안 생김)
+
+## 10. 기타
 
 - 비밀키는 `.env`에만 (`.env.example`에 키 이름만). AI 키 등은 클라이언트로 보내지 않습니다.
 - **시간대**: 시각(`DateTime`)은 UTC로 저장하고 화면에서만 Asia/Seoul로 표시합니다. 날짜 계산(오늘·분기·경과일)은 한국 날짜 기준입니다(`getTodayKst()`). DB 세션 시간대가 Asia/Seoul인 환경에서 SQL `now()`나 DB 기본값(`CURRENT_TIMESTAMP`)으로 시각을 넣으면 KST 값이 UTC로 저장되어 9시간 어긋나므로, 시각은 Prisma로 넣거나 `now() AT TIME ZONE 'UTC'`를 쓰세요.
