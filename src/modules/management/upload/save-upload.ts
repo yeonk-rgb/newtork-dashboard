@@ -7,6 +7,7 @@
 import "server-only";
 
 import type { Prisma } from "@/shared/db/generated/client";
+import { recordAudit } from "@/shared/audit/record";
 import { prisma } from "@/shared/db/client";
 
 import type { UploadPlan } from "./parse-upload";
@@ -15,6 +16,8 @@ export const OTHER_CATEGORY_NAME = "기타(엑셀 이관)";
 
 export type SaveSource = {
   userId: string;
+  /** 변경 기록에 남길 그때 아이디 */
+  loginId: string;
   fileNames: string[];
   now: Date;
 };
@@ -118,6 +121,28 @@ export async function saveUploadPlan(
           });
         }
       }
+      // 변경 기록: 요약 1건 (행마다 남기지 않음). 저장된 목표·월은 uploadId 로 이어진다
+      await recordAudit(tx, {
+        occurredAt: source.now,
+        actor: { id: source.userId, loginId: source.loginId },
+        area: "management",
+        screen: "upload",
+        action: "IMPORT",
+        target: {
+          type: "DataUpload",
+          id: upload.id,
+          label: `엑셀 업로드 · ${source.fileNames.join(", ")}`,
+        },
+        meta: {
+          uploadId: upload.id,
+          fileNames: source.fileNames,
+          savedRows,
+          targetYears: plan.targets.map((t) => t.year),
+          months: plan.months.map(
+            (m) => `${m.year}-${String(m.month).padStart(2, "0")}`,
+          ),
+        },
+      });
       return { uploadId: upload.id, savedRows };
     },
     { timeout: 60_000, maxWait: 10_000 },

@@ -1,6 +1,7 @@
 // 채권·채무 엑셀 이관 저장 (서버 전용) — 한 트랜잭션: (덮어쓰기면) 기존 행 숨김 → 이력 → 행 저장
 import "server-only";
 
+import { recordAudit } from "@/shared/audit/record";
 import { prisma } from "@/shared/db/client";
 
 import { LEDGER_KINDS, type LedgerKind } from "../labels";
@@ -35,6 +36,8 @@ export class ExistingChangedError extends Error {
 
 export type SaveImportInput = {
   userId: string;
+  /** 변경 기록에 남길 그때 아이디 */
+  loginId: string;
   now: Date;
   year: number;
   month: number;
@@ -122,6 +125,35 @@ export async function saveLedgerImport(input: SaveImportInput) {
             createdAt: new Date(now.getTime() + i),
           };
         }),
+      });
+
+      // 변경 기록: 요약 1건 (행마다 남기지 않음 — 2026-10-25 결정). 행은 uploadId 로 이 기록·업로드 이력과 이어진다
+      const monthText = `${year}-${String(month).padStart(2, "0")}`;
+      await recordAudit(tx, {
+        occurredAt: now,
+        actor: { id: userId, loginId: input.loginId },
+        area: "management",
+        screen: "ledger-import",
+        action: "IMPORT",
+        target: {
+          type: "DataUpload",
+          id: upload.id,
+          label: `채권·채무 엑셀 이관 · ${monthText} · ${input.fileName}`,
+        },
+        meta: {
+          uploadId: upload.id,
+          fileName: input.fileName,
+          month: monthText,
+          mode: input.mode === "overwrite" ? "덮어쓰기" : "추가",
+          savedRows: plan.entries.length,
+          hiddenRows: hidden,
+          excludedRows: input.excludedRows,
+          blocks: blocks.map((b) => ({
+            kind: b.kind,
+            count: b.count,
+            sum: b.sum,
+          })),
+        },
       });
 
       return { uploadId: upload.id, hidden, blocks };

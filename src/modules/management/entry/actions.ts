@@ -1,10 +1,18 @@
 "use server";
 // 월간 입력 저장 Server Action — 권한·검증·동시 수정을 모두 서버에서 다시 확인한다
+// 확정·확정 후 수정·확정 취소는 변경 기록(audit_log)을 같은 트랜잭션에 남긴다 (임시저장은 기록하지 않음 — 2026-10-25 결정)
 import { refresh } from "next/cache";
 
+import { recordAudit } from "@/shared/audit/record";
 import { getCurrentUser } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
 
+import {
+  auditActor,
+  monthlyChanges,
+  monthlyTargetLabel,
+  type MonthlyAuditSnapshot,
+} from "../audit-fields";
 import { getNow, getTodayKst } from "../data/load-summary-input";
 import { entryAbilities, monthState, type EntryStatus } from "./rules";
 import { saveEntrySchema, unconfirmSchema } from "./schemas";
@@ -21,6 +29,36 @@ const CONFLICT_MESSAGE =
   "다른 사람이 먼저 저장했습니다. 새로고침 후 다시 입력하세요.";
 
 class ConflictError extends Error {}
+
+/** 저장 전 그 달 값 (변경 기록의 "바뀌기 전") */
+function snapshotOf(
+  existing: {
+    status: "DRAFT" | "CONFIRMED";
+    productSales: bigint;
+    goodsSales: bigint;
+    serviceSales: bigint;
+    goodsPurchase: bigint;
+    materialPurchase: bigint;
+    operatingExpense: bigint;
+    otherExpenses: { categoryId: string; amount: bigint }[];
+  } | null,
+): MonthlyAuditSnapshot | null {
+  if (!existing) return null;
+  return {
+    values: {
+      productSales: existing.productSales,
+      goodsSales: existing.goodsSales,
+      serviceSales: existing.serviceSales,
+      goodsPurchase: existing.goodsPurchase,
+      materialPurchase: existing.materialPurchase,
+      operatingExpense: existing.operatingExpense,
+    },
+    status: existing.status,
+    others: new Map(
+      existing.otherExpenses.map((e) => [e.categoryId, e.amount]),
+    ),
+  };
+}
 
 function forbidden(message: string): EntryActionResult {
   return { ok: false, code: "FORBIDDEN", message };
@@ -69,8 +107,16 @@ export async function saveMonthlyEntry(
   }
 
   // 그 외 지출 항목: 존재하는 항목만, 비활성 항목은 이 달에 이미 값이 있을 때만
+  // (변경 기록의 항목 이름에도 쓰므로 이 달에 이미 있던 항목도 함께 읽는다)
   const categories = await prisma.expenseCategory.findMany({
-    where: { id: { in: input.otherExpenses.map((e) => e.categoryId) } },
+    where: {
+      id: {
+        in: [
+          ...input.otherExpenses.map((e) => e.categoryId),
+          ...(existing?.otherExpenses.map((e) => e.categoryId) ?? []),
+        ],
+      },
+    },
   });
   // 비활성 항목은 이 달에 0원이 아닌 값이 있을 때만 (화면에도 그 경우에만 보인다)
   const usedHere = new Set(
@@ -144,6 +190,31 @@ export async function saveMonthlyEntry(
           },
         });
       }
+      if (input.intent !== "draft") {
+        await recordAudit(tx, {
+          occurredAt: now,
+          actor: auditActor(user),
+          area: "management",
+          screen: "entry",
+          action: input.intent === "confirm" ? "CONFIRM" : "UPDATE_CONFIRMED",
+          target: {
+            type: "MonthlyFinance",
+            id: financeId,
+            label: monthlyTargetLabel(ym.year, ym.month),
+          },
+          changes: monthlyChanges(
+            snapshotOf(existing),
+            {
+              values: input.values,
+              status: "CONFIRMED",
+              others: new Map(
+                input.otherExpenses.map((e) => [e.categoryId, e.amount]),
+              ),
+            },
+            new Map(categories.map((c) => [c.id, c.name])),
+          ),
+        });
+      }
     });
   } catch (error) {
     // 새 달을 두 사람이 동시에 만들면 (연·월 유일) 위반 → 동시 수정으로 안내
@@ -197,16 +268,39 @@ export async function unconfirmMonthlyEntry(
   if (!abilities.canUnconfirm)
     return forbidden("확정 취소는 팀장만 할 수 있습니다.");
 
-  // 누가 언제 취소했는지는 updatedById·updatedAt 으로 남는다
-  const updated = await prisma.monthlyFinance.updateMany({
-    where: {
-      id: existing.id,
-      updatedAt: new Date(parsed.data.expectedUpdatedAt),
-    },
-    data: { status: "DRAFT", confirmedAt: null, updatedById: user.id },
-  });
-  if (updated.count === 0) {
-    return { ok: false, code: "CONFLICT", message: CONFLICT_MESSAGE };
+  // 확정 취소와 변경 기록은 한 트랜잭션 (기록이 실패하면 취소도 되돌린다)
+  const now = await getNow();
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.monthlyFinance.updateMany({
+        where: {
+          id: existing.id,
+          updatedAt: new Date(parsed.data.expectedUpdatedAt),
+        },
+        data: { status: "DRAFT", confirmedAt: null, updatedById: user.id },
+      });
+      if (updated.count === 0) throw new ConflictError();
+      await recordAudit(tx, {
+        occurredAt: now,
+        actor: auditActor(user),
+        area: "management",
+        screen: "entry",
+        action: "UNCONFIRM",
+        target: {
+          type: "MonthlyFinance",
+          id: existing.id,
+          label: monthlyTargetLabel(ym.year, ym.month),
+        },
+        changes: [
+          { field: "status", label: "상태", before: "확정", after: "임시저장" },
+        ],
+      });
+    });
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return { ok: false, code: "CONFLICT", message: CONFLICT_MESSAGE };
+    }
+    throw error;
   }
 
   refresh();

@@ -1,5 +1,9 @@
 // 채권·채무 엑셀 다운로드 (서버 전용) — 권한 확인은 부르는 쪽(Route Handler)에서 can() 으로
+// 누가 언제 어느 기간을 받았는지 변경 기록(audit_log)에 남기고, 기록이 실패하면 다운로드도 막는다 (2026-10-25 결정)
 import "server-only";
+
+import { recordAudit } from "@/shared/audit/record";
+import { prisma } from "@/shared/db/client";
 
 import { getNow, getTodayKst } from "../../data/load-summary-input";
 import { loadLedgerRowsByMonth } from "../load-ledger";
@@ -35,6 +39,7 @@ export type LedgerExport = {
 /** ?period=2026-10 | 2026-Q4 | 2026 → .xlsx (숨긴 행 제외, 화면 필터와 상관없이 기간 전체) */
 export async function exportLedger(
   periodParam: string | null,
+  actor: { id: string; loginId: string },
 ): Promise<LedgerExport> {
   const period = parseExportPeriod(periodParam);
   if (!period) {
@@ -56,17 +61,43 @@ export async function exportLedger(
     months,
     (ym) => byMonth.get(formatLedgerMonth(ym)) ?? [],
   );
-  const body = await buildLedgerWorkbook({
-    template,
-    sheets,
-    now: await getNow(),
-  });
+  const now = await getNow();
+  const body = await buildLedgerWorkbook({ template, sheets, now });
   const names = exportFileName(period);
+  const rowCount = sheets.reduce((n, s) => n + s.rows.length, 0);
+
+  try {
+    await recordAudit(prisma, {
+      occurredAt: now,
+      actor,
+      area: "management",
+      screen: "ledger-export",
+      action: "EXPORT",
+      target: {
+        type: "LedgerExport",
+        id: periodParam ?? "",
+        label: `채권·채무 엑셀 다운로드 · ${periodParam}`,
+      },
+      meta: {
+        period: periodParam,
+        fileName: names.fileName,
+        sheets: sheets.map((s) => s.sheetName),
+        sheetCount: sheets.length,
+        rows: rowCount,
+      },
+    });
+  } catch (error) {
+    console.error("[ledger-export] 다운로드 기록 실패", error);
+    throw new LedgerExportError(
+      503,
+      "다운로드 기록을 남기지 못해 다운로드를 막았습니다. 잠시 후 다시 시도하세요.",
+    );
+  }
   return {
     body,
     ...names,
     period: periodParam ?? "",
     sheetNames: sheets.map((s) => s.sheetName),
-    rowCount: sheets.reduce((n, s) => n + s.rows.length, 0),
+    rowCount,
   };
 }

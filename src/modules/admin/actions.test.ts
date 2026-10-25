@@ -24,7 +24,15 @@ vi.mock("@/shared/time/now", () => ({
 }));
 
 const UPDATED = new Date("2026-10-20T00:00:00Z");
-type Row = { id: string; role: string; deactivatedAt: Date | null };
+type Row = {
+  id: string;
+  role: string;
+  deactivatedAt: Date | null;
+  loginId?: string;
+  name?: string;
+  viewTeams?: string[];
+  editTeams?: string[];
+};
 let rows: Row[] = [];
 
 const db = {
@@ -50,8 +58,40 @@ const db = {
     create: vi.fn<(args: unknown) => Promise<object>>(async () => ({})),
   },
   authSession: { deleteMany: vi.fn(async () => ({ count: 0 })) },
-  $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(db)),
+  auditLog: {
+    create: vi.fn(async (args: { data: Record<string, unknown> }) => {
+      if (failAudit) throw failAudit;
+      return args.data;
+    }),
+  },
+  $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => {
+    // 실제 DB 처럼: 콜백이 끝까지 성공해야 쓰기가 반영된다 (committed 에 쌓임)
+    const pending: string[] = [];
+    const write =
+      <A extends unknown[], R>(name: string, f: (...a: A) => R) =>
+      (...a: A) => {
+        pending.push(name);
+        return f(...a);
+      };
+    const tx = {
+      authUser: {
+        ...db.authUser,
+        update: write("authUser.update", db.authUser.update),
+        updateMany: write("authUser.updateMany", db.authUser.updateMany),
+        create: write("authUser.create", db.authUser.create),
+      },
+      authSession: {
+        deleteMany: write("authSession.deleteMany", db.authSession.deleteMany),
+      },
+      auditLog: { create: write("auditLog.create", db.auditLog.create) },
+    };
+    const result = await fn(tx);
+    committed.push(...pending);
+    return result;
+  }),
 };
+let failAudit: Error | null = null;
+const committed: string[] = [];
 vi.mock("@/shared/db/client", () => ({ prisma: db }));
 
 const actions = await import("./actions");
@@ -63,8 +103,15 @@ const dataOf = (fn: { mock: { calls: unknown[][] } }, i = 0) =>
 const allDbMocks = () => [
   ...Object.values(db.authUser),
   db.authSession.deleteMany,
+  db.auditLog.create,
   db.$transaction,
 ];
+
+/** 기록된 변경 기록들 (data) */
+const audits = () =>
+  db.auditLog.create.mock.calls.map(
+    (c) => (c[0] as { data: Record<string, unknown> }).data,
+  );
 
 const ISO = UPDATED.toISOString();
 const CALLS = {
@@ -95,10 +142,28 @@ const CALLS = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  failAudit = null;
+  committed.length = 0;
   rows = [
     { id: "u-admin", role: "ADMIN", deactivatedAt: null },
-    { id: "u-prod-member", role: "MEMBER", deactivatedAt: null },
-    { id: "u-svc-leader", role: "LEADER", deactivatedAt: null },
+    {
+      id: "u-prod-member",
+      role: "MEMBER",
+      deactivatedAt: null,
+      loginId: "prod_member",
+      name: "이생산",
+      viewTeams: ["production"],
+      editTeams: [],
+    },
+    {
+      id: "u-svc-leader",
+      role: "LEADER",
+      deactivatedAt: null,
+      loginId: "svc_leader",
+      name: "박서비스",
+      viewTeams: ["service"],
+      editTeams: ["service"],
+    },
     { id: "u-old", role: "MEMBER", deactivatedAt: UPDATED },
   ];
 });
@@ -343,5 +408,178 @@ describe("관리자", () => {
     expect(await actions.restoreUser({ id: "u-old" })).toMatchObject({
       ok: true,
     });
+  });
+});
+
+describe("관리자(대표) 화면 변경 기록 (영역 admin)", () => {
+  beforeEach(() => {
+    currentUser = FAKE_USERS.admin;
+  });
+
+  it("권한 변경: 사람별 1건, 바뀌기 전·후 역할·열람 범위·수정 권한 (관리자는 '관리자(대표)')", async () => {
+    await actions.saveUserChanges({
+      changes: [
+        {
+          id: "u-prod-member",
+          role: "LEADER",
+          viewTeams: ["production", "service"],
+          editTeams: ["production"],
+          expectedUpdatedAt: ISO,
+        },
+        {
+          id: "u-svc-leader",
+          role: "ADMIN",
+          viewTeams: [],
+          editTeams: [],
+          expectedUpdatedAt: ISO,
+        },
+      ],
+    });
+    expect(audits()).toEqual([
+      expect.objectContaining({
+        area: "admin",
+        screen: "admin-users",
+        action: "ROLE_CHANGE",
+        targetType: "AuthUser",
+        targetId: "u-prod-member",
+        targetLabel: "이생산(prod_member)",
+        actorLoginId: FAKE_USERS.admin.loginId,
+        changes: [
+          { field: "role", label: "역할", before: "팀원", after: "팀장" },
+          {
+            field: "viewTeams",
+            label: "열람 범위",
+            before: "생산",
+            after: "생산, 서비스",
+          },
+          {
+            field: "editTeams",
+            label: "수정 권한",
+            before: null,
+            after: "생산",
+          },
+        ],
+      }),
+      expect.objectContaining({
+        targetLabel: "박서비스(svc_leader)",
+        changes: [
+          {
+            field: "role",
+            label: "역할",
+            before: "팀장",
+            after: "관리자(대표)",
+          },
+          {
+            field: "viewTeams",
+            label: "열람 범위",
+            before: "서비스",
+            after: null,
+          },
+          {
+            field: "editTeams",
+            label: "수정 권한",
+            before: "서비스",
+            after: null,
+          },
+        ],
+      }),
+    ]);
+  });
+
+  it("비밀번호 초기화: '초기화함'만 — 임시 비밀번호·해시는 기록 어디에도 없다", async () => {
+    const result = await actions.resetUserPassword({ id: "u-prod-member" });
+    expect(result).toMatchObject({ ok: true, tempPassword: "TempPw23abcd" });
+    expect(audits()).toEqual([
+      expect.objectContaining({
+        area: "admin",
+        action: "PASSWORD_RESET",
+        targetId: "u-prod-member",
+        changes: [],
+        meta: { result: "초기화함" },
+      }),
+    ]);
+    const json = JSON.stringify(audits());
+    expect(json).not.toContain("TempPw23abcd");
+    expect(json).not.toContain("hashed:");
+    expect(json).not.toMatch(/passwordHash|tempPassword/);
+  });
+
+  it("계정 생성: 아이디·이름·역할만 (임시 비밀번호·범위 없음)", async () => {
+    await actions.createUser({
+      loginId: "new_user",
+      name: "새직원",
+      role: "LEADER",
+      viewTeams: ["service"],
+      editTeams: ["service"],
+    });
+    expect(audits()).toEqual([
+      expect.objectContaining({
+        area: "admin",
+        action: "ACCOUNT_CREATE",
+        targetLabel: "새직원(new_user)",
+        changes: [
+          {
+            field: "loginId",
+            label: "아이디",
+            before: null,
+            after: "new_user",
+          },
+          { field: "name", label: "이름", before: null, after: "새직원" },
+          { field: "role", label: "역할", before: null, after: "팀장" },
+        ],
+      }),
+    ]);
+    expect(JSON.stringify(audits())).not.toContain("TempPw23abcd");
+  });
+
+  it("비활성화·복구: 상태 사용 중 ↔ 비활성", async () => {
+    await actions.deactivateUser({ id: "u-prod-member" });
+    await actions.restoreUser({ id: "u-old" });
+    expect(audits().map((a) => [a.action, a.changes])).toEqual([
+      [
+        "DEACTIVATE",
+        [
+          {
+            field: "status",
+            label: "상태",
+            before: "사용 중",
+            after: "비활성",
+          },
+        ],
+      ],
+      [
+        "REACTIVATE",
+        [
+          {
+            field: "status",
+            label: "상태",
+            before: "비활성",
+            after: "사용 중",
+          },
+        ],
+      ],
+    ]);
+  });
+
+  it.each([
+    ["권한 변경", () => CALLS["권한 변경"](), "authUser.updateMany"],
+    [
+      "비밀번호 초기화",
+      () => actions.resetUserPassword({ id: "u-prod-member" }),
+      "authUser.update",
+    ],
+    ["계정 추가", () => CALLS["계정 추가"](), "authUser.create"],
+    [
+      "비활성화",
+      () => actions.deactivateUser({ id: "u-prod-member" }),
+      "authUser.update",
+    ],
+    ["복구", () => actions.restoreUser({ id: "u-old" }), "authUser.updateMany"],
+  ] as const)("기록이 실패하면 %s 도 취소된다", async (_, call, write) => {
+    failAudit = new Error("기록 실패");
+    await expect(call()).rejects.toThrow("기록 실패");
+    expect(committed).not.toContain(write);
+    expect(committed).not.toContain("auditLog.create");
+    expect(deleteUserSessions).not.toHaveBeenCalled();
   });
 });
