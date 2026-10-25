@@ -7,6 +7,12 @@ import type { TrendPoint } from "../../metrics/trend";
 import type { ManagementSummary } from "../../metrics/types";
 import { comparisonNote } from "../confirmation-text";
 import { BreakEvenTable } from "./break-even-table";
+import {
+  AnnualTargetCard,
+  BreakEvenCard,
+  ProfitStructureCard,
+  ReceivablesDonutCard,
+} from "./detail-cards";
 import { ExpenseTable } from "./expense-table";
 import { ReceivablesSection } from "./receivables-section";
 import { RevenueMixChart } from "./revenue-mix-chart";
@@ -45,11 +51,20 @@ export function ManagementDetail({
           totalPrevious={changes.previous.expense}
           totalLastYear={withLastYear ? changes.lastYear.expense : null}
         />
+        {/* 경영 대시보드에서 옮겨 온 카드는 관련 표 옆으로 (2026-10-25) */}
         <ProfitTable summary={summary} />
+        <ProfitStructureCard summary={summary} />
         <QuarterTargetsTable summary={summary} />
+        <AnnualTargetCard summary={summary} />
       </div>
 
-      <BreakEvenTable summary={summary} />
+      {/* #break-even = 메인 "BEP 달성률 →" 도착 지점: BEP 카드 → 계산 내역 표 */}
+      <div id="break-even" className="scroll-mt-4 space-y-6">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <BreakEvenCard summary={summary} />
+        </div>
+        <BreakEvenTable summary={summary} />
+      </div>
 
       <RevenueMixChart
         points={serializeBigInt(
@@ -64,7 +79,10 @@ export function ManagementDetail({
         )}
       />
 
-      <ReceivablesSection receivables={summary.receivables} />
+      <ReceivablesSection
+        receivables={summary.receivables}
+        lead={<ReceivablesDonutCard summary={summary} />}
+      />
     </div>
   );
 }

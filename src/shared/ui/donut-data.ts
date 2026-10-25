@@ -9,6 +9,8 @@ export type DonutSlice = {
   extra?: string;
   /** 조각은 그리지만 목록·표에서 "남은 목표"처럼 흐리게 */
   muted?: boolean;
+  /** 목록 이름 옆 작은 글씨 (예: 기타 "(광고선전비·접대비 등)") */
+  hint?: string;
 };
 
 export type DonutRow = DonutSlice & {

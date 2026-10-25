@@ -2,19 +2,19 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import {
+  AiArea,
   AiCommentSection,
-  DashboardDonuts,
   DashboardTop,
   DashboardTopSkeleton,
   getManagementSummary,
   getManagementTrend,
-  MainBottom,
+  MainDashboard,
   resolvePeriod,
 } from "@/modules/management";
 import { can, getCurrentUser, homePathFor } from "@/shared/auth";
 import { Forbidden } from "@/shared/ui/forbidden";
 
-// 메인 = 전사 요약
+// 메인 = 전사 요약 (2026-10-25 담당자 요청 순서): KPI 4개 → 분기별 목표 달성 현황 → 추이 및 분석 → AI 분석
 export default function MainPage({ searchParams }: PageProps<"/">) {
   return (
     <Suspense fallback={<DashboardTopSkeleton />}>
@@ -45,9 +45,10 @@ async function MainContent({
   return (
     <div className="space-y-6">
       <DashboardTop title="경영 대시보드" summary={summary} showKpis={false} />
-      <AiCommentSection summary={summary} />
-      <DashboardDonuts summary={summary} />
-      <MainBottom summary={summary} trend={trend} />
+      <MainDashboard summary={summary} trend={trend} />
+      <AiArea>
+        <AiCommentSection summary={summary} />
+      </AiArea>
     </div>
   );
 }

@@ -83,7 +83,7 @@
 - **AI 분석 코멘트(8단계)**: `modules/management/ai/` + `shared/ai/`(server-only 클라이언트, `generateJson()`), 테이블 `mgmt_ai_comment`(다시 분석하면 행 추가, 화면은 최신 1건)
   - ⚠️ **고객사 답변(05-19번) 전까지 샘플 시드 데이터로만 사용** — 실제 재무 데이터를 넣은 DB에서 [분석하기]를 누르지 않는다
   - 입력은 `buildAiInput(summary)` 집계값만 (거래처명·건별 내역·비고·생산팀 목업 제외), 해시가 달라지면 "최신이 아님" 안내. 화면을 열 때는 AI를 호출하지 않는다
-  - 카드 위치: 메인(`/`) KPI 바로 아래, 경영지원 상세(`/management`) KPI 위 — 같은 `AiCommentSection` 재사용, 기록은 (연도, 분기)로만 찾으므로 두 화면이 같은 기록을 공유
+  - 카드 위치: 메인(`/`) **맨 아래 "AI 분석" 영역**(2026-10-25 재구성), 경영지원 상세(`/management`) KPI 위 — 같은 `AiCommentSection` 재사용, 기록은 (연도, 분기)로만 찾으므로 두 화면이 같은 기록을 공유
   - 끝난 분기만, confirm 권한만 생성 (`ai/rules.ts`의 `aiAbilities()` — 화면·Server Action 공용). 월 보기 = 그 달의 분기, 연간·누적 = 확정 월이 있는 마지막 분기
   - 응답 형식(프롬프트 v2): `{ summary[2~3], shortfalls[0~3], improvements[1~3] }`. 프롬프트는 문장 60자, 저장 검증은 80자 — 넘는 문장·3개 초과는 `normalizeAiComment()`가 잘라서 살리고(로그 경고) 요약이 없을 때만 실패. 옛 형식(`summary` 문자열 + `weaknesses`)은 `readStoredComment()`로 **화면 읽기만** 지원, 새로 저장하는 건 새 형식만
   - AI가 계산하지 않도록 입력에 미리 넣는다: 금액 `formatWonShort()`("7.09억원"·"6,668만원"), 목표 차이 `achievementText()`("82.4%로 17.6%p 부족/초과"), 연간 진도 `progressText()`, 기대치 대비 부족액, 매입·경비 합계, 추정 손익, 90일 초과 금액·건수. 산업분야·제품 시리즈 비중은 생산팀 연동 전까지 입력에서 제외 (`build-input.ts`의 TODO 위치에 `is_sample`과 함께 추가)
@@ -106,7 +106,7 @@
   - 분류·임시 기준은 **`metrics/settings.ts`의 `breakEven` 한 곳**: 매입 = 변동비(④-3), 경비 지출 = 고정비(①-2·05-36), 미분류 그 외 지출 = 고정비(05-35), `provisionalNotes`(화면 "임시 기준" 배지 + [계산 기준] 4줄 — 비우면 배지 사라짐). 그 외 지출 항목은 목표·항목 설정의 고정비/변동비
   - 예외(`reason`): no-data / no-revenue / no-fixed-cost / not-reachable(공헌이익 ≤ 0 → 가운데 "도달 불가", 변동비 한 조각 매출 대비)
   - 이전 기간 대비 변화(%p)·AI 연결은 후속 (06)
-- **경영 대시보드 재구성(2026-10-25 담당자 요청, 대시보드 PR 1 = 계산·표시 모델)**: 메인 순서 KPI 4개(매출·지출·추정 이익·미수금) → 분기별 목표 달성 현황(목표매출 달성률·매출 구성·지출 구성 도넛) → 추이 및 분석(매출·지출 추이 막대+선, 산업 분야별·제품별 매출 도넛) → AI 분석(맨 아래). 빠지는 카드(연간 목표·BEP·이익 구조·미수금 원형)는 상세 `/management`로 옮긴다(삭제 없음) — 화면 적용은 대시보드 PR 2
+- **경영 대시보드 재구성(2026-10-25 담당자 요청, PR 1 = 계산·표시 모델, PR 2 = 화면)**: 메인 순서 KPI 4개(매출·지출·추정 이익·미수금) → 분기별 목표 달성 현황(목표매출 달성률·매출 구성·지출 구성 도넛) → 추이 및 분석(매출·지출 추이 막대+선, 산업 분야별·제품별 매출 도넛) → AI 분석(맨 아래). 빠진 카드는 상세 `/management` 관련 표 옆으로 옮김(삭제 없음, `components/detail/detail-cards.tsx`): 이익 구조 → 이익 계산 옆, 연간 목표 달성률 → 분기별 목표 옆, BEP → `#break-even` 계산 내역 표 위(`#break-even`은 카드+표를 감싼 곳), 미수금 원형 → 미수금 영역 첫 줄. 메인 화면 조립은 `components/dashboard/main-dashboard.tsx`·`main-kpis.tsx`(숫자는 표시 모델에서만), 강조 카드는 목표매출 달성률(안에서는 빨간 글씨 대신 "▼ 미달" 배지). `DonutCard`에 `legend="amount-first"`·`layout="stacked"`·조각 `hint` 추가(기본값은 예전과 같음). 미수금 상위 거래처 5는 메인에서 빠짐(상세에 전체 표)
   - 표시 모델 `components/dashboard/model.ts`(순수 함수, summary 값 그대로 — `model.test.ts`가 같은 값인지 고정), **이름은 `labels.ts` 한 곳**·화면 표시 층에서만(metrics 이름표 그대로 → AI 입력 해시 유지)
   - 월 목표 = 분기 목표 ÷ 3 자동(`allocateMonthTargets`, 나머지 원은 분기 마지막 달 — 분기 배분과 같은 `splitEvenly`), `TargetResult.monthTargets`·`month`(월 보기만). 05-16(정리본 ④-5) 답이 오면 직접 입력 칸 검토
   - 추정 이익 = `profit.profit`(지금 비용 기준에서 매출 − 지출과 정확히 같음, 테스트 고정), 비교는 금액 차이 `Comparison.profitDiff`. 목표 분기 목록은 끝났고 3개월 모두 확정인데 미달일 때만 빨강(미확정 달이 있으면 안내만)
