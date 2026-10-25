@@ -1,6 +1,6 @@
 // 경영 대시보드 원형 그래프 (AI 카드 아래)
 // - 핵심 지표 4개(KPI 카드 대체): 매출 구성 / 기간 목표 달성률 / 이익 구조 / 미수금 총액
-// - 목표·비중 3개: 연간 목표 / 산업분야별 매출 비중 / 제품 시리즈별 매출 비중
+// - 달성률·비중 4개(2×2): 연간 목표 / 손익분기점(BEP) 달성률 / 산업분야별 매출 비중 / 제품 시리즈별 매출 비중
 import "server-only";
 
 import Link from "next/link";
@@ -33,6 +33,7 @@ import {
 } from "../kpi-cards";
 import {
   annualTargetDonut,
+  bepDonut,
   periodTargetDonut,
   profitDonut,
   receivablesDonut,
@@ -66,6 +67,7 @@ export async function DashboardDonuts({
   // 연간 목표 = 메인의 강조 카드 1개 (코퍼 바탕) — docs/design-guide.md
   const annual = annualTargetDonut(summary, METER_ON_ACCENT);
   const over90 = receivables.aging.find((a) => a.bucket === "90+");
+  const bep = bepDonut(summary);
 
   const shownComparisons =
     period.unit === "month" || period.unit === "quarter"
@@ -209,7 +211,7 @@ export async function DashboardDonuts({
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <DonutCard
           title={`${period.year}년 연간 목표 달성률`}
           {...annual}
@@ -252,6 +254,25 @@ export async function DashboardDonuts({
               </>
             )
           }
+        />
+        <DonutCard
+          title={`${summary.label} 손익분기점(BEP) 달성률`}
+          badge={
+            summary.breakEven.provisionalNotes.length > 0
+              ? "임시 기준"
+              : undefined
+          }
+          {...bep}
+          csvName={csv("손익분기점")}
+          action={
+            <Link
+              href={`/management?period=${toPeriodParam(period)}#break-even`}
+              className="shrink-0 text-xs text-primary hover:underline"
+            >
+              계산 내역 →
+            </Link>
+          }
+          footer={<BreakEvenFooter summary={summary} />}
         />
         <DonutCard
           title={`${summary.label} 산업분야별 매출 비중`}
@@ -299,6 +320,63 @@ export async function DashboardDonuts({
         />
       </div>
     </section>
+  );
+}
+
+/** BEP 카드 아래: BEP 매출·실제 매출·남은(초과) 매출, 고정비·공헌이익률, 미분류 안내, [계산 기준] 펼침 */
+function BreakEvenFooter({ summary }: { summary: ManagementSummary }) {
+  const b = summary.breakEven;
+  const { confirmedMonths } = summary.confirmation;
+  const months = periodMonths(summary.period).length;
+  return (
+    <>
+      {b.bepRevenue !== null && b.gap !== null && (
+        <>
+          <p>
+            BEP 매출 {formatWonShort(b.bepRevenue)} · 실제 매출{" "}
+            {formatWonShort(b.revenue)}
+          </p>
+          <p className="mt-1 text-foreground">
+            {b.gap > 0n
+              ? `BEP 초과 ${formatWonShort(b.gap)} — 흑자`
+              : b.gap === 0n
+                ? "손익분기점에 딱 도달"
+                : `BEP까지 남은 매출 ${formatWonShort(-b.gap)}`}
+          </p>
+          <p className="mt-1">
+            고정비 {formatWonShort(b.fixedCost)} · 공헌이익률{" "}
+            {b.contributionRatio === null ? "-" : pct(b.contributionRatio)}
+          </p>
+        </>
+      )}
+      {b.reason === "not-reachable" && (
+        <p className="text-foreground">
+          변동비({formatWonShort(b.variableCost)})가 매출(
+          {formatWonShort(b.revenue)}) 이상이라 매출이 늘어도 손익분기점에
+          도달하지 않습니다.
+        </p>
+      )}
+      {b.reason !== "no-data" && confirmedMonths.length < months && (
+        <p className="mt-1">
+          확정 {confirmedMonths.length}개월 / {months}개월 기준
+        </p>
+      )}
+      {b.unclassifiedCount > 0 && (
+        <p className="mt-1">
+          미분류 {b.unclassifiedCount}개 항목은 고정비로 계산
+        </p>
+      )}
+      {b.provisionalNotes.length > 0 && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-primary">계산 기준</summary>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4">
+            {b.provisionalNotes.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </>
   );
 }
 

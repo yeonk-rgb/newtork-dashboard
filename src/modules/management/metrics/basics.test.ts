@@ -65,14 +65,32 @@ describe("매출·지출·이익", () => {
       materialPurchase: 100n,
       operatingExpense: 150n,
       otherExpenses: [
-        { categoryId: "c2", name: "접대비", sortOrder: 2, amount: 20n },
-        { categoryId: "c1", name: "광고선전비", sortOrder: 1, amount: 30n },
+        {
+          categoryId: "c2",
+          name: "접대비",
+          sortOrder: 2,
+          costType: "VARIABLE",
+          amount: 20n,
+        },
+        {
+          categoryId: "c1",
+          name: "광고선전비",
+          sortOrder: 1,
+          costType: "VARIABLE",
+          amount: 30n,
+        },
       ],
     }),
     financeMonth(2026, 8, {
       productSales: 400n,
       otherExpenses: [
-        { categoryId: "c1", name: "광고선전비", sortOrder: 1, amount: 50n },
+        {
+          categoryId: "c1",
+          name: "광고선전비",
+          sortOrder: 1,
+          costType: "VARIABLE",
+          amount: 50n,
+        },
       ],
     }),
   ];

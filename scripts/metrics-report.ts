@@ -148,6 +148,43 @@ async function main() {
     )}`,
   );
 
+  const b = s.breakEven;
+  const classText = (i: (typeof b.items)[number]) =>
+    i.basis === "unclassified"
+      ? "미분류 → 고정비"
+      : i.costClass === "FIXED"
+        ? "고정비"
+        : "변동비";
+  out.push(
+    `\n## 손익분기점(BEP)${b.provisionalNotes.length > 0 ? " — 임시 기준" : ""}\n\n${table(
+      ["항목", "구분", "금액", "분류 근거"],
+      [
+        ...b.items.map((i) => [
+          i.label,
+          classText(i),
+          won(i.amount),
+          i.basis === "category" ? "항목 설정" : "임시 기준",
+        ]),
+        ["**변동비 합계**", "", `**${won(b.variableCost)}**`, ""],
+        ["**고정비 합계**", "", `**${won(b.fixedCost)}**`, ""],
+      ],
+    )}\n\n${table(
+      ["항목", "값"],
+      [
+        ["매출", won(b.revenue)],
+        ["공헌이익 (매출 − 변동비)", won(b.contribution)],
+        ["공헌이익률", pct(b.contributionRatio)],
+        [
+          "BEP 매출 (고정비 × 매출 ÷ 공헌이익, 올림)",
+          b.bepRevenue === null ? "-" : won(b.bepRevenue),
+        ],
+        ["달성률 (공헌이익 ÷ 고정비)", pct(b.rate)],
+        ["실제 매출 − BEP 매출", b.gap === null ? "-" : won(b.gap)],
+        ["계산 불가 사유", b.reason ?? "-"],
+      ],
+    )}`,
+  );
+
   const t = s.targets;
   out.push(
     `\n## 목표 달성률\n\n${
