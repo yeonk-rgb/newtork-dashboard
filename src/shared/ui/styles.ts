@@ -5,6 +5,8 @@
 /** 페이지 제목 (h1): 24px Bold */
 export const pageTitleClass =
   "text-2xl font-bold tracking-tight text-foreground";
+/** 영역 제목 (h2, 카드 묶음 위): 18px SemiBold — 경영 대시보드 "분기별 목표 달성 현황" 등 (2026-10-25) */
+export const sectionTitleClass = "text-lg font-semibold text-foreground";
 /** 카드·대화상자 제목 (h2): 16px SemiBold */
 export const cardTitleClass = "text-base font-semibold text-foreground";
 /** 라벨·카드 안 소제목·표 머리글: 12px Medium 보조색 */

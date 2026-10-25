@@ -42,7 +42,6 @@ export function BreakEvenTable({ summary }: { summary: ManagementSummary }) {
 
   return (
     <Section
-      id="break-even"
       title="손익분기점 계산 내역"
       description={
         b.provisionalNotes.length > 0

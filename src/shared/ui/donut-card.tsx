@@ -31,7 +31,7 @@ const OUTER = 0.95;
 /**
  * 카드 색 (docs/design-guide.md)
  * - default: 흰 카드
- * - accent: 강조 카드 (#AD5A2A → 코퍼 600 아주 옅은 그라데이션, 흰 글씨) — 화면당 1개만 (메인 연간 목표)
+ * - accent: 강조 카드 (#AD5A2A → 코퍼 600 아주 옅은 그라데이션, 흰 글씨) — 화면당 1개만 (메인 목표매출 달성률, 2026-10-25)
  *   흰 글씨 대비: 시작 #AD5A2A 4.91:1 · 끝 600 5.97:1 → 작은 글씨도 흰색 100% (투명도로 흐리게 하지 않음)
  *   선택 줄·배지·호버 면은 흰색을 겹치면 대비가 떨어지므로(흰 15% 3.7:1) 검정을 옅게 겹친다 (검정 10% 5.8:1)
  */
@@ -79,6 +79,8 @@ export function DonutCard({
   emptyText,
   csvName,
   tone = "default",
+  legend = "ratio-first",
+  layout = "row",
 }: {
   title: string;
   /** 제목 옆 작은 배지 (예: 샘플 데이터) */
@@ -105,6 +107,10 @@ export function DonutCard({
   csvName: string;
   /** 강조 카드면 "accent" (조각 색은 호출하는 쪽에서 METER_ON_ACCENT 등으로 맞춘다) */
   tone?: DonutTone;
+  /** 목록 열 순서: 비율 먼저(기본) / 금액 먼저 — 산업 분야별·제품별 매출 (담당자 요청 2026-10-25) */
+  legend?: "ratio-first" | "amount-first";
+  /** row = 넓으면 도넛 옆에 목록(기본) / stacked = 늘 도넛 아래 목록 (한 줄에 카드 3개일 때) */
+  layout?: "row" | "stacked";
 }) {
   const t = TONES[tone];
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -171,7 +177,14 @@ export function DonutCard({
                   key={row.key}
                   className={cn("border-b last:border-0", t.line)}
                 >
-                  <td className="py-2">{row.label}</td>
+                  <td className="py-2">
+                    {row.label}
+                    {row.hint && (
+                      <span className={cn("ml-1 text-xs", t.muted)}>
+                        {row.hint}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2 text-right">
                     {valueKind === "money"
                       ? formatAmount(row.value)
@@ -186,7 +199,12 @@ export function DonutCard({
             </tbody>
           </table>
         ) : (
-          <div className="@container flex flex-col items-center gap-4 sm:flex-row">
+          <div
+            className={cn(
+              "@container flex flex-col items-center gap-4",
+              layout === "row" && "sm:flex-row",
+            )}
+          >
             <div
               className="relative size-44 shrink-0"
               role="img"
@@ -267,22 +285,65 @@ export function DonutCard({
                     className="size-2.5 shrink-0 rounded-full"
                     style={{ background: row.color }}
                   />
-                  <span className="min-w-0 flex-1 truncate">{row.label}</span>
-                  <span className="w-14 text-right font-semibold tabular-nums">
-                    {donutPct(row.ratio)}
-                  </span>
-                  <span
-                    className={cn(
-                      "w-20 text-right text-xs tabular-nums",
-                      t.muted,
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{row.label}</span>
+                    {row.hint && (
+                      <span className={cn("block text-xs", t.muted)}>
+                        {row.hint}
+                      </span>
                     )}
-                    title={
-                      valueKind === "money" ? formatWon(row.value) : undefined
-                    }
-                  >
-                    {show(row.value)}
-                    {row.extra && <span className="block">{row.extra}</span>}
                   </span>
+                  {legend === "amount-first" ? (
+                    <>
+                      <span
+                        className="w-20 text-right font-semibold tabular-nums"
+                        title={
+                          valueKind === "money"
+                            ? formatWon(row.value)
+                            : undefined
+                        }
+                      >
+                        {show(row.value)}
+                        {row.extra && (
+                          <span
+                            className={cn("block text-xs font-normal", t.muted)}
+                          >
+                            {row.extra}
+                          </span>
+                        )}
+                      </span>
+                      <span
+                        className={cn(
+                          "w-14 text-right text-xs tabular-nums",
+                          t.muted,
+                        )}
+                      >
+                        {donutPct(row.ratio)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-14 text-right font-semibold tabular-nums">
+                        {donutPct(row.ratio)}
+                      </span>
+                      <span
+                        className={cn(
+                          "w-20 text-right text-xs tabular-nums",
+                          t.muted,
+                        )}
+                        title={
+                          valueKind === "money"
+                            ? formatWon(row.value)
+                            : undefined
+                        }
+                      >
+                        {show(row.value)}
+                        {row.extra && (
+                          <span className="block">{row.extra}</span>
+                        )}
+                      </span>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

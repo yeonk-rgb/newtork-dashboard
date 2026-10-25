@@ -239,8 +239,11 @@ function FlowTable({ rows }: { rows: Row[] }) {
 export function FlowChart({
   points,
   highlight,
+  titlePrefix = "월별 매출·지출",
 }: {
   points: FlowPoint[];
+  /** 카드 제목 앞부분 (뒤에 기간이 붙음) — 경영 대시보드는 "매출·지출 추이" */
+  titlePrefix?: string;
   /** 선택 기간의 달 — 이 달만 진한 색, 나머지는 연한 톤 (표시만, 값은 같음). 없으면 전부 진한 색 */
   highlight?: { year: number; month: number }[];
 }) {
@@ -253,7 +256,7 @@ export function FlowChart({
   const hasDraft = rows.some((r) => r.status === "DRAFT");
   const first = rows[0];
   const last = rows.at(-1)!;
-  const title = `월별 매출·지출 (${first.year}.${first.month} ~ ${last.year}.${last.month})`;
+  const title = `${titlePrefix} (${first.year}.${first.month} ~ ${last.year}.${last.month})`;
 
   const toggle = (
     <button

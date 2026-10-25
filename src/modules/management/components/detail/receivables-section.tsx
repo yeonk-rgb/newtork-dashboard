@@ -30,8 +30,11 @@ const BUCKET_LABEL = {
 
 export function ReceivablesSection({
   receivables,
+  lead,
 }: {
   receivables: ReceivableResult;
+  /** 영역 첫 줄 (경영 대시보드에서 옮겨 온 미수금 원형 카드, 2026-10-25) */
+  lead?: React.ReactNode;
 }) {
   const { total, count, byCustomer, aging, expected, asOf } = receivables;
   const share = (amount: bigint) =>
@@ -59,6 +62,10 @@ export function ReceivablesSection({
           미수금 관리(등록·수금 처리) →
         </Link>
       </div>
+
+      {lead && (
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">{lead}</div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Section title="거래처별 미수금" className="xl:col-span-1">

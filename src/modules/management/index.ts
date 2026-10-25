@@ -54,8 +54,7 @@ export {
   DashboardTopSkeleton,
   resolvePeriod,
 } from "./components/dashboard-top";
-export { DashboardDonuts } from "./components/donuts/dashboard-donuts";
-export { MainBottom } from "./components/bottom/main-bottom";
+export { AiArea, MainDashboard } from "./components/dashboard/main-dashboard";
 export { AiCommentSection } from "./ai/ai-comment-card";
 export { ManagementDetail } from "./components/detail/management-detail";
 

@@ -26,7 +26,7 @@ export async function DashboardTop({
   summary: ManagementSummary;
   /** KPI 카드 위에 넣을 내용 (경영지원 상세의 AI 분석 카드) */
   aboveKpis?: React.ReactNode;
-  /** 경영 대시보드는 KPI 카드 대신 AI 카드 아래 도넛으로 보여준다 */
+  /** 경영 대시보드는 이 KPI 카드 대신 새 KPI 4개(MainDashboard)를 쓴다 */
   showKpis?: boolean;
 }) {
   const range = await loadYearRange((await getTodayKst()).getUTCFullYear());
