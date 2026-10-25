@@ -1,0 +1,37 @@
+// 변경 이력 (담당: 경영지원팀 — 공통, 모든 팀이 같이 쓴다)
+// 테이블은 audit_ 접두사. 기록은 src/shared/audit/record.ts 의 recordAudit() 로만 넣는다 (원래 저장과 같은 트랜잭션)
+// - 수정·삭제 불가: 마이그레이션의 DB 트리거가 UPDATE·DELETE·TRUNCATE 를 거부한다 (db push 로는 트리거가 생기지 않음)
+// - 사용자 표와 외래키로 묶지 않는다: actorId + actorLoginId(그때 아이디) 를 그대로 저장 → 계정 비활성화·정리와 무관
+// - 비밀번호·해시·토큰 같은 칸은 recordAudit 가 거부한다 (src/shared/audit/forbidden.ts)
+
+/// 변경 기록 한 건
+model AuditLog {
+  id           String   @id @default(cuid())
+  /// 언제 (UTC — Prisma 가 기록, 표시는 한국 시간)
+  occurredAt   DateTime
+  /// 누가 (auth_user.id — 외래키 없음)
+  actorId      String
+  /// 그때 아이디 (계정 이름이 바뀌거나 비활성화돼도 누구인지 보이게)
+  actorLoginId String
+  /// "management" | "admin" — 관리자 화면 기록은 관리자(대표)만 본다
+  area         String
+  /// 어느 화면 (예: "ledger", "receivables") — src/shared/audit/types.ts
+  screen       String
+  /// 무엇을 했는지 (예: "CREATE", "UPDATE", "HIDE") — src/shared/audit/types.ts
+  action       String
+  /// 대상 종류·id (예: "LedgerEntry" + 행 id)
+  targetType   String
+  targetId     String
+  /// 사람이 읽을 대상 이름 (예: "2026-10 외상매출금 · 가나상사")
+  targetLabel  String
+  /// [{ field, label, before, after }] — 바뀐 칸만, 화면 표기 그대로 (금액 "12,500,000원", 상태 "장기미수")
+  changes      Json     @default("[]")
+  /// 이관·다운로드 정보 (업로드 id, 파일명, 기간, 행 수 등)
+  meta         Json?
+
+  @@index([occurredAt])
+  @@index([screen, occurredAt])
+  @@index([actorId, occurredAt])
+  @@index([targetType, targetId])
+  @@map("audit_log")
+}

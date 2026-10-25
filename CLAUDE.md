@@ -134,6 +134,14 @@
   - 인쇄: A4, 너비 1페이지에 맞춤·높이 자동 — 월별 시트 세로, 상세 시트 가로 (`printSetup()`). 통합 문서 기본 글꼴은 exceljs가 Calibri로 고정해 못 바꿈(후속 과제) — 사용 열에 맑은 고딕 열 서식으로 대신
   - 시트: 당월 1장 / 분기·연간은 데이터 있는 달만(없으면 빈 양식 1장, 이름 = 기간) + 맨 뒤 "상세"(원본에 없는 칸). 숨긴 행 제외. 파일명 `경영지원_관리_{기간}.xlsx`
   - 테스트: 원본 서식 대조(역할별), 왕복(다운로드 → `parseLedgerSheet` → 같은 행·상태·금액·코드, 총액 전부 match)
+- **변경 이력(2026-10-25 PR ①: 기록 표·공용 부품·채권·채무·미수금)**: 표 `audit_log`(`prisma/schema/audit.prisma`, 공용 — 관리자 화면 기록도 담음), 공용 부품 `shared/audit/`
+  - 저장 Server Action 은 **원래 저장과 같은 `prisma.$transaction` 안에서 `recordAudit(tx, …)`** 를 부른다 → 기록이 실패하면 저장도 취소. `updatedAt` 동시 수정 확인도 트랜잭션 안(`updateMany` count 0 → `ConflictError` 로 취소)
+  - 바뀐 칸만, 화면 표기 그대로: `diffFields(before, after, fields)` + 화면별 "기록할 칸" 목록(허용 목록 — `modules/management/audit-fields.ts`). 금액 `won`("12,500,000원"), 날짜 `date`, 선택값 `labelOf(…)`, 참·거짓 `flag(…)`. 목록에 없는 칸은 기록되지 않는다. 수정인데 바뀐 칸이 없으면 기록하지 않음
+  - 금지 칸: password·hash·token·secret·session·salt 등 이름이 changes·meta 에 있으면 `recordAudit` 가 에러(`forbidden.ts`). 비밀번호 초기화는 값 없이 동작만
+  - 사용자 표와 외래키 없음: `actorId` + `actorLoginId`(그때 아이디). 시각은 `getNow()`(UTC 저장, 표시는 한국 시간)
+  - **수정·삭제 불가**: 마이그레이션의 DB 트리거가 UPDATE·DELETE·TRUNCATE 거부. **`db push` 로는 트리거가 생기지 않는다** → 기록 표가 있는 DB 는 `npm run db:deploy`(마이그레이션) 로 맞추고, `db:smoke` 가 트리거·롤백을 트랜잭션 안에서 점검 후 되돌린다. 테스트·점검은 트랜잭션 안에서 넣고 되돌리기, 로컬 전체 초기화는 `prisma migrate reset`
+  - 확인용: `npm run audit:recent [건수] [화면]` (읽기만, 한국 시간). 보는 화면은 PR ③
+  - 다음: PR ② 월간 입력(확정·확정 후 수정·확정 취소만)·목표·지출 항목·엑셀 이관(요약 1건, uploadId)·엑셀 다운로드(기록 실패 시 다운로드 막기)·관리자 화면 / PR ③ `/management/history`(관리자(대표)+경영지원팀, 관리자 화면 기록은 관리자(대표)만), 채권·채무·미수금 행 [이력], 이력 엑셀(관리자(대표)만)
 
 ## 공통 정책
 
@@ -249,7 +257,7 @@ newtork-dashboard/ (= 이 폴더)
 - **모듈 간 import 금지**: `modules/<팀>`끼리 직접 import하지 않는다. 공통 코드는 `shared/`에만 둔다. (`eslint-plugin-boundaries`로 검사)
 - **연동은 `index.ts` 공개 함수로만**: 메인 대시보드 등에서 다른 팀 데이터가 필요하면 해당 모듈 `index.ts`가 export한 함수(예: `getSalesShareByIndustry(period)`)만 사용한다. 통합 전까지는 `docs/interface-production.md` 형식 그대로의 **목업**을 쓴다.
 - **기간 처리**: DB에는 **월 단위로만 저장**하고, 분기·연간은 조회할 때 계산한다.
-- **스키마를 바꾼 뒤**: `npm run db:push` → `npm run db:generate` → **dev 서버 재시작**(옛 Prisma 클라이언트가 남아 "Unknown argument" 에러가 날 수 있음 — 2026-10-20) → `npm run db:smoke`(실제 DB로 모든 칸·주요 조회 점검). 보고할 때 "dev 서버 재시작 필요"를 꼭 적는다
+- **스키마를 바꾼 뒤**: (DB 트리거가 있는 `audit_log` 처럼 마이그레이션에만 있는 것은 `npm run db:deploy`) `npm run db:push` → `npm run db:generate` → **dev 서버 재시작**(옛 Prisma 클라이언트가 남아 "Unknown argument" 에러가 날 수 있음 — 2026-10-20) → `npm run db:smoke`(실제 DB로 모든 칸·주요 조회 점검). 보고할 때 "dev 서버 재시작 필요"를 꼭 적는다
 - **마이그레이션**: 작업 중에는 `npm run db:push`로 로컬 DB에만 반영하고, 마이그레이션 파일은 **PR 올리기 직전에** `npx prisma migrate dev --name <설명>`으로 1개 생성한다. (`prisma/migrations/`는 git에 포함)
 - **권한 확인은 반드시 서버에서, `can()`으로**: 페이지·Server Action·조회 함수 모두 서버에서 `shared/auth`의 `can()`을 호출해 확인한다. 역할 비교를 직접 쓰지 않는다. UI에서 메뉴·버튼을 숨기는 건 보조 수단일 뿐이다.
 

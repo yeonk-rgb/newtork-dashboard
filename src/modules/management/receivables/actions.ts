@@ -1,10 +1,20 @@
 "use server";
 // 미수금 저장 Server Action — 권한·검증·동시 수정을 모두 서버에서 다시 확인한다
+// 저장과 변경 기록(audit_log)은 한 트랜잭션: 기록이 실패하면 저장도 취소된다
 import { refresh } from "next/cache";
 
+import { diffFields } from "@/shared/audit/diff";
+import { recordAudit } from "@/shared/audit/record";
+import type { AuditAction } from "@/shared/audit/types";
 import { getCurrentUser, type AppUser } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
 
+import {
+  auditActor,
+  RECEIVABLE_AUDIT_FIELDS,
+  receivableTargetLabel,
+  type ReceivableAuditRow,
+} from "../audit-fields";
 import { getNow, getTodayKst } from "../data/load-summary-input";
 import {
   canCreateReceivable,
@@ -93,24 +103,59 @@ async function loadForAction(
   return { user, row, abilities };
 }
 
+/** 트랜잭션 안에서 updatedAt 이 바뀌어 저장하지 못했을 때 — 트랜잭션을 취소하고 conflict 를 돌려준다 */
+class ConflictError extends Error {}
+
 /**
- * updatedAt 이 그대로일 때만 수정 (확인과 저장 사이에 끼어든 저장도 막음).
+ * updatedAt 이 그대로일 때만 수정 + 변경 기록 (한 트랜잭션 — 확인과 저장 사이에 끼어든 저장도 막음).
  * hidden: 숨김 상태 조건 (복구는 숨긴 건, 나머지는 숨기지 않은 건만)
+ * 수정·수금 처리·수금 취소는 바뀐 칸을, 숨김·복구는 동작만 기록한다
  */
 async function updateIfUnchanged(
   loaded: Loaded,
   data: Parameters<typeof prisma.receivable.updateMany>[0]["data"],
+  action: AuditAction,
   hidden = false,
 ): Promise<boolean> {
-  const updated = await prisma.receivable.updateMany({
-    where: {
-      id: loaded.row.id,
-      updatedAt: loaded.row.updatedAt,
-      deletedAt: hidden ? { not: null } : null,
-    },
-    data: { ...data, updatedById: loaded.user.id },
-  });
-  return updated.count > 0;
+  const { row, user } = loaded;
+  const after = { ...row, ...data } as ReceivableAuditRow;
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.receivable.updateMany({
+        where: {
+          id: row.id,
+          updatedAt: row.updatedAt,
+          deletedAt: hidden ? { not: null } : null,
+        },
+        data: { ...data, updatedById: user.id },
+      });
+      if (updated.count === 0) throw new ConflictError();
+      await recordAudit(tx, {
+        occurredAt: await getNow(),
+        actor: auditActor(user),
+        area: "management",
+        screen: "receivables",
+        action,
+        target: {
+          type: "Receivable",
+          id: row.id,
+          label: receivableTargetLabel(after),
+        },
+        changes:
+          action === "HIDE" || action === "RESTORE"
+            ? []
+            : diffFields<ReceivableAuditRow>(
+                row,
+                after,
+                RECEIVABLE_AUDIT_FIELDS,
+              ),
+      });
+    });
+    return true;
+  } catch (error) {
+    if (error instanceof ConflictError) return false;
+    throw error;
+  }
 }
 
 /** 대시보드 미수금은 기간 마지막 날 기준 잔액이라, 저장 후 안내에 덧붙인다 */
@@ -131,16 +176,36 @@ export async function createReceivable(
   const dateError = firstDateError(receivableDateErrors(input, today));
   if (dateError) return invalid(dateError);
 
-  await prisma.receivable.create({
-    data: {
-      customerName: input.customerName,
-      occurredOn: date(input.occurredOn),
-      amount: input.amount,
-      dueOn: input.dueOn ? date(input.dueOn) : null,
-      note: input.note,
-      createdById: user.id,
-      updatedById: user.id,
-    },
+  const now = await getNow();
+  await prisma.$transaction(async (tx) => {
+    const row = await tx.receivable.create({
+      data: {
+        customerName: input.customerName,
+        occurredOn: date(input.occurredOn),
+        amount: input.amount,
+        dueOn: input.dueOn ? date(input.dueOn) : null,
+        note: input.note,
+        createdById: user.id,
+        updatedById: user.id,
+      },
+    });
+    await recordAudit(tx, {
+      occurredAt: now,
+      actor: auditActor(user),
+      area: "management",
+      screen: "receivables",
+      action: "CREATE",
+      target: {
+        type: "Receivable",
+        id: row.id,
+        label: receivableTargetLabel(row),
+      },
+      changes: diffFields<ReceivableAuditRow>(
+        null,
+        row,
+        RECEIVABLE_AUDIT_FIELDS,
+      ),
+    });
   });
 
   refresh(); // 메인·경영지원 대시보드 미수금 숫자가 새 값으로 다시 그려지도록
@@ -185,14 +250,18 @@ export async function updateReceivable(
   );
   if (dateError) return invalid(dateError);
 
-  const saved = await updateIfUnchanged(loaded, {
-    customerName: input.customerName,
-    occurredOn: date(input.occurredOn),
-    amount: input.amount,
-    dueOn: input.dueOn ? date(input.dueOn) : null,
-    note: input.note,
-    ...(row.isCollected ? { collectedOn: date(input.collectedOn!) } : {}),
-  });
+  const saved = await updateIfUnchanged(
+    loaded,
+    {
+      customerName: input.customerName,
+      occurredOn: date(input.occurredOn),
+      amount: input.amount,
+      dueOn: input.dueOn ? date(input.dueOn) : null,
+      note: input.note,
+      ...(row.isCollected ? { collectedOn: date(input.collectedOn!) } : {}),
+    },
+    "UPDATE",
+  );
   if (!saved) return conflict;
 
   refresh();
@@ -225,10 +294,14 @@ export async function collectReceivable(
   ).collectedOn;
   if (dateError) return invalid(dateError);
 
-  const saved = await updateIfUnchanged(loaded, {
-    isCollected: true,
-    collectedOn: date(input.collectedOn),
-  });
+  const saved = await updateIfUnchanged(
+    loaded,
+    {
+      isCollected: true,
+      collectedOn: date(input.collectedOn),
+    },
+    "COLLECT",
+  );
   if (!saved) return conflict;
 
   refresh();
@@ -253,10 +326,14 @@ export async function uncollectReceivable(
     return forbidden("수금 취소는 팀장만 할 수 있습니다.");
   }
 
-  const saved = await updateIfUnchanged(loaded, {
-    isCollected: false,
-    collectedOn: null,
-  });
+  const saved = await updateIfUnchanged(
+    loaded,
+    {
+      isCollected: false,
+      collectedOn: null,
+    },
+    "UNCOLLECT",
+  );
   if (!saved) return conflict;
 
   refresh();
@@ -281,10 +358,14 @@ export async function hideReceivable(
     return forbidden("숨김 처리는 팀장만 할 수 있습니다.");
   }
 
-  const saved = await updateIfUnchanged(loaded, {
-    deletedAt: await getNow(),
-    deletedById: loaded.user.id,
-  });
+  const saved = await updateIfUnchanged(
+    loaded,
+    {
+      deletedAt: await getNow(),
+      deletedById: loaded.user.id,
+    },
+    "HIDE",
+  );
   if (!saved) return conflict;
 
   refresh();
@@ -313,6 +394,7 @@ export async function restoreReceivable(
   const saved = await updateIfUnchanged(
     loaded,
     { deletedAt: null, deletedById: null },
+    "RESTORE",
     true,
   );
   if (!saved) return conflict;
