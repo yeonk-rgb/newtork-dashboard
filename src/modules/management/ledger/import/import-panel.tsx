@@ -397,8 +397,8 @@ function TotalLine({ total }: { total: PreviewTotal }) {
       return (
         <li className={cn(base, "text-muted-foreground")}>
           <span>
-            {total.range} 수식 계산값 없음 (엑셀에서 저장한 파일이 아님) · 행
-            합계{" "}
+            {total.range} 수식 계산값이 파일에 없음 (엑셀에서 열어 저장하면
+            생김) · 행 합계{" "}
             <span className="tabular-nums">{formatAmount(total.rowsSum)}</span>
           </span>
         </li>

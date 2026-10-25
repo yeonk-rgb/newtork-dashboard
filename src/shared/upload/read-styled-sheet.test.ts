@@ -47,10 +47,11 @@ describe("readStyledXlsx", () => {
       value: "자동이체",
       fill: { theme: 9 },
     });
+    // 원본 빈 양식의 F열 수식은 계산값 0 이 저장돼 있다 (<v>0</v>) — 0 도 계산값으로 읽어야 함
     expect(getCell(sheet, 5, 6)).toMatchObject({
-      value: null,
+      value: 0,
       formula: "SUM(D5:D24)",
-      hasResult: false,
+      hasResult: true,
     });
   });
 
