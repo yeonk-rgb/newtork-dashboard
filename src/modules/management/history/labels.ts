@@ -25,6 +25,16 @@ export const HISTORY_SCREENS: {
     area: "management",
   },
   { key: "entry-export", label: "월간 입력 엑셀 다운로드", area: "management" },
+  {
+    key: "targets-export",
+    label: "목표 대비 실적 엑셀 다운로드",
+    area: "management",
+  },
+  {
+    key: "receivables-export",
+    label: "미수금 엑셀 다운로드",
+    area: "management",
+  },
   { key: "upload", label: "엑셀 업로드", area: "management" },
   { key: "admin-users", label: "관리자(대표) · 계정 관리", area: "admin" },
   {
@@ -84,7 +94,12 @@ export function metaSummary(
     return n === null ? null : `${n.toLocaleString("ko-KR")}${unit}`;
   };
 
-  if (screen === "ledger-export" || screen === "entry-export") {
+  if (
+    screen === "ledger-export" ||
+    screen === "entry-export" ||
+    screen === "targets-export" ||
+    screen === "receivables-export"
+  ) {
     return join([
       str(m, "period"),
       num(m, "sheetCount") !== null && `시트 ${count("sheetCount", "장")}`,

@@ -9,11 +9,27 @@ import { prisma } from "@/shared/db/client";
 import type { Period } from "@/shared/period/period";
 import { toPeriodParam } from "@/shared/period/url";
 
-import { getNow, getTodayKst } from "../data/load-summary-input";
+import {
+  getNow,
+  getTodayKst,
+  loadSummaryInput,
+} from "../data/load-summary-input";
 import { buildEntryWorkbook } from "../entry/export/build-entry-workbook";
 import { loadEntryExportData } from "../entry/export/load-entry-export";
 import { planEntrySheets } from "../entry/export/plan";
-import { exportFileName, monthsUpTo, parseExportPeriod } from "./period";
+import { computeManagementSummary } from "../metrics/summary";
+import {
+  buildReceivablesLayout,
+  receivablesListSheet,
+} from "../receivables/export/receivables-layout";
+import { buildTargetsLayout } from "../settings/export/targets-layout";
+import {
+  exportFileName,
+  monthsUpTo,
+  parseExportPeriod,
+  periodSheetName,
+} from "./period";
+import { buildStackedWorkbook } from "./stacked";
 import { readExportTemplate } from "./template";
 
 export class ManagementExportError extends Error {
@@ -26,7 +42,7 @@ export class ManagementExportError extends Error {
   }
 }
 
-/** 내려받을 수 있는 화면 (PR ② 목표 대비 실적·미수금, PR ③ 종합 리포트를 여기에 더한다) */
+/** 내려받을 수 있는 화면 (PR ③ 종합 리포트를 여기에 더한다) */
 const KINDS = {
   entry: {
     screen: "entry-export",
@@ -34,7 +50,25 @@ const KINDS = {
     label: "월간 입력 엑셀 다운로드",
     file: { ko: "월간입력", ascii: "entry" },
   },
+  /** 목표 대비 실적 — 어떤 기간을 골라도 그 해 시트 1장 ("2026") */
+  targets: {
+    screen: "targets-export",
+    targetType: "TargetsExport",
+    label: "목표 대비 실적 엑셀 다운로드",
+    file: { ko: "목표실적", ascii: "targets" },
+  },
+  /** 미수금 통계 — 기준일 = min(기간 말일, 오늘), 대시보드 KPI 와 같음 */
+  receivables: {
+    screen: "receivables-export",
+    targetType: "ReceivablesExport",
+    label: "미수금 엑셀 다운로드",
+    file: { ko: "미수금", ascii: "receivables" },
+  },
 } as const;
+
+/** 파일 이름·기록의 기간: 목표 대비 실적은 늘 연도 */
+const filePeriodOf = (kind: ExportKind, period: Period): Period =>
+  kind === "targets" ? { unit: "year", year: period.year } : period;
 
 export type ExportKind = keyof typeof KINDS;
 
@@ -54,9 +88,51 @@ async function buildFile(
   kind: ExportKind,
   period: Period,
   thisMonth: { year: number; month: number },
+  today: Date,
   now: Date,
 ) {
   switch (kind) {
+    case "targets": {
+      const year: Period = { unit: "year", year: period.year };
+      const [template, input] = await Promise.all([
+        readExportTemplate(),
+        loadSummaryInput(year, today),
+      ]);
+      const summary = computeManagementSummary(input);
+      const sheet = buildTargetsLayout({
+        summary,
+        months: input.financeMonths,
+        today,
+      });
+      const name = periodSheetName(year);
+      return {
+        body: await buildStackedWorkbook({
+          template,
+          sheets: [{ name, layout: sheet.layout, maxAux: sheet.maxAux }],
+          now,
+        }),
+        sheetNames: [name],
+      };
+    }
+    case "receivables": {
+      const [template, input] = await Promise.all([
+        readExportTemplate(),
+        loadSummaryInput(period, today),
+      ]);
+      const { receivables } = computeManagementSummary(input);
+      const sheet = buildReceivablesLayout(receivables);
+      const list = receivablesListSheet(receivables);
+      const name = periodSheetName(period);
+      return {
+        body: await buildStackedWorkbook({
+          template,
+          sheets: [{ name, layout: sheet.layout, maxAux: sheet.maxAux }],
+          lists: [list],
+          now,
+        }),
+        sheetNames: [name, list.name],
+      };
+    }
     case "entry": {
       const months = monthsUpTo(period, thisMonth);
       const [template, loaded] = await Promise.all([
@@ -102,10 +178,12 @@ export async function exportManagementFile(
     kindParam,
     period,
     thisMonth,
+    today,
     now,
   );
-  const param = toPeriodParam(period);
-  const names = exportFileName(def.file, period);
+  const filePeriod = filePeriodOf(kindParam, period);
+  const param = toPeriodParam(filePeriod);
+  const names = exportFileName(def.file, filePeriod);
 
   try {
     await recordAudit(prisma, {

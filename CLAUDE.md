@@ -150,8 +150,13 @@
   - 기간·이름 `export/period.ts`: 시트 이름 = 기간("2026-Q3", 누적 "2026-01~10"), 파일 `경영지원_{화면}_{기간}.xlsx`, 메모 기간 "당월/3분기/2026년/1~10월"
   - 월간 입력(`entry/export/`): 당월 = 월 시트 1장, 분기·연간·누적 = 맨 앞 합계 시트 + 데이터 있는 달(임시저장 포함). **합계는 확정 월만**(대시보드와 같은 숫자), 월 시트 H1 상태(임시저장·입력 없음 빨간 글씨), 합계 시트 H2 "제외: 9월 임시저장". 항목 이름은 고객사 문서 표기 — 월 시트 "월간 상품 매입액", 합계 시트 "상품 매입액" + 제목 "(2026년 3분기 합계)", H 메모 "← 당월 매입 (월간 입력)"(채권·채무 "← 당월 매입 지출"과 구분)
   - 인쇄: 월간 입력 시트는 **A4 가로** + 너비 1페이지 맞춤 (2026-10-25 Excel 측정: 세로는 약 70%·글자 7pt, 가로는 100%). 채권·채무 다운로드는 아직 세로(약 60%) — 가로 전환은 제안만 (06 후속 과제)
-  - 확인: `npm run export:report -- 2026-Q3 [폴더]`(읽기만 — 원본 ↔ 새 파일 셀 단위 비교표, 엑셀 F열 ↔ `computeManagementSummary`, 파일 저장). 테스트는 "의도하지 않은 차이 0건"(`compare.ts`)·테마·문서 속성·합계 = 화면 숫자를 고정
-  - 다음: PR ② 목표 대비 실적·미수금, PR ③ 월별 종합 리포트 (`docs/06-management-checklist.md` "엑셀 내보내기")
+  - 확인: `npm run export:report -- [entry|targets|receivables] 2026-Q3 [폴더]`(읽기만 — 원본 ↔ 새 파일 셀 단위 비교표, 엑셀 숫자 ↔ 대시보드 화면 숫자, 파일 저장). 테스트는 "의도하지 않은 차이 0건"(`compare.ts`)·테마·문서 속성·합계 = 화면 숫자를 고정
+  - **PR ②(2026-10-26) 목표 대비 실적·미수금**: 공용 쌓기형 엔진 `export/stacked.ts`(`buildStackedWorkbook` — 일반 행 = 원본 C41~F41, 빨간 행 = 장기미수 C3~F3, I열 보조 금액·비율, 목록형 시트), 비교 `export/compare-stacked.ts`
+    - 목표 대비 실적(`settings/export/targets-layout.ts`, `?kind=targets` — 어떤 기간이든 그 해 시트 "2026", 파일 `경영지원_목표실적_2026.xlsx`): "연간 목표매출액"(1~4분기 목표 F = SUM) → "목표매출 달성률"(월 행 + 분기 그룹 F = SUM, 적요 "월 목표 234,166,666 (분기 ÷ 3)", 임시저장 = D 빈칸 + 빨간 "임시저장 — 합계 제외"). 분기 메모·빨간색은 **대시보드 `targetCardModel` 그대로**(끝났고 3개월 모두 확정 + 미달만 빨강, 미확정 "(9월 미확정)", 진행 중 "(경과 1/3개월)"). H·I: 연간 실적 합계·목표매출 달성률(분모 = 입력한 연간 목표)·부족분
+    - 미수금(`receivables/export/receivables-layout.ts`, `?kind=receivables`, 시트 = 기간 + "미수금 상세" 목록형): 기준일 = 대시보드 KPI 와 같은 summary.receivables, 경과일 그룹 90일 초과(행 전체 빨강) → 61~90 → 31~60 → 0~30, "예정일 지남"은 적요 글자로만, 거래처별 블록 + H·I "90일 초과"·"수금 예정일 지남"
+    - 버튼: 목표·항목 설정(그 해), 미수금 관리(이번 달 오늘 기준 / 지난달 말 / 지난 분기 말) — `export/management-export-menu.tsx`. 변경 이력 `targets-export`·`receivables-export`
+    - 결과물 고정: `entry/export/__snapshots__`(월간 입력) + 채권·채무 스냅샷 — 공용 엔진만 손댔으면 갱신 금지
+  - 다음: PR ③ 월별 종합 리포트 (새 대시보드 순서, `docs/06-management-checklist.md` "엑셀 내보내기")
 - **변경 이력(2026-10-25 PR ①: 기록 표·공용 부품·채권·채무·미수금)**: 표 `audit_log`(`prisma/schema/audit.prisma`, 공용 — 관리자 화면 기록도 담음), 공용 부품 `shared/audit/`
   - 저장 Server Action 은 **원래 저장과 같은 `prisma.$transaction` 안에서 `recordAudit(tx, …)`** 를 부른다 → 기록이 실패하면 저장도 취소. `updatedAt` 동시 수정 확인도 트랜잭션 안(`updateMany` count 0 → `ConflictError` 로 취소)
   - 바뀐 칸만, 화면 표기 그대로: `diffFields(before, after, fields)` + 화면별 "기록할 칸" 목록(허용 목록 — `modules/management/audit-fields.ts`). 금액 `won`("12,500,000원"), 날짜 `date`, 선택값 `labelOf(…)`, 참·거짓 `flag(…)`. 목록에 없는 칸은 기록되지 않는다. 수정인데 바뀐 칸이 없으면 기록하지 않음

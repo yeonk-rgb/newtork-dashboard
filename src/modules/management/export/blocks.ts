@@ -18,6 +18,8 @@ export type GroupItem = {
   name: string | null;
   amount: number | null;
   note: string | null;
+  /** 적요만 빨간 글씨 (예: "임시저장 — 합계 제외") */
+  noteWarn?: boolean;
 };
 
 export type GroupStyle<R extends string> = {
@@ -100,7 +102,12 @@ export class SheetBuilder<R extends string, A = string> {
       cells.push(
         { col: COL.C, role: style.name, value: r?.name ?? null },
         { col: COL.D, role: style.amount, value: r?.amount ?? null },
-        { col: COL.E, role: style.note, value: r?.note ?? null },
+        {
+          col: COL.E,
+          role: style.note,
+          value: r?.note ?? null,
+          ...(r?.noteWarn ? { warn: true } : {}),
+        },
         {
           col: COL.F,
           role: style.total,

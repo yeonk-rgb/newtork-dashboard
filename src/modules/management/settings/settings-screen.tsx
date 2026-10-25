@@ -14,6 +14,8 @@ import { loadCategories, loadTarget } from "./load-settings";
 import { TargetForm } from "./target-form";
 import { pageTitleClass } from "@/shared/ui/styles";
 
+import { ManagementExportMenu } from "../export/management-export-menu";
+
 const TABS = [
   { key: "target", label: "연간 목표" },
   { key: "categories", label: "그 외 지출 항목" },
@@ -42,7 +44,21 @@ export async function SettingsScreen({
 
   return (
     <div className="space-y-6">
-      <h1 className={pageTitleClass}>목표·항목 설정</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className={pageTitleClass}>목표·항목 설정</h1>
+        {/* 목표 대비 실적 엑셀 — 보고 있는 연도 1장 (경영지원 열람 권한, 서버가 다시 확인) */}
+        <ManagementExportMenu
+          kind="targets"
+          file={{ ko: "목표실적", ascii: "targets" }}
+          options={[
+            {
+              label: `${year}년 목표 대비 실적`,
+              period: { unit: "year", year },
+            },
+          ]}
+          note="합계는 확정된 달만 더합니다. 대시보드 목표매출 달성률과 같은 기준입니다."
+        />
+      </div>
       <nav aria-label="설정 종류" className="flex gap-1 border-b">
         {TABS.map((t) => (
           <Link
