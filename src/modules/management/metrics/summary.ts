@@ -10,6 +10,7 @@ import {
   type YearMonth,
 } from "@/shared/period/period";
 
+import { computeBreakEven } from "./break-even";
 import { selectConfirmed } from "./confirmation";
 import { computeExpenses } from "./expenses";
 import { changeRate } from "./math";
@@ -64,6 +65,12 @@ export function computePeriodCore(
     revenue,
     expenses,
     profit: computeProfit(revenue, expenses, settings.costMode),
+    breakEven: computeBreakEven(
+      confirmed,
+      revenue.total,
+      settings.costMode,
+      settings.breakEven,
+    ),
   };
 }
 

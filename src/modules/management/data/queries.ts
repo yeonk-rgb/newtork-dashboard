@@ -53,6 +53,7 @@ export async function loadFinanceMonths(
       categoryId: e.categoryId,
       name: e.category.name,
       sortOrder: e.category.sortOrder,
+      costType: e.category.costType,
       amount: e.amount,
     })),
   }));

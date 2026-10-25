@@ -11,7 +11,11 @@ import {
 } from "@/shared/ui/chart-colors";
 import type { DonutSlice } from "@/shared/ui/donut-data";
 
-import type { AgingBucket, ManagementSummary } from "../../metrics/types";
+import type {
+  AgingBucket,
+  BreakEvenResult,
+  ManagementSummary,
+} from "../../metrics/types";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 const s = (v: bigint) => v.toString();
@@ -42,6 +46,19 @@ export function revenueDonut(summary: ManagementSummary): DonutCardData {
   };
 }
 
+type ProgressLabels = {
+  actual: string;
+  remaining: string;
+  reached: string;
+  over: string;
+};
+const TARGET_LABELS: ProgressLabels = {
+  actual: "실적",
+  remaining: "남은 목표",
+  reached: "목표 달성분",
+  over: "초과분",
+};
+
 /**
  * 목표 대비 실적 (분기·연간 공용): 실적 / 남은 목표, 초과면 목표 달성분 / 초과분 — 비율은 목표 대비
  * @param meter 색 (강조 카드 위에서는 METER_ON_ACCENT)
@@ -50,13 +67,19 @@ function progressSlices(
   target: bigint,
   actual: bigint,
   meter: MeterColors,
+  labels: ProgressLabels = TARGET_LABELS,
 ): DonutSlice[] {
   if (actual <= target) {
     return [
-      { key: "actual", label: "실적", value: s(actual), color: meter.fill },
+      {
+        key: "actual",
+        label: labels.actual,
+        value: s(actual),
+        color: meter.fill,
+      },
       {
         key: "remaining",
-        label: "남은 목표",
+        label: labels.remaining,
         value: s(target - actual),
         color: meter.track,
         muted: true,
@@ -66,13 +89,13 @@ function progressSlices(
   return [
     {
       key: "actual",
-      label: "목표 달성분",
+      label: labels.reached,
       value: s(target),
       color: meter.fill,
     },
     {
       key: "over",
-      label: "초과분",
+      label: labels.over,
       value: s(actual - target),
       color: meter.over,
     },
@@ -218,6 +241,63 @@ export function profitDonut(summary: ManagementSummary): DonutCardData {
     center: {
       value: profit.margin === null ? "-" : pct(profit.margin),
       label: profit.profit < 0n ? "이익률 (적자)" : "이익률",
+    },
+    emptyText: null,
+  };
+}
+
+const BEP_LABELS: ProgressLabels = {
+  actual: "실제 매출",
+  remaining: "BEP까지 남은 매출",
+  reached: "BEP 매출",
+  over: "BEP 초과 매출",
+};
+
+/** 계산할 수 없을 때 안내 (카드 그래프 자리) */
+export function breakEvenEmptyText(b: BreakEvenResult): string | null {
+  switch (b.reason) {
+    case "no-data":
+      return NO_DATA;
+    case "no-revenue":
+      return `매출이 없어 손익분기점을 계산할 수 없습니다 (고정비 ${formatWonShort(b.fixedCost)}).`;
+    case "no-fixed-cost":
+      return "고정비가 0원이라 손익분기점이 없습니다. 경비·그 외 지출 입력과 고정비/변동비 구분을 확인하세요.";
+    default:
+      return null;
+  }
+}
+
+/**
+ * 손익분기점(BEP) 달성률 — 100% 미만: 실제 매출 / BEP까지 남은 매출, 이상: BEP 매출 / 초과 매출 (비율은 BEP 매출 대비)
+ * 도달 불가(변동비 ≥ 매출): 변동비 한 조각, 비율은 매출 대비 (변동비율)
+ */
+export function bepDonut(summary: ManagementSummary): DonutCardData {
+  const b = summary.breakEven;
+  const emptyText = breakEvenEmptyText(b);
+  if (emptyText) {
+    return { slices: [], center: { value: "-", label: "" }, emptyText };
+  }
+  if (b.reason === "not-reachable" || b.bepRevenue === null) {
+    return {
+      slices: [
+        {
+          key: "variable",
+          label: "변동비 (매출 대비)",
+          value: s(b.variableCost),
+          color: PALETTE.copper,
+        },
+      ],
+      ratioBase: s(b.revenue),
+      center: { value: "도달 불가", label: "BEP 달성률" },
+      emptyText: null,
+    };
+  }
+  return {
+    slices: progressSlices(b.bepRevenue, b.revenue, METER, BEP_LABELS),
+    ratioBase: s(b.bepRevenue),
+    center: {
+      value: b.rate === null ? "-" : pct(b.rate),
+      label: "BEP 달성률",
     },
     emptyText: null,
   };

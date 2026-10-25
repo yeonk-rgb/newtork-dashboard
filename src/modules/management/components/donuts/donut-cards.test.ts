@@ -6,6 +6,7 @@ import { computeManagementSummary } from "../../metrics/summary";
 import { date, financeMonth, receivable } from "../../metrics/test-fixtures";
 import {
   annualTargetDonut,
+  bepDonut,
   periodTargetDonut,
   profitDonut,
   receivablesDonut,
@@ -190,5 +191,57 @@ describe("도넛 공통 계산", () => {
     expect(
       donutRows([{ key: "z", label: "z", value: "0", color: "#000" }])[0].ratio,
     ).toBe(0);
+  });
+});
+
+describe("손익분기점(BEP) 도넛", () => {
+  // 분기 3개월: 월 매출 = sales × 1.15, 변동비(매입) 월 5천만, 고정비(경비) = opex
+  it("100% 미만: 실제 매출 / BEP까지 남은 매출, 비율은 BEP 매출 대비", () => {
+    const s = summaryFor({ sales: 60_000_000n });
+    const d = bepDonut(s);
+    const b = s.breakEven;
+    expect(b.rate).toBeLessThan(1);
+    expect(d.slices.map((x) => [x.key, x.label, x.value])).toEqual([
+      ["actual", "실제 매출", b.revenue.toString()],
+      [
+        "remaining",
+        "BEP까지 남은 매출",
+        (b.bepRevenue! - b.revenue).toString(),
+      ],
+    ]);
+    expect(d.ratioBase).toBe(b.bepRevenue!.toString());
+    expect(d.center).toEqual({
+      value: `${(b.rate! * 100).toFixed(1)}%`,
+      label: "BEP 달성률",
+    });
+    expect(d.emptyText).toBeNull();
+  });
+
+  it("100% 이상: BEP 매출 / BEP 초과 매출", () => {
+    const s = summaryFor();
+    const d = bepDonut(s);
+    expect(s.breakEven.rate).toBeGreaterThan(1);
+    expect(d.slices.map((x) => x.label)).toEqual(["BEP 매출", "BEP 초과 매출"]);
+    expect(d.center.value).toBe("600.0%");
+  });
+
+  it("도달 불가(변동비 ≥ 매출): 가운데 '도달 불가', 변동비 한 조각(매출 대비)", () => {
+    const s = summaryFor({ sales: 40_000_000n });
+    const d = bepDonut(s);
+    expect(s.breakEven.reason).toBe("not-reachable");
+    expect(d.center).toEqual({ value: "도달 불가", label: "BEP 달성률" });
+    expect(d.slices).toHaveLength(1);
+    expect(d.ratioBase).toBe(s.breakEven.revenue.toString());
+    const [row] = donutRows(d.slices, d.ratioBase);
+    expect(row.ratio).toBeGreaterThan(1);
+  });
+
+  it.each([
+    [{ opex: 0n }, "고정비가 0원이라 손익분기점이 없습니다"],
+    [{ sales: 0n }, "매출이 없어 손익분기점을 계산할 수 없습니다"],
+  ])("계산할 수 없으면 그래프 대신 안내 (%o)", (opts, text) => {
+    const d = bepDonut(summaryFor(opts));
+    expect(d.slices).toEqual([]);
+    expect(d.emptyText).toContain(text);
   });
 });

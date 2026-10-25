@@ -100,6 +100,11 @@
   - 미수금은 기준일 = min(기간 마지막 날, 오늘) 시점 잔액, 경과일은 발생일 기준 (05-17번)
   - **증감 비교는 같은 월끼리**: 현재 기간에 확정 안 된 달(미확정·마감 전)이 있으면 비교 기간도 같은 순서의 달만 집계 (예: 2026 1~8월 ↔ 2025 1~8월, 3분기 7~8월 ↔ 2분기 4~5월). 모든 월이 확정이면 기간 전체 비교. 화면에 "같은 기간 비교 · …" 표시
   - 검산: `npm run metrics:report -- 2026 Q3` (로컬 DB로 계산 결과를 마크다운 표로 출력)
+- **손익분기점(BEP) 달성률(2026-10-25)**: 계산 `metrics/break-even.ts`(순수 함수, `PeriodCore.breakEven`), 카드 `bepDonut()`(`components/donuts/donut-cards.ts`) — 메인 2줄(연간 목표 옆, 2×2), 상세 `/management#break-even` 계산 내역 표(`components/detail/break-even-table.tsx`)
+  - 확정된 달 합계로 한 번 계산(월별 평균 아님): 공헌이익 = 매출 − 변동비, **달성률 = 공헌이익 ÷ 고정비**, BEP 매출 = 고정비 × 매출 ÷ 공헌이익(BigInt, 원 단위 올림). 비용 범위는 `costMode`와 같음 → 변동비 + 고정비 = 이익 계산 비용이라 **달성률 ≥ 100% ⇔ 흑자** (테스트로 고정)
+  - 분류·임시 기준은 **`metrics/settings.ts`의 `breakEven` 한 곳**: 매입 = 변동비(④-3), 경비 지출 = 고정비(①-2·05-36), 미분류 그 외 지출 = 고정비(05-35), `provisionalNotes`(화면 "임시 기준" 배지 + [계산 기준] 4줄 — 비우면 배지 사라짐). 그 외 지출 항목은 목표·항목 설정의 고정비/변동비
+  - 예외(`reason`): no-data / no-revenue / no-fixed-cost / not-reachable(공헌이익 ≤ 0 → 가운데 "도달 불가", 변동비 한 조각 매출 대비)
+  - 이전 기간 대비 변화(%p)·AI 연결은 후속 (06)
 - 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`

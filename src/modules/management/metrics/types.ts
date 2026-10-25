@@ -7,6 +7,8 @@ export type OtherExpenseInput = {
   categoryId: string;
   name: string;
   sortOrder: number;
+  /** 지출 항목 설정의 고정비/변동비 (null = 미분류) — 손익분기점 계산에 쓴다 */
+  costType: "FIXED" | "VARIABLE" | null;
   amount: bigint;
 };
 
@@ -93,6 +95,48 @@ export type ProfitResult = {
   profit: bigint;
   /** 이익 ÷ 총매출 */
   margin: number | null;
+};
+
+/** 손익분기점 계산의 비용 구분 */
+export type CostClass = "FIXED" | "VARIABLE";
+
+/** 계산 내역 한 줄 — 분류 근거: 임시 기준(설정 파일) / 항목 설정 / 미분류라 고정비로 */
+export type BreakEvenItem = {
+  key: string;
+  label: string;
+  amount: bigint;
+  costClass: CostClass;
+  basis: "provisional" | "category" | "unclassified";
+};
+
+/**
+ * 계산할 수 없는 이유
+ * - no-data: 확정된 달 없음 / no-revenue: 매출 0원
+ * - not-reachable: 공헌이익 ≤ 0 (변동비 ≥ 매출) / no-fixed-cost: 고정비 0원
+ */
+export type BreakEvenReason =
+  "no-data" | "no-revenue" | "not-reachable" | "no-fixed-cost";
+
+export type BreakEvenResult = {
+  items: BreakEvenItem[];
+  revenue: bigint;
+  variableCost: bigint;
+  fixedCost: bigint;
+  /** 공헌이익 = 매출 − 변동비 */
+  contribution: bigint;
+  /** 공헌이익 ÷ 매출 (매출 0이면 null) */
+  contributionRatio: number | null;
+  /** 손익분기점 매출 = 고정비 × 매출 ÷ 공헌이익 (원 단위 올림) */
+  bepRevenue: bigint | null;
+  /** 달성률 = 공헌이익 ÷ 고정비 (= 매출 ÷ BEP 매출) */
+  rate: number | null;
+  /** 실제 매출 − BEP 매출 (음수 = BEP까지 남은 매출) */
+  gap: bigint | null;
+  reason: BreakEvenReason | null;
+  /** 금액이 있는 미분류 그 외 지출 항목 수 (고정비로 계산함) */
+  unclassifiedCount: number;
+  /** 임시 기준 문구 (settings.ts) — 비어 있으면 확정 기준 */
+  provisionalNotes: string[];
 };
 
 export type TargetProgress = {
@@ -202,6 +246,7 @@ export type PeriodCore = {
   revenue: RevenueResult;
   expenses: ExpenseResult;
   profit: ProfitResult;
+  breakEven: BreakEvenResult;
 };
 
 export type Comparison = {
