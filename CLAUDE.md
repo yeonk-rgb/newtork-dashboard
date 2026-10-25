@@ -16,6 +16,8 @@
 | `docs/integration-notes.md` | 팀별 저장소를 합칠 때 맞출 규칙 (팀원 공유용) |
 | `docs/design-guide.md` | 공통 UI 디자인 가이드 — 색 토큰·타이포·카드·배지·표·도넛 규칙 (팀원 공유용) |
 | `docs/render-db-expiry.md` | Render 시험 서버 무료 DB 만료 대응 선택지 (유료·백업 이전·새로 만들기) |
+| `docs/user-guide.md` | 경영지원팀 담당자용 사용 안내서 (화면별 사용법·엑셀 받기·자주 묻는 것, 스크린샷 `docs/user-guide-images/` — 가짜 데이터) |
+| `docs/client-questions-2026-11.md` | 2차 고객사 확인 요청 정리본 (05-16·30~39, 이번에 반영한 것, 1차 미답 목록) |
 
 ## 프로젝트 개요
 
