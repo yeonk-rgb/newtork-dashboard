@@ -35,6 +35,11 @@ export const HISTORY_SCREENS: {
     label: "미수금 엑셀 다운로드",
     area: "management",
   },
+  {
+    key: "report-export",
+    label: "월별 리포트 엑셀 다운로드",
+    area: "management",
+  },
   { key: "upload", label: "엑셀 업로드", area: "management" },
   { key: "admin-users", label: "관리자(대표) · 계정 관리", area: "admin" },
   {
@@ -98,7 +103,8 @@ export function metaSummary(
     screen === "ledger-export" ||
     screen === "entry-export" ||
     screen === "targets-export" ||
-    screen === "receivables-export"
+    screen === "receivables-export" ||
+    screen === "report-export"
   ) {
     return join([
       str(m, "period"),

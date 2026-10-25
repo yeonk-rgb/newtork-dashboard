@@ -64,6 +64,24 @@ export function buildTargetsLayout(input: {
   months: FinanceMonth[];
   today: Date;
 }): TargetsSheet {
+  const b = new SheetBuilder<StackedRole, number>();
+  const result = appendTargetBlocks(b, input, 0);
+  return { layout: b.layout(), ...result };
+}
+
+/**
+ * 목표 두 블록을 builder 뒤에 이어 붙인다 (단독 다운로드·월별 종합 리포트 공용)
+ * @param separator 두 블록 사이 빈 행 순서 (원본 38·50·63행 높이 고르기)
+ */
+export function appendTargetBlocks(
+  b: SheetBuilder<StackedRole, number>,
+  input: {
+    summary: ManagementSummary;
+    months: FinanceMonth[];
+    today: Date;
+  },
+  separator: number,
+): Omit<TargetsSheet, "layout"> {
   const { summary, months, today } = input;
   const year = summary.period.year;
   const { targets } = summary;
@@ -72,8 +90,6 @@ export function buildTargetsLayout(input: {
     year: today.getUTCFullYear(),
     month: today.getUTCMonth() + 1,
   });
-  const b = new SheetBuilder<StackedRole, number>();
-
   // ── 연간 목표매출액 (1~4분기 목표) ──
   const titleRow = b.title(TARGET_SHEET_LABELS.annualTitle, "title");
   HEADER(b);
@@ -112,7 +128,7 @@ export function buildTargetsLayout(input: {
       value: Number(targets.annual.target),
     });
   }
-  b.separator(0);
+  b.separator(separator);
 
   // ── 목표매출 달성률 (월 행 + 분기 그룹) ──
   b.title(TARGET_SHEET_LABELS.rateTitle, "title");
@@ -262,7 +278,6 @@ export function buildTargetsLayout(input: {
   });
 
   return {
-    layout: b.layout(),
     maxAux: Math.max(
       Number(actual),
       Number(annualTarget ?? 0n),

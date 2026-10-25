@@ -27,6 +27,8 @@ export type RowSpec<R extends string = string, A = string> = {
   kind: RowKind;
   /** 빈 행(구분) 앞 블록 — 블록 사이 빈 행 높이를 고를 때 쓴다 */
   after?: A;
+  /** 이 행만 높이 지정 (예: 리포트 머리말 제목 30) — 없으면 heightOf */
+  height?: number;
   cells: CellSpec<R>[];
 };
 
@@ -137,7 +139,7 @@ export function drawLayout<R extends string, A>(
   },
 ) {
   for (const spec of layout.rows) {
-    const height = opts.heightOf(spec);
+    const height = spec.height ?? opts.heightOf(spec);
     if (height !== undefined) ws.getRow(spec.row).height = height;
     for (const cell of spec.cells) {
       applyCell(ws, spec.row, cell, opts.roles, opts.warnColor);

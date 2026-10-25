@@ -10,7 +10,7 @@ import {
 import { row } from "./test-rows";
 
 describe("기간", () => {
-  it("당월·분기·연간만 (누적 YTD·잘못된 값은 null)", () => {
+  it("당월·분기·연간·연초 누적 (잘못된 값은 null)", () => {
     expect(parseExportPeriod("2026-10")).toEqual({
       unit: "month",
       year: 2026,
@@ -22,7 +22,11 @@ describe("기간", () => {
       quarter: 4,
     });
     expect(parseExportPeriod("2026")).toEqual({ unit: "year", year: 2026 });
-    expect(parseExportPeriod("2026-YTD09")).toBeNull();
+    expect(parseExportPeriod("2026-YTD09")).toEqual({
+      unit: "ytd",
+      year: 2026,
+      month: 9,
+    });
     expect(parseExportPeriod("abc")).toBeNull();
     expect(parseExportPeriod(null)).toBeNull();
   });
@@ -91,6 +95,9 @@ describe("파일 이름·메뉴", () => {
       { label: "당월", param: "2026-10" },
       { label: "분기", param: "2026-Q4" },
       { label: "연간", param: "2026" },
+      { label: "연초 누적 (1~10월)", param: "2026-YTD10" },
     ]);
+    // 1월은 누적 = 당월이라 뺀다
+    expect(exportPeriodsFor({ year: 2026, month: 1 })).toHaveLength(3);
   });
 });

@@ -1,4 +1,4 @@
-// 경영지원 엑셀 다운로드 (?kind=entry&period=2026-10 | 2026-Q3 | 2026 | 2026-YTD10) — 경영지원 열람 권한이면 누구나
+// 경영지원 엑셀 다운로드 (?kind=entry|targets|receivables|report&period=2026-10 | 2026-Q3 | 2026 | 2026-YTD10) — 경영지원 열람 권한이면 누구나
 // 재무 데이터라 캐시 금지(no-store). 누가 언제 무엇을 받았는지 서버 로그와 변경 기록에 남긴다
 // 채권·채무 다운로드는 /api/management/ledger/export
 import {
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const file = await exportManagementFile(
       params.get("kind"),
       params.get("period"),
-      { id: user.id, loginId: user.loginId },
+      { id: user.id, loginId: user.loginId, name: user.name },
     );
     console.info(
       `[mgmt-export] user=${user.loginId} kind=${file.kind} period=${file.period} sheets=${file.sheetNames.join(",")}`,

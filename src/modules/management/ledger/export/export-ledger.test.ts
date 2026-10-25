@@ -59,8 +59,17 @@ describe("엑셀 다운로드 변경 기록", () => {
     });
   });
 
+  it("연초 누적: 파일 이름 _2026-01~10, 시트는 데이터 있는 달", async () => {
+    const file = await exportLedger("2026-YTD10", ACTOR);
+    expect(file).toMatchObject({
+      fileName: "경영지원_관리_2026-01~10.xlsx",
+      asciiName: "ledger-2026-YTD10.xlsx",
+      sheetNames: ["2026-10"],
+    });
+  });
+
   it("기간이 틀리면 기록하지 않는다", async () => {
-    await expect(exportLedger("2026-YTD09", ACTOR)).rejects.toMatchObject({
+    await expect(exportLedger("2026-13", ACTOR)).rejects.toMatchObject({
       status: 400,
     });
     expect(create).not.toHaveBeenCalled();

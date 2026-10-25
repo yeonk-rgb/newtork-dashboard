@@ -120,7 +120,7 @@ describe("원본 양식 서식과 같은지 (역할별)", () => {
     });
   });
 
-  it("인쇄: A4, 너비 1페이지 맞춤·높이 자동 — 월별 세로, 상세 가로, 여백은 원본", async () => {
+  it("인쇄: A4, 너비 1페이지 맞춤·높이 자동 — 월별·상세 모두 가로 (2026-10-26), 여백은 원본", async () => {
     const [template, wb] = [
       await openTemplate(),
       await openWorkbook(await build([october])),
@@ -128,7 +128,7 @@ describe("원본 양식 서식과 같은지 (역할별)", () => {
     const month = wb.getWorksheet("2026-10")!.pageSetup;
     const detail = wb.getWorksheet(DETAIL_SHEET_NAME)!.pageSetup;
     for (const [setup, orientation] of [
-      [month, "portrait"],
+      [month, "landscape"],
       [detail, "landscape"],
     ] as const) {
       expect(setup).toMatchObject({

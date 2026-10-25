@@ -1,5 +1,5 @@
 // 채권·채무 엑셀 다운로드 — 기간·시트 구성·파일 이름 (순수 함수)
-// 기간 형식은 대시보드와 같은 toPeriodParam: 당월 "2026-10" / 분기 "2026-Q4" / 연간 "2026" (누적 YTD 는 받지 않음)
+// 기간 형식은 대시보드와 같은 toPeriodParam: 당월 "2026-10" / 분기 "2026-Q4" / 연간 "2026" / 연초 누적 "2026-YTD10" (2026-10-26 추가)
 import {
   monthIndex,
   periodMonths,
@@ -8,14 +8,15 @@ import {
 } from "@/shared/period/period";
 import { parsePeriodParam, toPeriodParam } from "@/shared/period/url";
 
+import { periodSheetName } from "../../export/period";
+
 import { formatLedgerMonth, monthOfDate, type LedgerRow } from "../rules";
 import type { ExportSheet } from "./build-ledger-workbook";
 
-export type ExportPeriod = Exclude<Period, { unit: "ytd" }>;
+export type ExportPeriod = Period;
 
 export function parseExportPeriod(value: string | null): ExportPeriod | null {
-  const period = parsePeriodParam(value);
-  return period && period.unit !== "ytd" ? period : null;
+  return parsePeriodParam(value);
 }
 
 /** 기간 안의 달 중 이번 달까지 (미래 달 제외) */
@@ -42,23 +43,22 @@ export function planExportSheets(
   if (period.unit === "month") return sheets;
   const withData = sheets.filter((s) => s.rows.length > 0);
   if (withData.length > 0) return withData;
-  const name = toPeriodParam(period);
+  const name = periodSheetName(period);
   return [{ sheetName: name, month: name, rows: [] }];
 }
 
-/** 경영지원_관리_2026-10.xlsx (분기 _2026-Q4, 연간 _2026) + 영문 대체 이름 */
+/** 경영지원_관리_2026-10.xlsx (분기 _2026-Q4, 연간 _2026, 연초 누적 _2026-01~10) + 영문 대체 이름 */
 export function exportFileName(period: ExportPeriod): {
   fileName: string;
   asciiName: string;
 } {
-  const param = toPeriodParam(period);
   return {
-    fileName: `경영지원_관리_${param}.xlsx`,
-    asciiName: `ledger-${param}.xlsx`,
+    fileName: `경영지원_관리_${periodSheetName(period)}.xlsx`,
+    asciiName: `ledger-${toPeriodParam(period)}.xlsx`,
   };
 }
 
-/** 화면 [엑셀 다운로드] 메뉴: 보고 있는 기준년월의 당월·분기·연간 */
+/** 화면 [엑셀 다운로드] 메뉴: 보고 있는 기준년월의 당월·분기·연간·연초 누적 (1월이면 누적 = 당월이라 뺀다) */
 export function exportPeriodsFor(month: YearMonth): {
   label: string;
   param: string;
@@ -69,5 +69,11 @@ export function exportPeriodsFor(month: YearMonth): {
     ["분기", { unit: "quarter", year: month.year, quarter }],
     ["연간", { unit: "year", year: month.year }],
   ];
+  if (month.month > 1) {
+    periods.push([
+      `연초 누적 (1~${month.month}월)`,
+      { unit: "ytd", year: month.year, month: month.month },
+    ]);
+  }
   return periods.map(([label, p]) => ({ label, param: toPeriodParam(p) }));
 }

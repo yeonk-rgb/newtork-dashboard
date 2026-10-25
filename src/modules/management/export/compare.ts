@@ -96,6 +96,8 @@ export type SheetIntended = {
   print?: string;
   /** 용지 방향 차이 이유 */
   orientation?: string;
+  /** 고정 배율 차이 이유 (블록 단위 쪽 나눔 시트) */
+  scale?: string;
 };
 
 const PRINT_KEYS = [
@@ -155,7 +157,9 @@ export function compareSheetBasics(
       ? opts.intended?.print
       : key === "orientation"
         ? opts.intended?.orientation
-        : undefined;
+        : key === "scale"
+          ? opts.intended?.scale
+          : undefined;
     rows.push(
       row(
         `${ws.name} — 인쇄 ${key}`,

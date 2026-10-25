@@ -574,21 +574,27 @@ export function selectLedgerSheet(
   const found = ledgerSheets(sheets);
   if (found.length === 0) return { ok: false, reason: "none" };
   const candidates = found.map((s) => s.name);
-  const pick = (sheet: StyledSheet) => ({
-    ok: true as const,
-    sheet,
-    candidates,
-    note:
-      /^\d{4}-\d{2}$/.test(sheet.name) && sheet.name !== opts.month
-        ? `시트 이름(${sheet.name})과 기준년월(${opts.month})이 다릅니다. 맞는지 확인하세요.`
-        : null,
-  });
+  // 시트 이름의 기준년월: "2026-10" 또는 월별 리포트 안 "채권·채무 2026-10" (2026-10-26)
+  const monthOf = (name: string) =>
+    /(?:^|\s)(\d{4}-\d{2})$/.exec(name)?.[1] ?? null;
+  const pick = (sheet: StyledSheet) => {
+    const named = monthOf(sheet.name);
+    return {
+      ok: true as const,
+      sheet,
+      candidates,
+      note:
+        named && named !== opts.month
+          ? `시트 이름(${sheet.name})과 기준년월(${opts.month})이 다릅니다. 맞는지 확인하세요.`
+          : null,
+    };
+  };
   if (opts.requested) {
     const sheet = found.find((s) => s.name === opts.requested);
     return sheet ? pick(sheet) : { ok: false, reason: "choose", candidates };
   }
   if (found.length === 1) return pick(found[0]);
-  const sameMonth = found.find((s) => s.name === opts.month);
+  const sameMonth = found.find((s) => monthOf(s.name) === opts.month);
   return sameMonth
     ? pick(sameMonth)
     : { ok: false, reason: "choose", candidates };

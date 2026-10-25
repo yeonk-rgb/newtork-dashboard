@@ -36,6 +36,8 @@ import {
   targetCardModel,
 } from "@/modules/management/components/dashboard/model";
 import { stackedComparison } from "@/modules/management/export/compare-stacked";
+import { buildExportFile } from "@/modules/management/export/export-file";
+import { buildReportLayout } from "@/modules/management/report/report-layout";
 import { periodSheetName } from "@/modules/management/export/period";
 import { buildStackedWorkbook } from "@/modules/management/export/stacked";
 import {
@@ -50,6 +52,155 @@ import { toPeriodParam } from "@/shared/period/url";
 
 const pct = (v: number | null | undefined) =>
   v === null || v === undefined ? "-" : `${(v * 100).toFixed(1)}%`;
+
+/** 월별 종합 리포트: 다운로드와 같은 함수(buildExportFile)로 만들어 비교표 + 리포트 숫자 ↔ 대시보드 숫자 */
+async function monthlyReport(period: Period, outDir: string) {
+  const today = todayKst(new Date());
+  const { body, sheetNames } = await buildExportFile(
+    "report",
+    period,
+    { year: today.getUTCFullYear(), month: today.getUTCMonth() + 1 },
+    today,
+    new Date(),
+    "검산",
+  );
+  const file = exportFileName({ ko: "리포트", ascii: "report" }, period);
+  await mkdir(outDir, { recursive: true });
+  const filePath = path.join(outDir, file.fileName);
+  await writeFile(filePath, body);
+
+  const template = await readFile(TEMPLATE_RELATIVE_PATH);
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(body as unknown as ArrayBuffer);
+  const tpl = new ExcelJS.Workbook();
+  await tpl.xlsx.load(template as unknown as ArrayBuffer);
+  const name = periodSheetName(period);
+  const ws = wb.getWorksheet(name)!;
+
+  // 비교는 배치(layout)가 필요 — 같은 입력으로 배치만 다시 만든다 (파일과 같은 함수)
+  const input = await loadSummaryInput(period, today);
+  const summary = computeManagementSummary(input);
+  const yearInput = await loadSummaryInput(
+    { unit: "year", year: period.year },
+    today,
+  );
+  const { loadFinanceMonths } =
+    await import("@/modules/management/data/queries");
+  const { computeTrend, trendRange } =
+    await import("@/modules/management/metrics/trend");
+  const { monthIndex } = await import("@/shared/period/period");
+  const range = trendRange(period).map(monthIndex);
+  const layout = buildReportLayout({
+    summary,
+    yearSummary: computeManagementSummary(yearInput),
+    yearMonths: yearInput.financeMonths,
+    trend: computeTrend(
+      period,
+      await loadFinanceMonths(range[0], range.at(-1)!),
+      today,
+      summary.profit.costMode,
+    ),
+    today,
+    writtenOn: today.toISOString().slice(0, 10),
+    author: "검산",
+  });
+  const rows = [
+    ...comparePackage(
+      await readPackageParts(template),
+      await readPackageParts(body),
+    ),
+    ...stackedComparison(tpl.worksheets[0], wb, name, layout.layout, {
+      paged: true,
+    }),
+  ];
+  const count = (r: string) => rows.filter((x) => x.result === r).length;
+  console.log(
+    `# 월별 종합 리포트 검산 — ${toPeriodParam(period)}\n\n파일: ${filePath}\n시트: ${sheetNames.join(", ")}\n인쇄: 배율 ${ws.pageSetup.scale}% · 인쇄 범위 ${ws.pageSetup.printArea} · 쪽 나눔 블록: ${layout.blocks.map((b) => b.name).join(" / ")}\n`,
+  );
+  console.log(
+    `## ① 원본 ↔ 리포트 셀 단위 비교\n\n같음 ${count("같음")} · 의도한 차이 ${count("의도한 차이")} · **의도하지 않은 차이 ${unintended(rows).length}**\n`,
+  );
+  console.log(toMarkdown(rows.filter((r) => r.result !== "같음")));
+
+  const cellText = (r: number, c: number) =>
+    String(ws.getCell(r, c).value ?? "");
+  const findRow = (text: string, col = 3) => {
+    for (let r = 1; r <= ws.rowCount; r++)
+      if (cellText(r, col) === text) return r;
+    return -1;
+  };
+  const val = (r: number, c: number) => {
+    const cell = ws.getCell(r, c);
+    return Number(cell.formula ? cell.result : (cell.value ?? 0));
+  };
+  console.log(`\n## ② 리포트 숫자 = 대시보드 화면 숫자 (${summary.label})\n`);
+  console.log("| 항목 | 리포트 | 대시보드 | 결과 |\n|---|---:|---:|---|");
+  const line = (label: string, excel: string, screen: string) =>
+    console.log(
+      `| ${label} | ${excel} | ${screen} | ${excel === screen ? "같음" : "**다름**"} |`,
+    );
+  for (const k of dashboardKpis(summary)) {
+    line(
+      `KPI ${k.title}`,
+      formatAmount(BigInt(val(findRow(k.title), 4))),
+      formatAmount(k.value),
+    );
+  }
+  const kindPrefix = period.unit === "month" ? "월간 " : "";
+  const { revenueMixDonut, expenseMixDonut } =
+    await import("@/modules/management/components/dashboard/model");
+  const rev = revenueMixDonut(summary).slices;
+  ["제품 매출액", "상품 매출액", "용역 매출액"].forEach((n, i) =>
+    line(
+      `매출 구성 ${n}`,
+      formatAmount(BigInt(val(findRow(kindPrefix + n), 4))),
+      formatAmount(BigInt(rev[i].value)),
+    ),
+  );
+  const exp = expenseMixDonut(summary).donut.slices;
+  [
+    `${kindPrefix}상품 매입액`,
+    `${kindPrefix}원재료 매입액`,
+    `${kindPrefix}경비 지출액`,
+    "기타 (그 외 지출액)",
+  ].forEach((n, i) =>
+    line(
+      `지출 구성 ${n}`,
+      formatAmount(BigInt(val(findRow(n), 4))),
+      formatAmount(BigInt(exp[i].value)),
+    ),
+  );
+  // 목표 달성률: 대시보드 목표 카드 가운데 숫자 ↔ 리포트 분기 그룹(F ÷ 분기 목표) 또는 월 행(D ÷ 월 목표)
+  const card = targetCardModel(summary, today);
+  if (period.unit === "month") {
+    const r = findRow(`${period.month}월`);
+    const target = Number(
+      cellText(r, 5)
+        .match(/월 목표 ([\d,]+)/)?.[1]
+        .replace(/,/g, "") ?? 0,
+    );
+    const actual = ws.getCell(r, 4).value;
+    line(
+      `${period.month}월 목표 달성률`,
+      actual === null || !target ? "-" : pct(Number(actual) / target),
+      card.donut.center.value,
+    );
+  } else if (period.unit === "quarter") {
+    const first = findRow(`${(period.quarter - 1) * 3 + 1}월`);
+    const target = val(findRow(`${period.quarter}분기 목표`), 4);
+    line(
+      `${period.quarter}분기 목표 달성률`,
+      pct(target ? val(first, 6) / target : null),
+      card.donut.center.value,
+    );
+  }
+  const bep = ws.getCell(findRow("BEP 달성률", 8), 9).value;
+  line(
+    "BEP 달성률 (임시 기준)",
+    typeof bep === "number" ? pct(bep) : String(bep),
+    pct(summary.breakEven.rate),
+  );
+}
 
 /** 목표 대비 실적·미수금: 공용 쌓기형 엔진으로 만들어 비교표 + 엑셀 숫자 ↔ 대시보드 숫자 */
 async function stackedReport(
@@ -203,7 +354,7 @@ async function stackedReport(
   }
 }
 
-const KINDS = ["entry", "targets", "receivables"] as const;
+const KINDS = ["entry", "targets", "receivables", "report"] as const;
 type Kind = (typeof KINDS)[number];
 
 async function main() {
@@ -218,6 +369,7 @@ async function main() {
       "사용법: npm run export:report -- [entry|targets|receivables] <기간> [저장 폴더]",
     );
   if (kind === "entry") return entryReport(period, outDir);
+  if (kind === "report") return monthlyReport(period, outDir);
   return stackedReport(kind, period, outDir);
 }
 
