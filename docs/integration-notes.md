@@ -192,6 +192,8 @@ export async function saveProduction(input: Input) {
 - 바뀐 칸은 `src/shared/audit/diff.ts`의 `diffFields(before, after, fields)`로 — 팀마다 "기록할 칸" 목록(허용 목록)을 만들고, 칸 이름·값은 화면 표기 그대로
 - 비밀번호·해시·토큰·세션 같은 칸 이름은 거부된다. 기록은 수정·삭제 불가(DB 트리거) — 마이그레이션으로 적용해야 트리거가 생김(`db push` 로는 안 생김)
 
+- 보는 화면 `/management/history`: 팀 화면을 기록하면 `src/modules/management/history/labels.ts`의 `HISTORY_SCREENS`에 화면 이름(한글)·area를 추가하고, meta 를 문장으로 보여 주려면 `metaSummary()`에 형식을 추가한다 (없으면 바뀐 내용만 보이고 meta 는 표시하지 않음)
+
 ## 10. 기타
 
 - 비밀키는 `.env`에만 (`.env.example`에 키 이름만). AI 키 등은 클라이언트로 보내지 않습니다.

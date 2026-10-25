@@ -14,6 +14,7 @@ import {
   uncollectReceivable,
   type ReceivableActionResult,
 } from "./actions";
+import { RowHistoryButton } from "../history/row-history-button";
 import { CollectForm } from "./collect-form";
 import { Modal } from "./modal";
 import { ReceivableForm } from "./receivable-form";
@@ -389,6 +390,11 @@ export function ReceivablesManager({
                     </td>
                     <td className="py-3 text-right whitespace-nowrap">
                       <div className="flex justify-end gap-1">
+                        <RowHistoryButton
+                          type="Receivable"
+                          id={row.id}
+                          label={`${row.customerName} · ${row.occurredOn}`}
+                        />
                         {can.canCollect && (
                           <button
                             type="button"

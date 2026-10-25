@@ -41,6 +41,12 @@ const NAV_RULES: NavRule[] = [
         label: "목표·항목 설정",
         action: "confirm",
       },
+      // 변경 이력 — 관리자(대표) + 경영지원팀 (경영지원 열람 = 이 두 역할). 관리자 화면 기록은 화면 안에서 관리자(대표)만
+      {
+        href: "/management/history",
+        label: "변경 이력",
+        action: "view",
+      },
     ],
   },
   { href: "/production", label: "생산", team: "production" },

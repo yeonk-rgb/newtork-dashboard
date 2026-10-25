@@ -12,6 +12,12 @@ import {
   loadSummaryInput,
   todayKst,
 } from "@/modules/management/data/load-summary-input";
+import {
+  loadHistoryForExport,
+  loadHistoryPage,
+  loadRowHistory,
+} from "@/modules/management/history/load-history";
+import { parseHistoryFilter } from "@/modules/management/history/rules";
 import { loadLedgerData } from "@/modules/management/ledger/load-ledger";
 import { countExisting } from "@/modules/management/ledger/import/save-import";
 import { loadReceivablesData } from "@/modules/management/receivables/load-receivables";
@@ -80,6 +86,34 @@ async function main() {
   await check("엑셀 업로드: 기존 데이터·이력", () =>
     Promise.all([loadExistingData(), loadRecentUploads()]),
   );
+  {
+    // 변경 이력: 검색(대소문자 무시)·사람 목록(groupBy)·행 이력(이관 줄) — 관리자(대표) / 경영지원팀 조건 둘 다
+    const filter = parseHistoryFilter(
+      { q: "a", from: "2020-01-01" },
+      todayKst(new Date()),
+    );
+    const admin = { canView: true, canSeeAdmin: true, canExport: true };
+    const mgmt = { canView: true, canSeeAdmin: false, canExport: false };
+    await check("변경 이력 목록 (loadHistoryPage)", () =>
+      Promise.all([
+        loadHistoryPage(filter, admin),
+        loadHistoryPage(filter, mgmt),
+      ]),
+    );
+    await check("변경 이력 엑셀 (loadHistoryForExport)", () =>
+      loadHistoryForExport(filter, admin),
+    );
+    const ledgerRow = await prisma.ledgerEntry.findFirst({
+      select: { id: true },
+      orderBy: { uploadId: { sort: "asc", nulls: "last" } },
+    });
+    await check("행 이력 (loadRowHistory)", () =>
+      Promise.all([
+        loadRowHistory("LedgerEntry", ledgerRow?.id ?? "none"),
+        loadRowHistory("Receivable", "none"),
+      ]),
+    );
+  }
 
   // 3) 변경 기록(audit_log): 수정·삭제 차단 트리거, 기록이 실패하면 저장도 취소 — 모두 트랜잭션 안에서 하고 되돌린다
   class Rollback extends Error {}
