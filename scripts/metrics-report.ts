@@ -9,6 +9,11 @@ import {
   loadSummaryInput,
   todayKst,
 } from "@/modules/management/data/load-summary-input";
+import {
+  dashboardKpis,
+  expenseMixDonut,
+  targetCardModel,
+} from "@/modules/management/components/dashboard/model";
 import { computeManagementSummary } from "@/modules/management/metrics/summary";
 import type { Change, FinanceMonth } from "@/modules/management/metrics/types";
 import { prisma } from "@/shared/db/client";
@@ -22,8 +27,15 @@ import {
   type Period,
   type Quarter,
 } from "@/shared/period/period";
+import { parsePeriodParam } from "@/shared/period/url";
 
 function parsePeriod(args: string[]): Period {
+  // 화면 주소와 같은 형식도 받는다: 2026-Q3 | 2026-08 | 2026 | 2026-YTD09
+  if (args.length === 1 && args[0].includes("-")) {
+    const p = parsePeriodParam(args[0]);
+    if (!p) throw new Error(`기간 형식이 올바르지 않습니다: ${args[0]}`);
+    return p;
+  }
   const [yearArg, spec] = args;
   const year = Number(yearArg);
   if (!Number.isInteger(year))
@@ -214,6 +226,88 @@ async function main() {
           `\n\n분기 목표: ${t.quarterTargets!.quarters.map((q, i) => `${i + 1}Q ${won(q)}(${t.quarterTargets!.sources[i]})`).join(" / ")}` +
           (t.quarterTargets!.warning ? ` ⚠️ ${t.quarterTargets!.warning}` : "")
     }`,
+  );
+
+  // 월 목표 = 분기 목표 ÷ 3 자동 (2026-10-25 A안). 월 보기면 그 분기 3개월, 아니면 기간 안의 달
+  if (t.monthTargets) {
+    const shownMonths =
+      period.unit === "month"
+        ? [0, 1, 2].map((i) => (Math.ceil(period.month / 3) - 1) * 3 + 1 + i)
+        : periodMonths(period)
+            .filter((m) => m.year === period.year)
+            .map((m) => m.month);
+    const confirmedRevenue = (month: number) => {
+      const m = input.financeMonths.find(
+        (x) =>
+          x.year === period.year &&
+          x.month === month &&
+          x.status === "CONFIRMED",
+      );
+      return m ? m.productSales + m.goodsSales + m.serviceSales : null;
+    };
+    out.push(
+      `\n## 월 목표·월 달성률 (월 목표 = 분기 목표 ÷ 3 자동, 나머지 원은 분기 마지막 달)\n\n${table(
+        ["월", "월 목표", "확정 매출", "월 달성률"],
+        shownMonths.map((month) => {
+          const target = t.monthTargets![month - 1];
+          const actual = confirmedRevenue(month);
+          return [
+            `${month}월`,
+            won(target),
+            actual === null ? "미확정" : won(actual),
+            actual === null || target === 0n
+              ? "-"
+              : pct(Number(actual) / Number(target)),
+          ];
+        }),
+      )}` +
+        (t.month
+          ? `\n\n선택한 달(${t.month.month}월): 목표 ${won(t.month.target)} · 실적 ${won(t.month.actual)} · 달성률 ${pct(t.month.rate)}`
+          : ""),
+    );
+  }
+
+  // 메인 대시보드 새 구성 표시 모델 (화면에 넘길 값 — summary 값 그대로)
+  const kpis = dashboardKpis(s);
+  const card = targetCardModel(s, input.today);
+  const mix = expenseMixDonut(s);
+  out.push(
+    `\n## 대시보드 표시 모델 (메인 재구성)\n\n${table(
+      ["KPI", "값", "아래 줄", "비교"],
+      kpis.map((k) => [
+        k.title,
+        won(k.value) + (k.warn ? " (빨강)" : ""),
+        k.sub ?? "",
+        k.deltas === null
+          ? "-"
+          : k.deltas.rows
+              .map(
+                (r) =>
+                  `${r.label} ${
+                    r.value === null
+                      ? "-"
+                      : k.deltas!.kind === "amount"
+                        ? `${(r.value as bigint) >= 0n ? "▲" : "▼"}${won((r.value as bigint) < 0n ? -(r.value as bigint) : (r.value as bigint))}원`
+                        : pct(r.value as number)
+                  }`,
+              )
+              .join(" / "),
+      ]),
+    )}\n\n목표매출 달성률 카드: 가운데 ${card.donut.center.value} (${card.donut.center.label})${card.note ? ` · ${card.note}` : ""}${card.quarterProgress ? ` · ${card.quarterProgress.label} ${pct(card.quarterProgress.rate)}` : ""}\n\n` +
+      `분기별: ${card.quarters.map((q) => `${q.quarter}분기 ${pct(q.rate)}(${q.state}${q.warn ? ", 빨강" : ""}${q.unconfirmedMonths.length ? `, 미확정 ${q.unconfirmedMonths.join("·")}월` : ""})`).join(" / ") || "-"}\n\n` +
+      `### 지출 구성 (조각 4개, 합 = 총지출 ${won(s.expenses.total)})\n\n${table(
+        ["조각", "금액", "비중"],
+        mix.donut.slices.map((x) => [
+          x.label + (mix.sliceHints[x.key] ? ` ${mix.sliceHints[x.key]}` : ""),
+          won(BigInt(x.value)),
+          s.expenses.total === 0n
+            ? "-"
+            : pct(Number(x.value) / Number(s.expenses.total)),
+        ]),
+      )}\n\n#### 기타 항목별 (펼침)\n\n${table(
+        ["항목", "금액"],
+        mix.otherItems.map((i) => [i.label, won(BigInt(i.amount))]),
+      )}`,
   );
 
   const c = s.changes;

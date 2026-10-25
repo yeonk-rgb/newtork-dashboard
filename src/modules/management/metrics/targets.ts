@@ -13,6 +13,29 @@ import type {
 } from "./types";
 
 /**
+ * total 을 count 개로 똑같이 나누고 나머지 원은 마지막 몫에 더한다 (분기 목표·월 목표 배분 공통 규칙)
+ */
+export function splitEvenly(total: bigint, count: number): bigint[] {
+  const n = BigInt(count);
+  const base = total / n;
+  const rest = total % n;
+  return Array.from({ length: count }, (_, i) =>
+    i === count - 1 ? base + rest : base,
+  );
+}
+
+/**
+ * 월 목표 (2026-10-25 결정 A안): 분기 목표 ÷ 3, 나머지 원은 그 분기 마지막 달에 — 분기 배분과 같은 규칙(splitEvenly).
+ * 담당자 답(05-④-5) 전까지 자동. 직접 입력 칸은 답이 오면 검토
+ * @returns 1~12월 (index 0 = 1월)
+ */
+export function allocateMonthTargets(
+  quarters: QuarterTargets["quarters"],
+): bigint[] {
+  return quarters.flatMap((q) => splitEvenly(q, 3));
+}
+
+/**
  * 분기 목표 배분
  * - 비어 있는 분기 = (연간 − 입력한 분기 합) ÷ 빈 분기 수, 나머지 원은 마지막 빈 분기에
  * - 입력한 분기 합이 연간보다 크면 빈 분기는 0 + 경고
@@ -44,11 +67,9 @@ export function allocateQuarterTargets(
     return { quarters, sources, warning: "QUARTER_SUM_EXCEEDS_ANNUAL" };
   }
 
-  const count = BigInt(emptyIndexes.length);
-  const base = remaining / count;
-  const rest = remaining % count;
+  const parts = splitEvenly(remaining, emptyIndexes.length);
   emptyIndexes.forEach((index, i) => {
-    quarters[index] = i === emptyIndexes.length - 1 ? base + rest : base;
+    quarters[index] = parts[i];
   });
   return { quarters, sources };
 }
@@ -71,6 +92,8 @@ export function computeTargets(
       period: null,
       quarterTargets: null,
       quarterActuals: null,
+      monthTargets: null,
+      month: null,
     };
   }
 
@@ -132,7 +155,26 @@ export function computeTargets(
     revenueBetween(first, first + 2),
   ) as [bigint, bigint, bigint, bigint];
 
-  return { annual, period: periodTarget, quarterTargets, quarterActuals };
+  const monthTargets = allocateMonthTargets(quarterTargets.quarters);
+  const month =
+    period.unit === "month"
+      ? {
+          month: period.month,
+          ...progress(
+            monthTargets[period.month - 1],
+            revenueBetween(period.month, period.month),
+          ),
+        }
+      : null;
+
+  return {
+    annual,
+    period: periodTarget,
+    quarterTargets,
+    quarterActuals,
+    monthTargets,
+    month,
+  };
 }
 
 /**
