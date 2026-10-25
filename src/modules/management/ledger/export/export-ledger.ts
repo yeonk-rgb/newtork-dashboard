@@ -6,6 +6,7 @@ import { recordAudit } from "@/shared/audit/record";
 import { prisma } from "@/shared/db/client";
 
 import { getNow, getTodayKst } from "../../data/load-summary-input";
+import { readExportTemplate } from "../../export/template";
 import { loadLedgerRowsByMonth } from "../load-ledger";
 import { formatLedgerMonth, toDateOnly } from "../rules";
 import { buildLedgerWorkbook } from "./build-ledger-workbook";
@@ -15,7 +16,6 @@ import {
   parseExportPeriod,
   planExportSheets,
 } from "./period";
-import { readLedgerTemplate } from "./template";
 
 export class LedgerExportError extends Error {
   constructor(
@@ -54,7 +54,7 @@ export async function exportLedger(
     throw new LedgerExportError(400, "미래 기간은 내려받을 수 없습니다.");
   }
 
-  const template = await readLedgerTemplate();
+  const template = await readExportTemplate();
   const byMonth = await loadLedgerRowsByMonth(months);
   const sheets = planExportSheets(
     period,

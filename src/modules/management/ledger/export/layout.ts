@@ -6,6 +6,16 @@
 // - 미지급비용-업체: 자동이체 행을 위에(연두, E:F 병합), 총액은 자동이체 제외 SUM (원본과 같음),
 //   H·I열에 "자동이체 합계 / 전체 합계" (2026-10-25 결정 — 블록 아래 행으로 두면 업로드가 거래처로 읽음)
 import {
+  SheetBuilder,
+  type GroupItem,
+  type GroupStyle,
+} from "../../export/blocks";
+import {
+  COL,
+  type CellSpec as SharedCellSpec,
+  type RowSpec as SharedRowSpec,
+} from "../../export/draw";
+import {
   AR_GROUP_TOTAL_LABEL,
   AR_STATUSES,
   KIND_LABEL,
@@ -14,6 +24,9 @@ import {
   type LedgerKind,
 } from "../labels";
 import type { LedgerRow } from "../rules";
+
+export { COL };
+export type { TotalPart } from "../../export/draw";
 
 /** 원본 양식에서 서식을 가져올 칸의 역할 (template.ts 의 ROLE_CELLS 와 짝) */
 export type StyleRole =
@@ -54,29 +67,8 @@ export type StyleRole =
   | "extraLabel"
   | "extraAmount";
 
-/** 총액 칸 위치 — 병합 범위의 테두리(위·가운데·아래)를 정한다 */
-export type TotalPart = "top" | "middle" | "bottom" | "single";
-
-export type CellSpec = {
-  /** 1부터 (A=1) */
-  col: number;
-  role: StyleRole;
-  value?: string | number | null;
-  formula?: { expr: string; result: number };
-  /** 글자로 저장 (서식 "@") — 코드, 자동이체 적요 */
-  asText?: boolean;
-  totalPart?: TotalPart;
-};
-
-export type RowKind = "title" | "header" | "data" | "separator";
-
-export type RowSpec = {
-  row: number;
-  kind: RowKind;
-  /** 빈 행(구분) 뒤 블록 — 원본의 블록 사이 빈 행 높이를 가져온다 */
-  after?: LedgerKind;
-  cells: CellSpec[];
-};
+export type CellSpec = SharedCellSpec<StyleRole>;
+export type RowSpec = SharedRowSpec<StyleRole, LedgerKind>;
 
 export type SheetLayout = {
   rows: RowSpec[];
@@ -86,21 +78,12 @@ export type SheetLayout = {
   maxExtraAmount: number;
 };
 
-export const COL = { A: 1, C: 3, D: 4, E: 5, F: 6, H: 8, I: 9 };
-
 const toNumber = (amount: string) => Number(amount);
 
-type GroupStyle = {
-  name: StyleRole;
-  amount: StyleRole;
-  note: StyleRole;
-  total: StyleRole;
-  memo: StyleRole;
-  /** 원본 총액 칸 테두리를 그대로 쓴다 (업체 F67:F79 는 칸마다 네 면 테두리 — 위·가운데·아래 규칙을 적용하지 않음) */
-  keepTotalBorder?: boolean;
-};
-
-const GROUP_STYLE: Record<ArStatus | Exclude<LedgerKind, "AR">, GroupStyle> = {
+const GROUP_STYLE: Record<
+  ArStatus | Exclude<LedgerKind, "AR">,
+  GroupStyle<StyleRole>
+> = {
   LONG_OVERDUE: {
     name: "longName",
     amount: "longAmount",
@@ -146,131 +129,61 @@ const GROUP_STYLE: Record<ArStatus | Exclude<LedgerKind, "AR">, GroupStyle> = {
   },
 };
 
-const partOf = (i: number, n: number): TotalPart =>
-  n === 1 ? "single" : i === 0 ? "top" : i === n - 1 ? "bottom" : "middle";
+const items = (rows: LedgerRow[]): GroupItem[] =>
+  rows.map((r) => ({
+    code: r.partnerCode,
+    name: r.partnerName,
+    amount: toNumber(r.amount),
+    note: r.note,
+  }));
 
-class Builder {
-  rows: RowSpec[] = [];
-  merges: string[] = [];
-  maxExtraAmount = 0;
+const withCode = (style: GroupStyle<StyleRole>): GroupStyle<StyleRole> => ({
+  ...style,
+  code: "code",
+});
 
-  get next() {
-    return this.rows.length + 1;
-  }
-
-  push(kind: RowKind, cells: CellSpec[], after?: LedgerKind): number {
-    const row = this.next;
-    this.rows.push({ row, kind, cells, ...(after ? { after } : {}) });
-    return row;
-  }
-
-  cell(row: number, spec: CellSpec) {
-    this.rows[row - 1].cells.push(spec);
-  }
-
-  title(kind: LedgerKind) {
-    const row = this.push("title", [
-      { col: COL.C, role: "title", value: KIND_LABEL[kind] },
-    ]);
-    this.merges.push(`C${row}:F${row}`);
-  }
-
-  header(withCode: boolean) {
-    this.push("header", [
-      ...(withCode
-        ? [{ col: COL.A, role: "codeHeader" as const, value: "코드" }]
-        : []),
-      { col: COL.C, role: "header", value: "거래처명" },
-      { col: COL.D, role: "header", value: "잔액" },
-      { col: COL.E, role: "header", value: "적요" },
-      { col: COL.F, role: "header", value: "총액" },
-    ]);
-  }
-
-  /** 그룹 하나: 행들 + F열 총액 병합·SUM + H열 메모. 첫 행·끝 행 번호를 돌려준다 */
-  group(
-    rows: LedgerRow[],
-    style: GroupStyle,
-    memo: string,
-    withCode: boolean,
-  ): { first: number; last: number; memoRow: number } {
-    const n = Math.max(rows.length, 1);
-    const first = this.next;
-    const last = first + n - 1;
-    const sum = rows.reduce((s, r) => s + toNumber(r.amount), 0);
-    const memoRow = first + Math.floor((n - 1) / 2);
-    for (let i = 0; i < n; i++) {
-      const r = rows[i];
-      const row = first + i;
-      const cells: CellSpec[] = [];
-      if (withCode) {
-        cells.push({
-          col: COL.A,
-          role: "code",
-          value: r?.partnerCode ?? null,
-          asText: true,
-        });
-      }
-      cells.push(
-        { col: COL.C, role: style.name, value: r?.partnerName ?? null },
-        {
-          col: COL.D,
-          role: style.amount,
-          value: r ? toNumber(r.amount) : null,
-        },
-        { col: COL.E, role: style.note, value: r?.note ?? null },
-        {
-          col: COL.F,
-          role: style.total,
-          ...(style.keepTotalBorder ? {} : { totalPart: partOf(i, n) }),
-          ...(i === 0
-            ? { formula: { expr: `SUM(D${first}:D${last})`, result: sum } }
-            : {}),
-        },
-      );
-      if (row === memoRow) {
-        cells.push({ col: COL.H, role: style.memo, value: `← ${memo}` });
-      }
-      this.push("data", cells);
-    }
-    if (n > 1) this.merges.push(`F${first}:F${last}`);
-    return { first, last, memoRow };
-  }
-
-  separator(after: LedgerKind) {
-    this.push("separator", [], after);
-  }
+function header(b: SheetBuilder<StyleRole, LedgerKind>, code: boolean) {
+  b.header([
+    ...(code
+      ? [{ col: COL.A, role: "codeHeader" as const, value: "코드" }]
+      : []),
+    { col: COL.C, role: "header", value: "거래처명" },
+    { col: COL.D, role: "header", value: "잔액" },
+    { col: COL.E, role: "header", value: "적요" },
+    { col: COL.F, role: "header", value: "총액" },
+  ]);
 }
 
 /** 기준년월 한 달의 행(숨긴 행 제외, 화면 순서) → 시트 배치 */
 export function buildSheetLayout(rows: LedgerRow[]): SheetLayout {
-  const b = new Builder();
+  const b = new SheetBuilder<StyleRole, LedgerKind>();
   const of = (kind: LedgerKind) =>
     rows.filter((r) => r.kind === kind && !r.hidden);
 
   // 외상매출금: 상태별 그룹 (장기미수 → 당월수금완료 → 당월수금예정)
-  b.title("AR");
-  b.header(true);
+  b.title(KIND_LABEL.AR, "title");
+  header(b, true);
   for (const status of AR_STATUSES) {
     b.group(
-      of("AR").filter((r) => r.arStatus === status),
-      GROUP_STYLE[status],
-      AR_GROUP_TOTAL_LABEL[status],
-      true,
+      items(of("AR").filter((r) => r.arStatus === status)),
+      withCode(GROUP_STYLE[status]),
+      { text: AR_GROUP_TOTAL_LABEL[status] },
     );
   }
   b.separator("AR");
 
   for (const kind of ["AP", "ACCRUED_STAFF"] as const) {
-    b.title(kind);
-    b.header(false);
-    b.group(of(kind), GROUP_STYLE[kind], KIND_TOTAL_LABEL[kind], false);
+    b.title(KIND_LABEL[kind], "title");
+    header(b, false);
+    b.group(items(of(kind)), GROUP_STYLE[kind], {
+      text: KIND_TOTAL_LABEL[kind],
+    });
     b.separator(kind);
   }
 
   // 미지급비용-업체: 자동이체 행(연두, E:F 병합) → 일반 행(총액 = 자동이체 제외)
-  b.title("ACCRUED_VENDOR");
-  b.header(false);
+  b.title(KIND_LABEL.ACCRUED_VENDOR, "title");
+  header(b, false);
   const vendor = of("ACCRUED_VENDOR");
   const auto = vendor.filter((r) => r.autoTransfer);
   const normal = vendor.filter((r) => !r.autoTransfer);
@@ -293,12 +206,9 @@ export function buildSheetLayout(rows: LedgerRow[]): SheetLayout {
     b.merges.push(`E${row}:F${row}`);
   }
   const autoLast = autoFirst + autoCount - 1;
-  const g = b.group(
-    normal,
-    GROUP_STYLE.ACCRUED_VENDOR,
-    KIND_TOTAL_LABEL.ACCRUED_VENDOR,
-    false,
-  );
+  const g = b.group(items(normal), GROUP_STYLE.ACCRUED_VENDOR, {
+    text: KIND_TOTAL_LABEL.ACCRUED_VENDOR,
+  });
 
   // H·I열: 자동이체 합계 / 전체 합계 (메모 아래 두 줄, 블록보다 길면 행을 더 쓴다)
   const autoSum = auto.reduce((s, r) => s + toNumber(r.amount), 0);
@@ -309,7 +219,6 @@ export function buildSheetLayout(rows: LedgerRow[]): SheetLayout {
   ];
   extras.forEach(([label, expr, result], i) => {
     const row = g.memoRow + 1 + i;
-    while (b.rows.length < row) b.push("data", []);
     b.cell(row, { col: COL.H, role: "extraLabel", value: label });
     b.cell(row, {
       col: COL.I,
@@ -317,7 +226,5 @@ export function buildSheetLayout(rows: LedgerRow[]): SheetLayout {
       formula: { expr, result },
     });
   });
-  b.maxExtraAmount = allSum;
-
-  return { rows: b.rows, merges: b.merges, maxExtraAmount: b.maxExtraAmount };
+  return { ...b.layout(), maxExtraAmount: allSum };
 }

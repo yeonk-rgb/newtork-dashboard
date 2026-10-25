@@ -66,7 +66,11 @@ export { ReceivablesScreen } from "./receivables/receivables-screen";
 export { LedgerScreen } from "./ledger/ledger-screen";
 export { LedgerImportScreen } from "./ledger/import/import-screen";
 export { exportLedger, LedgerExportError } from "./ledger/export/export-ledger";
-export { LedgerTemplateMissingError } from "./ledger/export/template";
+export { ExportTemplateMissingError } from "./export/template";
+export {
+  exportManagementFile,
+  ManagementExportError,
+} from "./export/export-file";
 export { HistoryScreen } from "./history/history-screen";
 export { exportHistory, HistoryExportError } from "./history/export-history";
 export { UploadScreen } from "./upload/upload-screen";
