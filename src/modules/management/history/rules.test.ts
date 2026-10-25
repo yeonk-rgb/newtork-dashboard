@@ -143,6 +143,7 @@ describe("화면 표기", () => {
         "ledger",
         "ledger-import",
         "ledger-export",
+        "entry-export",
         "receivables",
         "entry",
         "targets",
@@ -154,6 +155,7 @@ describe("화면 표기", () => {
       "채권·채무 관리",
       "채권·채무 엑셀 이관",
       "채권·채무 엑셀 다운로드",
+      "월간 입력 엑셀 다운로드",
       "미수금 관리",
       "월간 입력",
       "목표 설정",
@@ -196,6 +198,14 @@ describe("화면 표기", () => {
         sheetCount: 1,
       }),
     ).toBe("2026-10 · 시트 1장 · 6행 · 경영지원_관리_2026-10.xlsx");
+    expect(
+      metaSummary("entry-export", "EXPORT", {
+        period: "2026-Q3",
+        sheets: ["2026-Q3", "2026-07"],
+        fileName: "경영지원_월간입력_2026-Q3.xlsx",
+        sheetCount: 2,
+      }),
+    ).toBe("2026-Q3 · 시트 2장 · 경영지원_월간입력_2026-Q3.xlsx");
     expect(
       metaSummary("ledger-import", "IMPORT", {
         mode: "추가",

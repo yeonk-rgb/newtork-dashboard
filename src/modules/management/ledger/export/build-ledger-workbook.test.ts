@@ -11,18 +11,14 @@ import {
   selectLedgerSheet,
 } from "../import/parse-ledger-sheet";
 import { buildImportPlan, EMPTY_CHOICES } from "../import/plan";
+import { extraColumnWidth } from "../../export/draw";
 import {
   buildLedgerWorkbook,
   DETAIL_SHEET_NAME,
-  extraColumnWidth,
   type ExportSheet,
 } from "./build-ledger-workbook";
 import { buildSheetLayout } from "./layout";
-import {
-  LedgerTemplateMissingError,
-  readLedgerTemplate,
-  ROLE_CELLS,
-} from "./template";
+import { ROLE_CELLS } from "./template";
 import { SAMPLE_ROWS } from "./test-rows";
 
 const NOW = new Date("2026-10-25T03:00:00Z");
@@ -381,16 +377,5 @@ describe("selectLedgerSheet", () => {
       ok: true,
       note: "시트 이름(2026-11)과 기준년월(2026-10)이 다릅니다. 맞는지 확인하세요.",
     });
-  });
-});
-
-describe("양식 파일", () => {
-  it("없으면 알아볼 수 있는 오류", async () => {
-    await expect(
-      readLedgerTemplate(() => readFile("/없는/경로/ledger-template.xlsx")),
-    ).rejects.toBeInstanceOf(LedgerTemplateMissingError);
-    await expect(
-      readLedgerTemplate(() => readFile("/없는/경로/ledger-template.xlsx")),
-    ).rejects.toThrow("양식 파일을 찾을 수 없습니다");
   });
 });

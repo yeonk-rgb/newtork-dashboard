@@ -20,6 +20,7 @@ import {
   type EntryActionResult,
 } from "./actions";
 import { ConfirmDialog, type ConfirmRequest } from "./confirm-dialog";
+import { EntryExportMenu } from "./export/entry-export-menu";
 import {
   browserStorage,
   draftKey,
@@ -443,6 +444,7 @@ export function EntryForm({
                 </option>
               ))}
             </select>
+            <EntryExportMenu year={data.year} month={data.month} />
           </div>
         </div>
 

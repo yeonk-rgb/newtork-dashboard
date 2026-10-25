@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { buttonSecondaryClass } from "@/shared/ui/styles";
 
-import { fileNameFrom } from "../ledger/export/export-menu";
+import { fileNameFrom } from "../export/download-menu";
 
 export function HistoryExportButton({ search }: { search: string }) {
   const [pending, setPending] = useState(false);

@@ -17,6 +17,7 @@ import {
   loadHistoryPage,
   loadRowHistory,
 } from "@/modules/management/history/load-history";
+import { loadEntryExportData } from "@/modules/management/entry/export/load-entry-export";
 import { parseHistoryFilter } from "@/modules/management/history/rules";
 import { loadLedgerData } from "@/modules/management/ledger/load-ledger";
 import { countExisting } from "@/modules/management/ledger/import/save-import";
@@ -79,6 +80,9 @@ async function main() {
   );
   await check("채권·채무 관리 (loadLedgerData)", () =>
     loadLedgerData({ year: 2026, month: 10 }, true),
+  );
+  await check("월간 입력 엑셀: 월별 값·지출 항목 (loadEntryExportData)", () =>
+    loadEntryExportData([7, 8, 9].map((month) => ({ year: 2026, month }))),
   );
   await check("채권·채무 이관: 같은 달 기존 행 수 (countExisting)", () =>
     countExisting(2026, 10),

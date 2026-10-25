@@ -3,7 +3,7 @@
 import {
   exportLedger,
   LedgerExportError,
-  LedgerTemplateMissingError,
+  ExportTemplateMissingError,
 } from "@/modules/management";
 import { can, getCurrentUser } from "@/shared/auth";
 
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     if (error instanceof LedgerExportError) {
       return text(error.status, error.message);
     }
-    if (error instanceof LedgerTemplateMissingError) {
+    if (error instanceof ExportTemplateMissingError) {
       console.error(`[ledger-export] 양식 파일 없음: ${error.filePath}`);
       return text(503, error.message);
     }

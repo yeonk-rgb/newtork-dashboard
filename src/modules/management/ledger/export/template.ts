@@ -1,48 +1,15 @@
 // 채권·채무 엑셀 다운로드 — 고객사 원본 양식(ledger-template.xlsx)에서 서식 읽기 (2026-10-25 결정: A안)
 // 셀 서식은 "역할 → 원본 셀 주소" 표(ROLE_CELLS) 하나로 가져온다. 양식이 바뀌면 파일만 바꾸고,
 // 역할 칸이 옮겨졌으면 build-ledger-workbook.test.ts 의 원본 서식 비교 테스트가 알려 준다
-// 배포 결과물에 이 파일이 들어가도록 next.config.ts 의 outputFileTracingIncludes 에 등록돼 있다
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
+// 파일 읽기·열·인쇄 설정은 경영지원 다운로드 공용(../../export/template.ts)
 import type ExcelJS from "exceljs";
 
+import {
+  readRoleStyles,
+  readSheetBasics,
+  type SheetBasics,
+} from "../../export/template";
 import type { StyleRole } from "./layout";
-
-export const TEMPLATE_RELATIVE_PATH =
-  "src/modules/management/ledger/export/ledger-template.xlsx";
-
-export class LedgerTemplateMissingError extends Error {
-  constructor(readonly filePath: string) {
-    super(
-      "양식 파일을 찾을 수 없습니다 (ledger-template.xlsx). 관리자에게 알려 주세요.",
-    );
-    this.name = "LedgerTemplateMissingError";
-  }
-}
-
-/**
- * 경로는 문자열 그대로 둔다 — 변수로 넘기면 Turbopack 이 정적 분석을 못 해 프로젝트 전체를 서버 결과물에 넣는다
- * (next build 경고 "Dynamic filesystem access causes tracing of the whole project")
- */
-const readTemplateFile = () =>
-  readFile(
-    path.join(
-      process.cwd(),
-      "src/modules/management/ledger/export/ledger-template.xlsx",
-    ),
-  );
-
-/** 원본 양식 파일 읽기 — 없거나 못 읽으면 LedgerTemplateMissingError (read 는 테스트에서 바꿔 끼움) */
-export async function readLedgerTemplate(
-  read: () => Promise<Buffer> = readTemplateFile,
-): Promise<Buffer> {
-  try {
-    return await read();
-  } catch {
-    throw new LedgerTemplateMissingError(TEMPLATE_RELATIVE_PATH);
-  }
-}
 
 /**
  * 역할 → 원본 셀. 원본 행 번호(2026-10-25 확인):
@@ -87,51 +54,30 @@ export const ROLE_CELLS: Record<Exclude<StyleRole, "extraAmount">, string> = {
   extraLabel: "H73",
 };
 
-/** 블록 사이 빈 행 (원본 38·50·63행) 과 데이터 행 높이 (원본 3행) */
-export const SEPARATOR_ROWS = { AR: 38, AP: 50, ACCRUED_STAFF: 63 } as const;
-export const DATA_ROW = 3;
-
-export type TemplateStyles = {
+export type TemplateStyles = Omit<SheetBasics, "separatorHeights"> & {
   roles: Record<StyleRole, Partial<ExcelJS.Style>>;
-  /** A~H 열 너비·숨김 (원본 그대로) */
-  columns: { width?: number; hidden: boolean }[];
-  rowHeight: number | undefined;
-  separatorHeights: Record<keyof typeof SEPARATOR_ROWS, number | undefined>;
-  pageSetup: Partial<ExcelJS.PageSetup>;
-  /** 원본 일반 칸 글꼴 (잔액 칸 = 맑은 고딕 10) — 서식 없는 칸·상세 시트에 쓴다 */
-  baseFont: Partial<ExcelJS.Font>;
+  /** 블록 사이 빈 행 (원본 38·50·63행) */
+  separatorHeights: Record<"AR" | "AP" | "ACCRUED_STAFF", number | undefined>;
 };
-
-const clone = <T>(v: T): T => structuredClone(v);
 
 /** 원본 시트에서 역할별 서식·열·행 높이·인쇄 설정을 읽는다 */
 export function readTemplateStyles(ws: ExcelJS.Worksheet): TemplateStyles {
-  const roles = {} as Record<StyleRole, Partial<ExcelJS.Style>>;
-  for (const [role, address] of Object.entries(ROLE_CELLS)) {
-    roles[role as StyleRole] = clone(ws.getCell(address).style);
-  }
+  const roles = readRoleStyles(ws, ROLE_CELLS) as Record<
+    StyleRole,
+    Partial<ExcelJS.Style>
+  >;
   // I열 "자동이체 합계·전체 합계" 금액: 원본에 없는 칸 — 총액(F) 글꼴·서식(#,##0 굵게)에 테두리 없이 오른쪽 정렬
-  const total = clone(ws.getCell(ROLE_CELLS.otherTotal).style);
+  const total = roles.otherTotal;
   roles.extraAmount = {
-    font: total.font,
+    font: structuredClone(total.font),
     numFmt: total.numFmt ?? "#,##0",
     alignment: { horizontal: "right", vertical: "middle" },
   };
-
-  const columns = Array.from({ length: 8 }, (_, i) => {
-    const col = ws.getColumn(i + 1);
-    return { width: col.width, hidden: Boolean(col.hidden) };
-  });
+  const basics = readSheetBasics(ws);
+  const [AR, AP, ACCRUED_STAFF] = basics.separatorHeights;
   return {
+    ...basics,
     roles,
-    columns,
-    rowHeight: ws.getRow(DATA_ROW).height,
-    separatorHeights: {
-      AR: ws.getRow(SEPARATOR_ROWS.AR).height,
-      AP: ws.getRow(SEPARATOR_ROWS.AP).height,
-      ACCRUED_STAFF: ws.getRow(SEPARATOR_ROWS.ACCRUED_STAFF).height,
-    },
-    pageSetup: clone(ws.pageSetup),
-    baseFont: clone(ws.getCell(ROLE_CELLS.collectedAmount).font),
+    separatorHeights: { AR, AP, ACCRUED_STAFF },
   };
 }

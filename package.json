@@ -21,6 +21,7 @@
     "db:push": "prisma db push",
     "db:deploy": "prisma migrate deploy",
     "metrics:report": "tsx --conditions=react-server scripts/metrics-report.ts",
+    "export:report": "tsx --conditions=react-server scripts/export-report.ts",
     "env:set-key": "bash scripts/set-anthropic-key.sh",
     "seed:ai-examples": "tsx --conditions=react-server scripts/seed-ai-examples.ts",
     "seed:ledger": "tsx --conditions=react-server scripts/seed-ledger.ts",

@@ -24,6 +24,7 @@ export const HISTORY_SCREENS: {
     label: "채권·채무 엑셀 다운로드",
     area: "management",
   },
+  { key: "entry-export", label: "월간 입력 엑셀 다운로드", area: "management" },
   { key: "upload", label: "엑셀 업로드", area: "management" },
   { key: "admin-users", label: "관리자(대표) · 계정 관리", area: "admin" },
   {
@@ -83,7 +84,7 @@ export function metaSummary(
     return n === null ? null : `${n.toLocaleString("ko-KR")}${unit}`;
   };
 
-  if (screen === "ledger-export") {
+  if (screen === "ledger-export" || screen === "entry-export") {
     return join([
       str(m, "period"),
       num(m, "sheetCount") !== null && `시트 ${count("sheetCount", "장")}`,
