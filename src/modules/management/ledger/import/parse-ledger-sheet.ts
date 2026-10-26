@@ -3,7 +3,7 @@
 // - Sheet1 하나에 블록 4개가 세로로: C열 제목(외상매출금·외상매입금·미지급비용-직원·미지급비용-업체) → 다음 행이 헤더
 // - 헤더: 코드(A, 외상매출금만·숨김 열) | 거래처명(C) | 잔액(D) | 적요(E) | 총액(F)
 // - F열 총액은 그룹마다 세로 병합 + =SUM(D..:D..). 데이터로 저장하지 않고 검증에만 쓴다
-// - 외상매출금 그룹 = F열 병합 범위, H열 메모("← 장기 미수금 업체" 등)로 상태 판별, 빨간 글씨 = 장기미수
+// - 외상매출금 그룹 = F열 병합 범위, H열 메모("← 장기 미수금 업체" 등)로 상태 판별, 빨간 글씨 = 장기 미수금
 // - 미지급비용-업체: 적요 "자동이체" 또는 연두 배경(테마 색) = 자동이체. 66행은 원본 SUM 범위 밖
 // 행 번호는 고정이 아니라고 보고 제목 글자로 찾는다
 import {
@@ -40,7 +40,7 @@ export type TotalState =
   | "mismatch"
   /** 수식은 있는데 파일에 계산값이 없음 (<v> 없음 — 엑셀이 아닌 도구로 저장한 파일 등). 계산값 0 과는 다름 */
   | "noResult"
-  /** 총액 칸이 비어 있음 (예: 장기미수 F3:F4) */
+  /** 총액 칸이 비어 있음 (예: 장기 미수금 F3:F4) */
   | "noTotal";
 
 export type TotalCheck = {
@@ -70,7 +70,7 @@ export type ParsedRow = {
   arStatus: ArStatus | null;
   /** 외상매출금 상태 근거 */
   arStatusSource: "memo" | "red" | null;
-  /** 당월수금완료 완료일 후보 ("YYYY-MM-DD") */
+  /** 당월 수금 완료일 후보 ("YYYY-MM-DD") */
   settledOn: string | null;
   /** 완료일 근거: 적요 날짜 / 기준월 말일(또는 오늘) */
   settledSource: "note" | "monthEnd" | null;
@@ -431,7 +431,7 @@ function parseBlock(
         arStatusSource = "red";
         if (fromMemo && fromMemo !== "LONG_OVERDUE") {
           warnings.push(
-            `빨간 글씨라 장기미수로 분류했습니다 (원래 그룹: ${AR_STATUS_LABEL[fromMemo]}).`,
+            `빨간 글씨라 장기 미수금으로 분류했습니다 (원래 그룹: ${AR_STATUS_LABEL[fromMemo]}).`,
           );
         }
       } else if (fromMemo) {
@@ -574,7 +574,7 @@ export function selectLedgerSheet(
   const found = ledgerSheets(sheets);
   if (found.length === 0) return { ok: false, reason: "none" };
   const candidates = found.map((s) => s.name);
-  // 시트 이름의 기준년월: "2026-10" 또는 월별 리포트 안 "채권·채무 2026-10" (2026-10-26)
+  // 시트 이름의 기준년월: "2026-10" 또는 월별 리포트 안 "경영지원 관리 2026-10"(예전 파일 "채권·채무 2026-10"도 같은 규칙)
   const monthOf = (name: string) =>
     /(?:^|\s)(\d{4}-\d{2})$/.exec(name)?.[1] ?? null;
   const pick = (sheet: StyledSheet) => {

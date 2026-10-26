@@ -1,4 +1,4 @@
-// 채권·채무 엑셀 이관 규칙 (순수 함수) — 화면과 Server Action 이 같이 쓴다
+// 경영지원 관리 엑셀 이관 규칙 (순수 함수) — 화면과 Server Action 이 같이 쓴다
 import { can } from "@/shared/auth/can";
 import type { AppUser } from "@/shared/auth/types";
 

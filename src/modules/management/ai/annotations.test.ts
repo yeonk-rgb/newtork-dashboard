@@ -22,7 +22,7 @@ function summaryFor(target: bigint | null) {
           quarterTargets: [null, null, null, null],
         }
       : null,
-    // 2024년 12월 채권·채무 외상매출금 — 장기미수 4곳 + 당월수금예정 1곳(장기미수 아님 → 제외)
+    // 2024년 12월 경영지원 관리 외상매출금 — 장기 미수금 4곳 + 당월 수금예정 1곳(장기 미수금 아님 → 제외)
     receivables: [
       ["a1", "가나발전(가상)", 80_000_000n],
       ["a2", "가나발전(가상)", 40_000_000n],
@@ -64,7 +64,7 @@ describe("buildAnnotations", () => {
     );
   });
 
-  it("장기미수 거래처: 외상매출금 장기미수를 거래처별로 묶어 금액 큰 순 최대 3곳 (경과일 없음)", () => {
+  it("장기 미수금 거래처: 외상매출금 장기 미수금을 거래처별로 묶어 금액 큰 순 최대 3곳 (경과일 없음)", () => {
     expect(buildAnnotations(summaryFor(null)).longOverdue).toEqual([
       { name: "가나발전(가상)", amount: "1.20억원" },
       { name: "다라가스(가상)", amount: "6,668만원" },

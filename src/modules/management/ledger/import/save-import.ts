@@ -1,4 +1,4 @@
-// 채권·채무 엑셀 이관 저장 (서버 전용) — 한 트랜잭션: (덮어쓰기면) 기존 행 숨김 → 이력 → 행 저장
+// 경영지원 관리 엑셀 이관 저장 (서버 전용) — 한 트랜잭션: (덮어쓰기면) 기존 행 숨김 → 이력 → 행 저장
 import "server-only";
 
 import { recordAudit } from "@/shared/audit/record";
@@ -138,7 +138,7 @@ export async function saveLedgerImport(input: SaveImportInput) {
         target: {
           type: "DataUpload",
           id: upload.id,
-          label: `채권·채무 엑셀 이관 · ${monthText} · ${input.fileName}`,
+          label: `경영지원 관리 엑셀 이관 · ${monthText} · ${input.fileName}`,
         },
         meta: {
           uploadId: upload.id,

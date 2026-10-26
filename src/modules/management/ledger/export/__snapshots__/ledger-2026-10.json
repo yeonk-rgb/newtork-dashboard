@@ -7706,7 +7706,7 @@
     },
     {
      "address": "G2",
-     "value": "당월수금예정",
+     "value": "당월 수금예정",
      "style": {
       "font": {
        "charset": 129,
@@ -7964,7 +7964,7 @@
     },
     {
      "address": "G3",
-     "value": "장기미수",
+     "value": "장기 미수금",
      "style": {
       "font": {
        "charset": 129,
@@ -8222,7 +8222,7 @@
     },
     {
      "address": "G4",
-     "value": "장기미수",
+     "value": "장기 미수금",
      "style": {
       "font": {
        "charset": 129,
@@ -8480,7 +8480,7 @@
     },
     {
      "address": "G5",
-     "value": "당월수금완료",
+     "value": "당월 수금",
      "style": {
       "font": {
        "charset": 129,
@@ -8738,7 +8738,7 @@
     },
     {
      "address": "G6",
-     "value": "당월수금완료",
+     "value": "당월 수금",
      "style": {
       "font": {
        "charset": 129,
@@ -8996,7 +8996,7 @@
     },
     {
      "address": "G7",
-     "value": "당월수금완료",
+     "value": "당월 수금",
      "style": {
       "font": {
        "charset": 129,
@@ -9254,7 +9254,7 @@
     },
     {
      "address": "G8",
-     "value": "당월수금예정",
+     "value": "당월 수금예정",
      "style": {
       "font": {
        "charset": 129,
@@ -9512,7 +9512,7 @@
     },
     {
      "address": "G9",
-     "value": "당월수금예정",
+     "value": "당월 수금예정",
      "style": {
       "font": {
        "charset": 129,

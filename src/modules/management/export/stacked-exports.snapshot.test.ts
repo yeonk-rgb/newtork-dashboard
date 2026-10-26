@@ -30,7 +30,7 @@ describe("목표 대비 실적·미수금 다운로드 결과물 스냅샷", () 
       months: yearInput.financeMonths,
       today: FIXTURE_TODAY,
     });
-    // 미수금 관리(건별 참고) 엑셀 — 건별 목록 9/30 기준 (2026-10-26 전과 같은 입력)
+    // 미수금 건별 기록 엑셀 — 건별 목록 9/30 기준 (2026-10-26 전과 같은 입력)
     const q3 = fixtureItemResult();
     const r = buildReceivablesLayout(q3);
     const buf = await buildStackedWorkbook({

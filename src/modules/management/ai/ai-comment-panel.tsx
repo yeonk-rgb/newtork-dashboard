@@ -152,7 +152,7 @@ export function AiCommentPanel({
                     <li className="flex gap-2 text-muted-foreground">
                       <span aria-hidden>•</span>
                       <span>
-                        장기 미수 거래처:{" "}
+                        장기 미수금 거래처:{" "}
                         {latest.result.longOverdue
                           .map((c) =>
                             c.ageDays === undefined

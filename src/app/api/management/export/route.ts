@@ -1,6 +1,6 @@
 // 경영지원 엑셀 다운로드 (?kind=entry|targets|receivables|report&period=2026-10 | 2026-Q3 | 2026 | 2026-YTD10) — 경영지원 열람 권한이면 누구나
 // 재무 데이터라 캐시 금지(no-store). 누가 언제 무엇을 받았는지 서버 로그와 변경 기록에 남긴다
-// 채권·채무 다운로드는 /api/management/ledger/export
+// 경영지원 관리 다운로드는 /api/management/ledger/export
 import {
   exportManagementFile,
   ExportTemplateMissingError,

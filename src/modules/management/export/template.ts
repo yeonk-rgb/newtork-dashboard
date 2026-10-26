@@ -45,7 +45,7 @@ export async function readExportTemplate(
 /** 원본 행 번호(2026-10-25 확인): 데이터 행 3, 블록 사이 빈 행 38(9.95)·50·63(9.75) */
 export const DATA_ROW = 3;
 export const SEPARATOR_ROWS = [38, 50, 63] as const;
-/** 원본 빨간 글씨(장기미수 C3) — "주의할 숫자" 색. 새 색을 만들지 않고 원본에서 읽는다 */
+/** 원본 빨간 글씨(장기 미수금 C3) — "주의할 숫자" 색. 새 색을 만들지 않고 원본에서 읽는다 */
 const WARN_CELL = "C3";
 /** 원본 일반 칸 글꼴 (잔액 칸 = 맑은 고딕 10) */
 const BASE_FONT_CELL = "D5";

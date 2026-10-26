@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { ReceivablesScreen } from "@/modules/management";
 
-// 미수금 관리 (?tab=over90&q=거래처&hidden=1) — 경영지원 열람 권한이면 볼 수 있고, 동작은 권한별
+// 미수금 건별 기록 (?tab=over90&q=거래처&hidden=1) — 경영지원 열람 권한이면 볼 수 있고, 동작은 권한별
 export default function ReceivablesPage({
   searchParams,
 }: PageProps<"/management/receivables">) {

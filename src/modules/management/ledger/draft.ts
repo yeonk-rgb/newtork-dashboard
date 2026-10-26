@@ -19,7 +19,7 @@ export type LedgerDraft = {
 };
 
 /**
- * 새 행 기본값: 외상매출금 = 당월수금예정, 미지급비용-업체 = 기타.
+ * 새 행 기본값: 외상매출금 = 당월 수금예정, 미지급비용-업체 = 기타.
  * 외상매입금 매입유형은 판별할 수 없어 비워 두고 직접 고르게 한다
  */
 export function emptyDraft(kind: LedgerKind): LedgerDraft {
@@ -52,7 +52,7 @@ export function draftFromRow(row: LedgerRow): LedgerDraft {
   };
 }
 
-/** 외상매출금 상태를 바꿀 때: 당월수금완료가 아니면 완료일을 지운다 */
+/** 외상매출금 상태를 바꿀 때: 당월 수금이 아니면 완료일을 지운다 */
 export function withArStatus(
   draft: LedgerDraft,
   status: ArStatus,

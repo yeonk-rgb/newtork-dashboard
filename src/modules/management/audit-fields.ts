@@ -31,7 +31,7 @@ export const auditActor = (user: AppUser) => ({
 const monthLabel = (year: number, month: number) =>
   `${year}-${String(month).padStart(2, "0")}`;
 
-// ---------- 채권·채무 관리 ----------
+// ---------- 경영지원 관리 ----------
 
 export type LedgerAuditRow = {
   year: number;
@@ -106,7 +106,7 @@ export function ledgerTargetLabel(row: {
   return `${monthLabel(row.year, row.month)} ${KIND_LABEL[row.kind]} · ${row.partnerName}`;
 }
 
-// ---------- 미수금 관리 ----------
+// ---------- 미수금 건별 기록 ----------
 
 export type ReceivableAuditRow = {
   customerName: string;

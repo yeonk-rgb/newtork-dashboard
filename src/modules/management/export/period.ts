@@ -59,7 +59,7 @@ export function periodTotalSuffix(period: Period): string | null {
   }
 }
 
-/** 경영지원_{화면}_{기간}.xlsx (채권·채무 "경영지원_관리_2026-10.xlsx" 와 같은 규칙) + 영문 대체 이름 */
+/** 경영지원_{화면}_{기간}.xlsx (경영지원 관리 "경영지원_관리_2026-10.xlsx" 와 같은 규칙) + 영문 대체 이름 */
 export function exportFileName(
   screen: { ko: string; ascii: string },
   period: Period,

@@ -104,7 +104,7 @@ describe("ledgerDateErrors", () => {
     dueOn: null,
   });
 
-  it("당월수금완료는 완료일 필수, 오늘 이후 불가", () => {
+  it("당월 수금은 완료일 필수, 오늘 이후 불가", () => {
     expect(
       ledgerDateErrors({ ...ar("COLLECTED"), settledOn: null }, TODAY)
         .settledOn,
@@ -118,12 +118,12 @@ describe("ledgerDateErrors", () => {
     ).toEqual({});
   });
 
-  it("외상매출금 장기미수·예정에는 완료일을 넣을 수 없음", () => {
+  it("외상매출금 장기 미수금·예정에는 완료일을 넣을 수 없음", () => {
     for (const s of ["LONG_OVERDUE", "SCHEDULED"] as const) {
       expect(
         ledgerDateErrors({ ...ar(s), settledOn: "2026-10-01" }, TODAY)
           .settledOn,
-      ).toBe("완료일은 당월수금완료일 때만 입력합니다.");
+      ).toBe("완료일은 당월 수금일 때만 입력합니다.");
     }
   });
 

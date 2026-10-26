@@ -1,4 +1,4 @@
-// 채권·채무 엑셀 다운로드 — 받은 사람·기간 기록, 기록 실패 시 다운로드도 막기
+// 경영지원 관리 엑셀 다운로드 — 받은 사람·기간 기록, 기록 실패 시 다운로드도 막기
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SAMPLE_ROWS } from "./test-rows";
@@ -37,7 +37,7 @@ describe("엑셀 다운로드 변경 기록", () => {
       action: "EXPORT",
       targetType: "LedgerExport",
       targetId: "2026-Q4",
-      targetLabel: "채권·채무 엑셀 다운로드 · 2026-Q4",
+      targetLabel: "경영지원 관리 엑셀 다운로드 · 2026-Q4",
       actorLoginId: "mgmt_member",
       meta: {
         period: "2026-Q4",

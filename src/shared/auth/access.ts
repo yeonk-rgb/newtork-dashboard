@@ -23,13 +23,13 @@ const NAV_RULES: NavRule[] = [
       { href: "/management/entry", label: "월간 입력", action: "edit" },
       {
         href: "/management/receivables",
-        // 2026-10-26: 대시보드 미수금은 채권·채무 외상매출금 기준 → 이 화면은 건별 참고용
-        label: "미수금(건별 참고)",
+        // 2026-10-26: 대시보드 미수금은 경영지원 관리 외상매출금 기준 → 이 화면은 건별 참고용
+        label: "미수금 건별 기록",
         action: "view",
       },
       {
         href: "/management/ledger",
-        label: "채권·채무 관리",
+        label: "경영지원 관리",
         action: "view",
       },
       {

@@ -16,7 +16,7 @@ export type CellSpec<R extends string = string> = {
   /** 글자로 저장 (서식 "@") — 코드, 자동이체 적요 */
   asText?: boolean;
   totalPart?: TotalPart;
-  /** 빨간 글씨 (원본 장기미수 색) — 주의할 숫자·안내 */
+  /** 빨간 글씨 (원본 장기 미수금 색) — 주의할 숫자·안내 */
   warn?: boolean;
 };
 

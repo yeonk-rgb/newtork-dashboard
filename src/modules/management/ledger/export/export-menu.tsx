@@ -1,5 +1,5 @@
 "use client";
-// 채권·채무 [엑셀 다운로드 ▾] 당월·분기·연간 — 메뉴 모양·내려받기는 경영지원 다운로드 공용 부품
+// 경영지원 관리 [엑셀 다운로드 ▾] 당월·분기·연간 — 메뉴 모양·내려받기는 경영지원 다운로드 공용 부품
 import { DownloadMenu } from "../../export/download-menu";
 import { parseLedgerMonth } from "../rules";
 import { exportPeriodsFor } from "./period";

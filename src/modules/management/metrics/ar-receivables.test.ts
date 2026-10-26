@@ -1,4 +1,4 @@
-// 대시보드 미수금 = 채권·채무 외상매출금 (2026-10-26, 05-22)
+// 대시보드 미수금 = 경영지원 관리 외상매출금 (2026-10-26, 05-22)
 import { describe, expect, it } from "vitest";
 
 import { arBaseMonth, computeArReceivables } from "./ar-receivables";
@@ -32,7 +32,7 @@ describe("기준월 = 기간 안에서 외상매출금 행이 있는 마지막 �
   });
 });
 
-describe("미수 = 장기미수 + 당월수금예정, 당월수금완료는 따로", () => {
+describe("미수 = 장기 미수금 + 당월 수금예정, 당월 수금은 따로", () => {
   const entries = [
     arEntry("long", {
       status: "LONG_OVERDUE",
@@ -73,7 +73,7 @@ describe("미수 = 장기미수 + 당월수금예정, 당월수금완료는 따�
     expect(r.count).toBe(4);
   });
 
-  it("거래처별 (금액 큰 순) + 그중 장기미수", () => {
+  it("거래처별 (금액 큰 순) + 그중 장기 미수금", () => {
     expect(r.customerCount).toBe(3);
     expect(r.byCustomer).toEqual([
       { customerName: "다라(가상)", amount: 110n, count: 2, longOverdue: 80n },
@@ -82,7 +82,7 @@ describe("미수 = 장기미수 + 당월수금예정, 당월수금완료는 따�
     ]);
   });
 
-  it("수금 예정: 당월수금예정 행의 예정일 (지남·월별·없음), 장기미수는 넣지 않음", () => {
+  it("수금 예정: 당월 수금예정 행의 예정일 (지남·월별·없음), 장기 미수금은 넣지 않음", () => {
     expect(r.expected.overdue).toEqual({ amount: 30n, count: 1 });
     expect(r.expected.noDueDate).toEqual({ amount: 20n, count: 1 });
     expect(r.expected.months[0]).toMatchObject({ year: 2026, month: 9 });

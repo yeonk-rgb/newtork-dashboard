@@ -15,8 +15,8 @@ describe("표시 형식", () => {
     expect(date("2026-10-15")).toBe("2026-10-15");
     expect(text("  메모 ")).toBe("메모");
     expect(text("   ")).toBeNull();
-    expect(labelOf({ LONG_OVERDUE: "장기미수" })("LONG_OVERDUE")).toBe(
-      "장기미수",
+    expect(labelOf({ LONG_OVERDUE: "장기 미수금" })("LONG_OVERDUE")).toBe(
+      "장기 미수금",
     );
     expect(flag("자동이체")(true)).toBe("자동이체");
     expect(flag("자동이체")(false)).toBeNull();

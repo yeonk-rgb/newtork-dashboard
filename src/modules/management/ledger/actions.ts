@@ -1,5 +1,5 @@
 "use server";
-// 채권·채무 저장 Server Action — 권한·검증·동시 수정을 모두 서버에서 다시 확인한다
+// 경영지원 관리 저장 Server Action — 권한·검증·동시 수정을 모두 서버에서 다시 확인한다
 // 저장과 변경 기록(audit_log)은 한 트랜잭션: 기록이 실패하면 저장도 취소된다
 import { refresh } from "next/cache";
 
@@ -94,7 +94,7 @@ export async function createLedgerEntry(
 ): Promise<LedgerActionResult> {
   const user = await getCurrentUser();
   if (!user || !canCreateLedgerEntry(user)) {
-    return forbidden("채권·채무를 입력할 권한이 없습니다. (열람만 가능)");
+    return forbidden("경영지원 관리를 입력할 권한이 없습니다. (열람만 가능)");
   }
   const parsed = createLedgerSchema.safeParse(raw);
   if (!parsed.success) return invalid(firstIssue(parsed.error));

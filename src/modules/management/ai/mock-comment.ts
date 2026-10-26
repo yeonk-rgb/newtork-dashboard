@@ -42,8 +42,8 @@ export function mockAiComment(input: AiInput): AiCommentResponse {
   const { longOverdue } = input.receivables;
   if (longOverdue.count > 0) {
     pairs.push([
-      `[모의] 장기미수 ${longOverdue.amount}(${longOverdue.count}건)입니다.`,
-      "[모의] 장기 미수 거래처에 수금 일정을 확인합니다.",
+      `[모의] 장기 미수금 ${longOverdue.amount}(${longOverdue.count}건)입니다.`,
+      "[모의] 장기 미수금 거래처에 수금 일정을 확인합니다.",
     ]);
   }
 

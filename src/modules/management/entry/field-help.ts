@@ -22,7 +22,7 @@ export const FIELD_HELP: Record<EntryField, string> = {
   goodsPurchase: `되팔기 위해 사들인 상품의 매입 금액. ${COST_BASIS}`,
   materialPurchase: `제품 생산에 쓰는 원재료 매입 금액. ${COST_BASIS}`,
   operatingExpense:
-    "임차료·공과금·직원 경비 등 일반 경비. 채권·채무 관리의 미지급비용-직원 총액과 같은 숫자로 보고, '그 외 지출' 항목과 겹치지 않게 입력합니다. 공급가액(부가세 제외).",
+    "임차료·공과금·직원 경비 등 일반 경비. 경영지원 관리의 미지급비용-직원 총액과 같은 숫자로 보고, '그 외 지출' 항목과 겹치지 않게 입력합니다. 공급가액(부가세 제외).",
 };
 
 export const OTHER_EXPENSE_HELP =

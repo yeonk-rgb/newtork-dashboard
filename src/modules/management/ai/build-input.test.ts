@@ -55,7 +55,7 @@ function summaryFor(
       revenueTarget: 4_000_000_000n,
       quarterTargets: [null, null, null, null],
     },
-    // 2026년 9월 채권·채무 외상매출금 (대시보드 미수금 기준)
+    // 2026년 9월 경영지원 관리 외상매출금 (대시보드 미수금 기준)
     receivables: [
       arEntry("r1", {
         status: "LONG_OVERDUE",
@@ -125,7 +125,7 @@ describe("buildAiInput", () => {
     expect(input.profit.estimatedProfit).toBe("1.80억원");
   });
 
-  it("장기미수 금액·건수 (거래처명 없이)", () => {
+  it("장기 미수금 금액·건수 (거래처명 없이)", () => {
     expect(input.receivables.longOverdue).toEqual({
       amount: "5,000만원",
       count: 1,
@@ -240,7 +240,7 @@ describe("SYSTEM_PROMPT", () => {
     expect(SYSTEM_PROMPT).toContain("shortfalls(부족한 점·주의)");
     expect(SYSTEM_PROMPT).toContain("improvements(다음 분기 개선할 점)");
     expect(SYSTEM_PROMPT).toContain("같은 순서로 하나씩");
-    expect(SYSTEM_PROMPT).toContain('"장기 미수 거래처"');
+    expect(SYSTEM_PROMPT).toContain('"장기 미수금 거래처"');
   });
 });
 
@@ -260,11 +260,11 @@ describe("mockAiComment (카드 3단이 모두 보이도록)", () => {
     ]);
     expect(mock.shortfalls).toEqual([
       "[모의] 기대치 대비 18.00억원 부족입니다.",
-      "[모의] 장기미수 5,000만원(1건)입니다.",
+      "[모의] 장기 미수금 5,000만원(1건)입니다.",
     ]);
     expect(mock.improvements).toEqual([
       "[모의] 부족분만큼 수주·출하 일정을 앞당겨 점검합니다.",
-      "[모의] 장기 미수 거래처에 수금 일정을 확인합니다.",
+      "[모의] 장기 미수금 거래처에 수금 일정을 확인합니다.",
       "[모의] 9월 실적을 확정해 분석을 갱신합니다.",
     ]);
     // 거래처명은 AI(모의 포함) 문장에 나오지 않는다

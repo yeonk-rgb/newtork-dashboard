@@ -76,19 +76,19 @@ async function main() {
   await check("작성자 이름 조회 (loadUserNames)", () =>
     loadUserNames(["seed", "smoke-unknown"]),
   );
-  await check("미수금 관리 목록 (loadReceivablesData)", () =>
+  await check("미수금 건별 기록 목록 (loadReceivablesData)", () =>
     loadReceivablesData(true),
   );
   await check("목표·항목 설정: 연간 목표·직원 수 (loadTarget)", () =>
     loadTarget(2026),
   );
-  await check("채권·채무 관리 (loadLedgerData)", () =>
+  await check("경영지원 관리 (loadLedgerData)", () =>
     loadLedgerData({ year: 2026, month: 10 }, true),
   );
   await check("월간 입력 엑셀: 월별 값·지출 항목 (loadEntryExportData)", () =>
     loadEntryExportData([7, 8, 9].map((month) => ({ year: 2026, month }))),
   );
-  await check("채권·채무 이관: 같은 달 기존 행 수 (countExisting)", () =>
+  await check("경영지원 관리 이관: 같은 달 기존 행 수 (countExisting)", () =>
     countExisting(2026, 10),
   );
   await check("엑셀 업로드: 기존 데이터·이력", () =>

@@ -39,7 +39,7 @@ export const date: AuditFormat = (v) => {
   return String(v).slice(0, 10);
 };
 
-/** 선택값 → 화면 한글 (예: "LONG_OVERDUE" → "장기미수") */
+/** 선택값 → 화면 한글 (예: "LONG_OVERDUE" → "장기 미수금") */
 export const labelOf =
   (labels: Record<string, string>): AuditFormat =>
   (v) =>

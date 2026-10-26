@@ -143,13 +143,13 @@ describe("create·update 요청", () => {
 });
 
 describe("입력 행(draft)", () => {
-  it("새 행 기본값: 외상매출금 = 당월수금예정, 업체 = 기타, 매입유형은 비움", () => {
+  it("새 행 기본값: 외상매출금 = 당월 수금예정, 업체 = 기타, 매입유형은 비움", () => {
     expect(emptyDraft("AR").arStatus).toBe("SCHEDULED");
     expect(emptyDraft("ACCRUED_VENDOR").expenseType).toBe("OTHER");
     expect(emptyDraft("AP").purchaseType).toBe("");
   });
 
-  it("당월수금완료가 아니게 바꾸면 완료일을 지운다", () => {
+  it("당월 수금이 아니게 바꾸면 완료일을 지운다", () => {
     const done = withArStatus(emptyDraft("AR"), "COLLECTED", "2026-10-20");
     expect(done).toMatchObject({
       arStatus: "COLLECTED",

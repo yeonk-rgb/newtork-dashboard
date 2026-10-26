@@ -45,7 +45,7 @@ function summaryFor(
             revenueTarget: opts.target ?? 4_000_000_000n,
             quarterTargets: [null, null, null, null],
           },
-    // 9월 채권·채무 외상매출금
+    // 9월 경영지원 관리 외상매출금
     receivables: [
       arEntry("a", { amount: 30_000_000n }),
       arEntry("b", { amount: 20_000_000n }),
@@ -146,20 +146,20 @@ describe("이익 구조 도넛", () => {
 });
 
 describe("미수금 도넛", () => {
-  it("장기미수 · 당월 수금예정 + 건수, 가운데 미수 총액·기준월", () => {
+  it("장기 미수금 · 당월 수금예정 + 건수, 가운데 미수 총액·기준월", () => {
     const d = receivablesDonut(summaryFor());
     expect(d.slices.map((x) => [x.label, x.value, x.extra])).toEqual([
-      ["장기미수", "60000000", "2건"],
+      ["장기 미수금", "60000000", "2건"],
       ["당월 수금예정", "50000000", "2건"],
     ]);
-    // 당월 수금완료(700만)는 미수가 아니라 조각·가운데 합계에 넣지 않음
+    // 당월 수금(700만)는 미수가 아니라 조각·가운데 합계에 넣지 않음
     expect(d.center).toEqual({
       value: "1.10억원",
-      label: "미수금 총액 (9월 기준)",
+      label: "미수금 총액 (9월 외상매출금 기준)",
     });
   });
 
-  it("기간에 채권·채무 외상매출금 입력이 없으면 빈 안내", () => {
+  it("기간에 경영지원 관리 외상매출금 입력이 없으면 빈 안내", () => {
     const s = summaryFor();
     const d = receivablesDonut({
       ...s,

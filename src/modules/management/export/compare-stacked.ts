@@ -21,7 +21,7 @@ const PRINT_REASON =
 const ORIENTATION_REASON =
   "A4 가로 — 너비 맞춤 시 세로는 약 70%, 가로는 100% (월간 입력과 같은 기준, 2026-10-25)";
 
-/** 총액 칸 위치별 원본 셀 — 일반: 외상매입금 F41 위·F42 가운데·F49 아래 / 빨간: 장기미수 F3 위·F4 아래 */
+/** 총액 칸 위치별 원본 셀 — 일반: 외상매입금 F41 위·F42 가운데·F49 아래 / 빨간: 장기 미수금 F3 위·F4 아래 */
 const TOTAL_SOURCE: Record<"total" | "warnTotal", Record<TotalPart, string>> = {
   total: { top: "F41", middle: "F42", bottom: "F49", single: "F41" },
   warnTotal: { top: "F3", middle: "F3", bottom: "F4", single: "F3" },
@@ -93,14 +93,14 @@ export function stackedComparison(
           ? {
               intended: {
                 border:
-                  "원본에 없는 그룹 길이(1행 또는 3행 이상) — 위·가운데·아래 테두리 규칙 (채권·채무 다운로드와 같음)",
+                  "원본에 없는 그룹 길이(1행 또는 3행 이상) — 위·가운데·아래 테두리 규칙 (경영지원 관리 다운로드와 같음)",
               },
             }
           : {}),
       });
     }
   }
-  // 빨간 안내·빨간 총액 (색만 원본 장기미수 C3 빨강으로 바꿈)
+  // 빨간 안내·빨간 총액 (색만 원본 장기 미수금 C3 빨강으로 바꿈)
   for (const role of [
     "memo",
     "note",
@@ -120,7 +120,7 @@ export function stackedComparison(
       source: src,
       target: target(c),
       intended: {
-        font: "주의할 숫자·안내는 빨간 글씨 (색은 원본 장기미수 C3 그대로)",
+        font: "주의할 숫자·안내는 빨간 글씨 (색은 원본 장기 미수금 C3 그대로)",
         ...(role === "total" && c.totalPart !== "top"
           ? { border: "그룹 길이에 맞춘 위·가운데·아래 테두리" }
           : {}),
@@ -170,7 +170,7 @@ export function stackedComparison(
       actual: stable(ws.getCell(c.row, c.col).numFmt),
       result: "의도한 차이",
       reason:
-        "H 라벨 + I 금액 — 채권·채무 다운로드 '자동이체 합계'와 같은 규칙 (총액 굵은 글꼴, 테두리 없음)",
+        "H 라벨 + I 금액 — 경영지원 관리 다운로드 '자동이체 합계'와 같은 규칙 (총액 굵은 글꼴, 테두리 없음)",
     });
   }
   const dataRow = first(

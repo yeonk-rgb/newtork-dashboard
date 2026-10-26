@@ -1,4 +1,4 @@
-// 채권·채무 관리 규칙 (순수 함수): 권한별 가능한 동작, 기준년월, 날짜 검사
+// 경영지원 관리 규칙 (순수 함수): 권한별 가능한 동작, 기준년월, 날짜 검사
 // 화면(클라이언트)에서도 쓰므로 server-only 인 "@/shared/auth" 대신 순수 모듈을 직접 가져온다
 import { can } from "@/shared/auth/can";
 import type { AppUser } from "@/shared/auth/types";
@@ -49,7 +49,7 @@ export function canCreateLedgerEntry(user: AppUser): boolean {
   return can(user, "edit", "management");
 }
 
-/** 숨긴 항목 보기·복구: confirm (미수금 관리와 같은 기준) */
+/** 숨긴 항목 보기·복구: confirm (미수금 건별 기록과 같은 기준) */
 export function canManageHiddenLedger(user: AppUser): boolean {
   return can(user, "confirm", "management");
 }
@@ -138,7 +138,7 @@ export type LedgerDateFields = {
 
 /**
  * 날짜 규칙 위반 (필드 → 메시지). 비어 있으면 통과.
- * - 완료일: 오늘 이후 불가. 외상매출금은 당월수금완료일 때만 입력하고, 그때는 필수
+ * - 완료일: 오늘 이후 불가. 외상매출금은 당월 수금일 때만 입력하고, 그때는 필수
  * - 예정일: 제한 없음 (형식만)
  * @param today "YYYY-MM-DD" (한국 날짜)
  */
@@ -160,7 +160,7 @@ export function ledgerDateErrors(
   } else if (fields.settledOn > today) {
     errors.settledOn = "완료일은 오늘 이후로 입력할 수 없습니다.";
   } else if (isAr && !collected) {
-    errors.settledOn = "완료일은 당월수금완료일 때만 입력합니다.";
+    errors.settledOn = "완료일은 당월 수금일 때만 입력합니다.";
   }
   return errors;
 }

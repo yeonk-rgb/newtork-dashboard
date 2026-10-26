@@ -103,7 +103,7 @@ describe("buildSheetLayout — 샘플 16행", () => {
     ]);
   });
 
-  it("장기미수는 빨간 역할, 코드는 글자(앞자리 0), 코드 없는 거래처는 빈 칸", () => {
+  it("장기 미수금은 빨간 역할, 코드는 글자(앞자리 0), 코드 없는 거래처는 빈 칸", () => {
     expect(cellAt(rows, 3, 3)?.role).toBe("longName");
     expect(cellAt(rows, 3, 1)).toMatchObject({
       value: "0000000087",

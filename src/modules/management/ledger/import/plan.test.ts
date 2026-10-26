@@ -100,7 +100,7 @@ describe("buildImportPlan", () => {
     expect(future.blockers[0].message).toContain("오늘 이후");
   });
 
-  it("미분류는 상태를 골라야 가져오기 가능 — 당월수금완료를 고르면 완료일 기본값", async () => {
+  it("미분류는 상태를 골라야 가져오기 가능 — 당월 수금을 고르면 완료일 기본값", async () => {
     const parsed = await parseFixture("ledger-sample-issues.xlsx");
     const before = plan(parsed, { purchaseType: ALL_GOODS });
     expect(
@@ -114,7 +114,7 @@ describe("buildImportPlan", () => {
       arStatus: { 25: "SCHEDULED", 26: "COLLECTED", 28: "LONG_OVERDUE" },
     });
     expect(after.blockers).toEqual([]);
-    // 26행 적요 날짜(10/20)는 수금완료 그룹이 아니었으므로 완료일 후보로 쓰지 않음
+    // 26행 적요 날짜(10/20)는 당월 수금 그룹이 아니었으므로 완료일 후보로 쓰지 않음
     expect(after.entries.find((e) => e.row === 26)?.fields).toMatchObject({
       arStatus: "COLLECTED",
       settledOn: "2026-10-25",

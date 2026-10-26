@@ -45,7 +45,7 @@ const rows = [
 ];
 
 describe("groupArRows", () => {
-  it("장기미수 → 당월수금완료 → 당월수금예정 순서, 빈 그룹도 총액 0으로 남김", () => {
+  it("장기 미수금 → 당월 수금 → 당월 수금예정 순서, 빈 그룹도 총액 0으로 남김", () => {
     const groups = groupArRows(rows);
     expect(groups.map((g) => g.status)).toEqual([
       "LONG_OVERDUE",

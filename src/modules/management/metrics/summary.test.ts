@@ -34,7 +34,7 @@ describe("computeManagementSummary", () => {
       quarterTargets: [null, null, null, null],
     },
     receivables: [
-      // 채권·채무 외상매출금 9월 당월수금예정 (2026-10-26부터 대시보드 미수금 기준)
+      // 경영지원 관리 외상매출금 9월 당월 수금예정 (2026-10-26부터 대시보드 미수금 기준)
       arEntry("r", { amount: 70n }),
     ],
     today,

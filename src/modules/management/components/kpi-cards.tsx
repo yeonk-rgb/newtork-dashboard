@@ -13,6 +13,7 @@ import type {
   ManagementSummary,
   MarginChange,
 } from "../metrics/types";
+import { TERMS } from "../terms";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
@@ -244,7 +245,7 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
         />
       </Card>
 
-      {/* 미수금 = 채권·채무 외상매출금 (장기미수 + 당월 수금예정, 2026-10-26 결정 05-22) */}
+      {/* 미수금 = 경영지원 관리 외상매출금 (장기 미수금 + 당월 수금예정, 2026-10-26 결정 05-22) */}
       <Card title="미수금 총액">
         <p className={valueClass}>
           {receivables.month ? (
@@ -255,13 +256,13 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           {receivables.month
-            ? `거래처 ${receivables.customerCount}곳 · ${receivables.month.month}월 채권·채무 기준${receivables.isCurrentMonth ? " (작성 중)" : ""}`
-            : "이 기간에 채권·채무 입력 없음"}
+            ? `거래처 ${receivables.customerCount}곳 · ${receivables.month.month}월 ${TERMS.arBasis}${receivables.isCurrentMonth ? " (작성 중)" : ""}`
+            : `이 기간에 ${TERMS.ledger} 입력 없음`}
         </p>
         {receivables.month && (
           <dl className="mt-4 space-y-2 text-xs text-muted-foreground">
             <div className="flex justify-between gap-2">
-              <dt>장기미수</dt>
+              <dt>{TERMS.longOverdue}</dt>
               <dd
                 className={
                   receivables.longOverdue.amount > 0n
@@ -274,7 +275,7 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
               </dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt>당월 수금예정</dt>
+              <dt>{TERMS.scheduled}</dt>
               <dd className="text-foreground">
                 <Won value={receivables.scheduled.amount} /> ·{" "}
                 {receivables.scheduled.count}건

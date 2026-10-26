@@ -1,5 +1,6 @@
-// 채권·채무 관리 표기 — 항목명·순서는 고객사 엑셀(경영지원_관리.xlsx)과 같게 둔다
+// 경영지원 관리 표기 — 항목명·순서는 고객사 엑셀(경영지원_관리.xlsx)과 같게 둔다
 // 값은 Prisma enum(management.prisma)과 같은 문자열. 화면(클라이언트)에서도 쓰므로 생성된 Prisma 타입을 가져오지 않는다
+import { TERMS } from "../terms";
 
 export const LEDGER_KINDS = [
   "AR",
@@ -28,14 +29,14 @@ export function parseKindParam(value: string | undefined): LedgerKind {
   return LEDGER_KINDS.find((k) => KIND_PARAM[k] === value) ?? "AR";
 }
 
-/** 외상매출금 상태 — 배열 순서 = 화면 그룹 순서 (장기미수 → 당월수금완료 → 당월수금예정) */
+/** 외상매출금 상태 — 배열 순서 = 화면 그룹 순서 (장기 미수금 → 당월 수금 → 당월 수금예정) */
 export const AR_STATUSES = ["LONG_OVERDUE", "COLLECTED", "SCHEDULED"] as const;
 export type ArStatus = (typeof AR_STATUSES)[number];
 
 export const AR_STATUS_LABEL: Record<ArStatus, string> = {
-  LONG_OVERDUE: "장기미수",
-  COLLECTED: "당월수금완료",
-  SCHEDULED: "당월수금예정",
+  LONG_OVERDUE: TERMS.longOverdue,
+  COLLECTED: TERMS.collected,
+  SCHEDULED: TERMS.scheduled,
 };
 
 /** 그룹 합계 줄 이름 (엑셀 '총액' 옆 메모 문구) */

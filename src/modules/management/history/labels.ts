@@ -6,6 +6,7 @@ import {
   type AuditArea,
   type AuditChange,
 } from "@/shared/audit/types";
+import { TERMS } from "../terms";
 
 /** 기록하는 화면 — area "admin" 화면은 관리자(대표)만 고를 수 있다 */
 export const HISTORY_SCREENS: {
@@ -16,12 +17,16 @@ export const HISTORY_SCREENS: {
   { key: "entry", label: "월간 입력", area: "management" },
   { key: "targets", label: "목표 설정", area: "management" },
   { key: "expense-categories", label: "지출 항목", area: "management" },
-  { key: "receivables", label: "미수금 관리", area: "management" },
-  { key: "ledger", label: "채권·채무 관리", area: "management" },
-  { key: "ledger-import", label: "채권·채무 엑셀 이관", area: "management" },
+  { key: "receivables", label: TERMS.itemReceivables, area: "management" },
+  { key: "ledger", label: TERMS.ledger, area: "management" },
+  {
+    key: "ledger-import",
+    label: `${TERMS.ledger} 엑셀 이관`,
+    area: "management",
+  },
   {
     key: "ledger-export",
-    label: "채권·채무 엑셀 다운로드",
+    label: `${TERMS.ledger} 엑셀 다운로드`,
     area: "management",
   },
   { key: "entry-export", label: "월간 입력 엑셀 다운로드", area: "management" },

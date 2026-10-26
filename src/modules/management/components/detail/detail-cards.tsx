@@ -17,6 +17,7 @@ import {
   receivablesDonut,
 } from "../donuts/donut-cards";
 import { comparisonRows, Deltas, fromMargin } from "../kpi-cards";
+import { TERMS } from "../../terms";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 const csvOf = (summary: ManagementSummary, name: string) =>
@@ -183,7 +184,7 @@ export function ProfitStructureCard({
   );
 }
 
-/** 미수금 원형 (채권·채무 외상매출금 기준): 장기미수 / 당월 수금예정, 아래 당월 수금완료·예정일 지남 */
+/** 미수금 원형 (경영지원 관리 외상매출금 기준): 장기 미수금 / 당월 수금예정, 아래 당월 수금·예정일 지남 */
 export function ReceivablesDonutCard({
   summary,
 }: {
@@ -201,7 +202,7 @@ export function ReceivablesDonutCard({
         receivables.month && (
           <dl className="space-y-1">
             <div className="flex justify-between gap-2">
-              <dt>당월 수금완료 (미수에 넣지 않음)</dt>
+              <dt>{TERMS.collected} (미수금에 넣지 않음)</dt>
               <dd className="text-foreground">
                 {formatWonShort(receivables.collected.amount)} ·{" "}
                 {receivables.collected.count}건

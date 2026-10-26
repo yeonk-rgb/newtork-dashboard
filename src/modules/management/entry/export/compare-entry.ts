@@ -68,7 +68,7 @@ export function entryComparison(
           ? {
               intended: {
                 border:
-                  "1행 그룹 총액은 네 면 테두리 (원본에는 1행 그룹이 없음 — 채권·채무 다운로드와 같은 규칙)",
+                  "1행 그룹 총액은 네 면 테두리 (원본에는 1행 그룹이 없음 — 경영지원 관리 다운로드와 같은 규칙)",
               },
             }
           : {}),
@@ -90,7 +90,7 @@ export function entryComparison(
       source: ENTRY_ROLE_CELLS.memo,
       target: target(warn),
       intended: {
-        font: "확정 안 됨·입력 없음 안내는 빨간 글씨 (색은 원본 장기미수 C3 그대로)",
+        font: "확정 안 됨·입력 없음 안내는 빨간 글씨 (색은 원본 장기 미수금 C3 그대로)",
       },
     });
   }

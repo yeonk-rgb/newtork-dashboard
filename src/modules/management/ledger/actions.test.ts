@@ -1,4 +1,4 @@
-// 채권·채무 Server Action — 저장과 변경 기록이 한 트랜잭션인지, 바뀐 칸만 화면 표기로 남는지
+// 경영지원 관리 Server Action — 저장과 변경 기록이 한 트랜잭션인지, 바뀐 칸만 화면 표기로 남는지
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { isForbiddenKey } from "@/shared/audit/forbidden";
@@ -107,7 +107,7 @@ describe("추가", () => {
         before: null,
         after: "0000000087",
       },
-      { field: "arStatus", label: "상태", before: null, after: "장기미수" },
+      { field: "arStatus", label: "상태", before: null, after: "장기 미수금" },
       {
         field: "partnerName",
         label: "거래처명",
@@ -151,8 +151,8 @@ describe("수정", () => {
       {
         field: "arStatus",
         label: "상태",
-        before: "당월수금예정",
-        after: "당월수금완료",
+        before: "당월 수금예정",
+        after: "당월 수금",
       },
       {
         field: "amount",

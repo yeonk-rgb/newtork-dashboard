@@ -1,5 +1,5 @@
 "use client";
-// 당월수금완료로 바꿀 때 뜨는 완료일 입력 (모달). 확인하면 입력 중인 행에 값만 넣고, 저장은 행의 [저장]으로
+// 당월 수금으로 바꿀 때 뜨는 완료일 입력 (모달). 확인하면 입력 중인 행에 값만 넣고, 저장은 행의 [저장]으로
 import { useState } from "react";
 
 import { formatWon } from "@/shared/format/money";

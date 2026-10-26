@@ -53,7 +53,7 @@ export type LedgerPreview = {
   /** 같은 기준년월에 이미 있는 행 (숨기지 않은 것) */
   existing: Record<LedgerKind, number>;
   existingTotal: number;
-  /** 완료일이 없는 당월수금완료 행의 기본값 min(기준월 말일, 오늘) — 미분류를 수금완료로 고를 때도 */
+  /** 완료일이 없는 당월 수금 행의 기본값 min(기준월 말일, 오늘) — 미분류를 당월 수금으로 고를 때도 */
   defaultSettledOn: string;
   /** 파일 안 양식 시트 이름 (여러 장이면 다른 시트로 바꿀 수 있게) */
   sheetCandidates: string[];
@@ -117,7 +117,7 @@ export type ImportChoices = {
   purchaseType: Record<number, PurchaseType>;
   /** 없으면 "기타" */
   expenseType: Record<number, ExpenseType>;
-  /** 당월수금완료 완료일 수정 */
+  /** 당월 수금 완료일 수정 */
   settledOn: Record<number, string>;
 };
 
@@ -155,7 +155,7 @@ export function finalArStatus(
   return row.arStatus ?? choices.arStatus[row.row] ?? null;
 }
 
-/** 당월수금완료 행의 완료일: 사용자 수정 > 파일(적요 날짜·기본값) > 기본값 */
+/** 당월 수금 행의 완료일: 사용자 수정 > 파일(적요 날짜·기본값) > 기본값 */
 export function finalSettledOn(
   row: Pick<ParsedRow, "row" | "settledOn">,
   choices: ImportChoices,

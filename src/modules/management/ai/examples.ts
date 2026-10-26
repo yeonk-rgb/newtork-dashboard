@@ -19,7 +19,7 @@ export const exampleId = (year: number, quarter: number) =>
 export const EXAMPLE_QUARTERS = [
   {
     quarter: { unit: "quarter", year: 2026, quarter: 2 },
-    situation: "a) 목표 미달 + 장기미수",
+    situation: "a) 목표 미달 + 장기 미수금",
   },
   {
     quarter: { unit: "quarter", year: 2025, quarter: 1 },
@@ -135,8 +135,8 @@ export function buildExampleComment(
   const longOverdue = input.receivables.longOverdue;
   if (longOverdue.count > 0) {
     pairs.push([
-      `장기미수가 ${longOverdue.amount}(${longOverdue.count}건)입니다.`,
-      `장기미수 ${longOverdue.count}건의 수금 일정을 거래처별로 확정합니다.`,
+      `장기 미수금이 ${longOverdue.amount}(${longOverdue.count}건)입니다.`,
+      `장기 미수금 ${longOverdue.count}건의 수금 일정을 거래처별로 확정합니다.`,
     ]);
   }
   const top = pairs.slice(0, 3);

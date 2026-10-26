@@ -18,8 +18,8 @@
 | `docs/render-db-expiry.md` | Render 시험 서버 무료 DB 만료 대응 선택지 (유료·백업 이전·새로 만들기) |
 | `docs/user-guide.md` | 경영지원팀 담당자용 사용 안내서 (화면별 사용법·엑셀 받기·자주 묻는 것, 스크린샷 `docs/user-guide-images/` — 가짜 데이터) |
 | `docs/client-questions-2026-11.md` | 2차 고객사 확인 요청 정리본 (05-16·30~39, 이번에 반영한 것, 1차 미답 목록) |
-| `docs/client-questions-3rd-draft.md` | 3차 확인 요청 초안 (05-41~46 자금수지 예측 — 아직 보내지 않음, 2차 답변 회신에 붙일 예정) |
-| `docs/design-cashflow-forecast.md` | 3~6개월 자금수지 예측 설계안 (구현은 고객 답변 뒤) |
+| `docs/client-questions-3rd-draft.md` | 3차 확인 요청 초안 (05-41~46 자금 수지 예측 — 아직 보내지 않음, 2차 답변 회신에 붙일 예정) |
+| `docs/design-cashflow-forecast.md` | 3~6개월 자금 수지 예측 설계안 (구현은 고객 답변 뒤) |
 | `docs/excel-default-font-review.md` | 엑셀 기본 글꼴 Calibri 후처리 검토 — 보류, 다시 할 때 방법·위험·테스트 |
 
 ## 프로젝트 개요
@@ -91,8 +91,8 @@
   - 카드 위치: 메인(`/`) **맨 아래 "AI 분석" 영역**(2026-10-25 재구성), 경영지원 상세(`/management`) KPI 위 — 같은 `AiCommentSection` 재사용, 기록은 (연도, 분기)로만 찾으므로 두 화면이 같은 기록을 공유
   - 끝난 분기만, confirm 권한만 생성 (`ai/rules.ts`의 `aiAbilities()` — 화면·Server Action 공용). 월 보기 = 그 달의 분기, 연간·누적 = 확정 월이 있는 마지막 분기
   - 응답 형식(프롬프트 v2): `{ summary[2~3], shortfalls[0~3], improvements[1~3] }`. 프롬프트는 문장 60자, 저장 검증은 80자 — 넘는 문장·3개 초과는 `normalizeAiComment()`가 잘라서 살리고(로그 경고) 요약이 없을 때만 실패. 옛 형식(`summary` 문자열 + `weaknesses`)은 `readStoredComment()`로 **화면 읽기만** 지원, 새로 저장하는 건 새 형식만
-  - AI가 계산하지 않도록 입력에 미리 넣는다: 금액 `formatWonShort()`("7.09억원"·"6,668만원"), 목표 차이 `achievementText()`("82.4%로 17.6%p 부족/초과"), 연간 진도 `progressText()`, 기대치 대비 부족액, 매입·경비 합계, 추정 손익, 미수금(외상매출금 기준월·장기미수·당월 수금예정·당월 수금완료 금액·건수 — 프롬프트 v3 `2026-10-26.1`). 산업분야·제품 시리즈 비중은 생산팀 연동 전까지 입력에서 제외 (`build-input.ts`의 TODO 위치에 `is_sample`과 함께 추가)
-  - **headline(연간 목표 달성 한 줄)과 장기 미수 거래처명은 AI가 아니라 서버가 만든다** (`ai/annotations.ts`, 생성 시 결과와 함께 저장 — 2026-10-26부터 외상매출금 장기미수 거래처, 경과일 없음. 옛 기록의 `ageDays`는 읽기만). 거래처명은 AI 입력에 넣지 않는다 (05-19)
+  - AI가 계산하지 않도록 입력에 미리 넣는다: 금액 `formatWonShort()`("7.09억원"·"6,668만원"), 목표 차이 `achievementText()`("82.4%로 17.6%p 부족/초과"), 연간 진도 `progressText()`, 기대치 대비 부족액, 매입·경비 합계, 추정 손익, 미수금(외상매출금 기준월·장기 미수금·당월 수금예정·당월 수금 금액·건수 — 프롬프트 v3 `2026-10-26.1`, 단어 정리 `2026-10-26.2`). 산업분야·제품 시리즈 비중은 생산팀 연동 전까지 입력에서 제외 (`build-input.ts`의 TODO 위치에 `is_sample`과 함께 추가)
+  - **headline(연간 목표 달성 한 줄)과 장기 미수금 거래처명은 AI가 아니라 서버가 만든다** (`ai/annotations.ts`, 생성 시 결과와 함께 저장 — 2026-10-26부터 외상매출금 장기 미수금 거래처, 경과일 없음. 옛 기록의 `ageDays`는 읽기만). 거래처명은 AI 입력에 넣지 않는다 (05-19)
   - 카드 모양: 연한 네이비 바탕 + 왼쪽 네이비 강조선, 오른쪽 위 "AI 분석/모의 응답 · 생성일시" + [다시 분석], headline, 3단(이번 기간 현황 / 부족한 점·주의 / 다음 분기 개선할 점) • 목록
   - 저장된 코멘트의 `promptVersion`이 현재와 다르면 "분석 기준이 바뀌어…", 입력 해시가 다르면 "데이터가 변경되어…" 안내
   - 모델 `claude-opus-5-5`(`shared/ai/client.ts`), SDK `@anthropic-ai/sdk` 버전 정확히 고정, 구조화 출력 + 거절 시 서버 fallback + Zod 재검증. 프롬프트를 바꾸면 `ai/prompt.ts`의 `PROMPT_VERSION`을 올린다
@@ -103,8 +103,8 @@
 - **지표 계산**: `modules/management/metrics/`(순수 함수, DB·화면 모름) + `data/`(DB 조회, server-only). 공개 함수는 `getManagementSummary(period)` (권한: 경영지원 view)
   - 금액은 BigInt, 비율만 number(0~1). 0으로 나누기·데이터 없음은 `null` + `reason`
   - 이익 비용 범위는 `metrics/settings.ts`의 `costMode` (05-3 결정: 매입 포함 = 매입액은 원가)
-  - **미수금 = 채권·채무 관리 외상매출금 (2026-10-26 결정 05-22, 결정 반영 PR ②)**: `metrics/ar-receivables.ts`(순수 함수) — 기준월 = 기간 안에서 오늘이 속한 달까지 외상매출금 행이 있는 마지막 달(없으면 "입력 없음", 다른 기간 값을 끌어오지 않음), 미수 = 장기미수 + 당월수금예정, 당월수금완료는 따로(미수 아님), 기준일 = min(기준월 말일, 오늘). 경과일 구간(90일 초과 등) 대신 담당자가 정한 "장기미수". 수금 예정은 당월수금예정 행의 예정일. 조회 `loadArEntries(year)`(`deletedAt: null`). 요약 입력 `SummaryInput.receivables` = 외상매출금 행
-  - 미수금 관리(건별)는 **참고용**(사이드바 "미수금(건별 참고)"): 건별 계산은 `computeItemReceivables`(경과일 발생일 기준, 05-17) — 화면·건별 엑셀(`?kind=receivables`)만 쓴다. 화면 맨 위에 "대시보드는 외상매출금 기준" + 같은 기준일의 외상매출금 미수 ↔ 건별 합계 차이 안내(막지는 않음)
+  - **미수금 = 경영지원 관리 외상매출금 (2026-10-26 결정 05-22, 결정 반영 PR ②)**: `metrics/ar-receivables.ts`(순수 함수) — 기준월 = 기간 안에서 오늘이 속한 달까지 외상매출금 행이 있는 마지막 달(없으면 "입력 없음", 다른 기간 값을 끌어오지 않음), 미수 = 장기 미수금 + 당월 수금예정, 당월 수금은 따로(미수금 아님), 기준일 = min(기준월 말일, 오늘). 경과일 구간(90일 초과 등) 대신 담당자가 정한 "장기 미수금". 수금 예정은 당월 수금예정 행의 예정일. 조회 `loadArEntries(year)`(`deletedAt: null`). 요약 입력 `SummaryInput.receivables` = 외상매출금 행
+  - 미수금 건별 기록은 **참고용**(사이드바 "미수금 건별 기록"): 건별 계산은 `computeItemReceivables`(경과일 발생일 기준, 05-17) — 화면·건별 엑셀(`?kind=receivables`)만 쓴다. 화면 맨 위에 "대시보드는 외상매출금 기준" + 같은 기준일의 외상매출금 미수 ↔ 건별 합계 차이 안내(막지는 않음)
   - **증감 비교는 같은 월끼리**: 현재 기간에 확정 안 된 달(미확정·마감 전)이 있으면 비교 기간도 같은 순서의 달만 집계 (예: 2026 1~8월 ↔ 2025 1~8월, 3분기 7~8월 ↔ 2분기 4~5월). 모든 월이 확정이면 기간 전체 비교. 화면에 "같은 기간 비교 · …" 표시
   - 검산: `npm run metrics:report -- 2026 Q3` (로컬 DB로 계산 결과를 마크다운 표로 출력)
 - **손익분기점(BEP) 달성률(2026-10-25)**: 계산 `metrics/break-even.ts`(순수 함수, `PeriodCore.breakEven`), 카드 `bepDonut()`(`components/donuts/donut-cards.ts`) — 메인 2줄(연간 목표 옆, 2×2), 상세 `/management#break-even` 계산 내역 표(`components/detail/break-even-table.tsx`)
@@ -117,10 +117,11 @@
   - 월 목표 = 분기 목표 ÷ 3 자동(`allocateMonthTargets`, 나머지 원은 분기 마지막 달 — 분기 배분과 같은 `splitEvenly`), `TargetResult.monthTargets`·`month`(월 보기만). 직접 입력 칸은 만들지 않음 (05-16 결정)
   - 추정 이익 = `profit.profit`(지금 비용 기준에서 매출 − 지출과 정확히 같음, 테스트 고정), 비교는 금액 차이 `Comparison.profitDiff`. 목표 분기 목록은 끝났고 3개월 모두 확정인데 미달일 때만 빨강(미확정 달이 있으면 안내만)
 - **자료 기반 결정(2026-10-26)**: 고객사 추가 답변은 받지 않고 05의 열린 질문을 결정으로 닫음. 결정 반영 PR ①~⑥ (06 "결정 반영 PR 순서")
-  - **적용 기준**: 화면에 "임시 기준·고객사 확인 중"은 쓰지 않고, 정한 기준을 "적용 기준"으로 남긴다 — 문구는 `metrics/settings.ts`의 `APPLIED_BASIS` 한 곳(BEP 카드·계산 내역 표·리포트 각주). 담당자가 다르게 원하면 설정값과 이 문구를 함께 바꾼다. 금액 기준: 월간 입력(매출·매입·경비) = 공급가액(부가세 제외), 미수금·채권·채무·자금수지 예측 = 실제 주고받는 금액(부가세 포함)
-  - 입력·수정 화면 제목 아래 "작업 내용은 변경 이력에 기록됩니다" = `shared/ui/audit-notice.tsx`의 `<AuditNotice />` (월간 입력·목표·채권·채무·이관·업로드·미수금·관리자 설정)
+  - **적용 기준**: 화면에 "임시 기준·고객사 확인 중"은 쓰지 않고, 정한 기준을 "적용 기준"으로 남긴다 — 문구는 `metrics/settings.ts`의 `APPLIED_BASIS` 한 곳(BEP 카드·계산 내역 표·리포트 각주). 담당자가 다르게 원하면 설정값과 이 문구를 함께 바꾼다. 금액 기준: 월간 입력(매출·매입·경비) = 공급가액(부가세 제외), 미수금·외상매입금·미지급비용·자금 수지 예측 = 실제 주고받는 금액(부가세 포함)
+  - 입력·수정 화면 제목 아래 "작업 내용은 변경 이력에 기록됩니다" = `shared/ui/audit-notice.tsx`의 `<AuditNotice />` (월간 입력·목표·경영지원 관리·이관·업로드·미수금·관리자 설정)
   - **인당 생산성**: 목표·항목 설정 "직원 수"(`AnnualTarget.headcount Int?`, 연도별 선택, 목표와 함께 저장·변경 이력 "직원 수") → `metrics/productivity.ts`(확정된 달 합계 ÷ 직원 수, 원 단위 반올림, `reason` no-headcount/no-data) → `ManagementSummary.productivity` → 상세 BEP 카드 옆 `ProductivityCard`. 시드 12명
   - 프로젝트별 원가·이익률, 수주 잔고 & 영업 파이프라인 = 자료 부족으로 보류, 생산량·가동률 = 생산팀, 그룹웨어 연동 = 통합 단계 (06)
+- **화면 단어(2026-10-26 담당자 요청)**: 화면·엑셀·변경 이력·AI 문장의 단어는 담당자님 자료 단어 — 경영지원 관리(옛 채권·채무), 장기 미수금, 당월 수금, 당월 수금예정, 미수금 건별 기록(옛 미수금 관리), 자금 수지 예측. **단어는 `modules/management/terms.ts`의 `TERMS` 한 곳**(사이드바 `shared/auth/access.ts`는 shared라 글자로 두고 `terms.test.ts`가 같은지 고정, 같은 테스트가 src 코드(주석 제외)에 옛 단어가 다시 들어오면 실패). 주소·코드 이름·DB 값·파일명 `경영지원_관리_*.xlsx`·엑셀 메모 판별 글자("장기미수금"·"수금된"·"수금예정")는 그대로. 리포트 시트 "경영지원 관리 2026-10"·"경영지원 관리 상세", 예전 "채권·채무 2026-10"도 `selectLedgerSheet`가 이름 끝 기준년월로 고름. AI 프롬프트 `2026-10-26.2`
 - 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
@@ -129,63 +130,63 @@
   - 저장은 한 트랜잭션(`save-upload.ts`): 월별실적은 **확정으로 덮어씀**, 그외지출액은 '기타(엑셀 이관)' 항목, 그 달 나머지 그 외 지출 항목은 0원. 이력은 `mgmt_data_upload`
   - 업로드로 저장된 달·목표는 `uploadId`가 남고, 그 데이터가 AI 입력에 들어가는 분기는 **[분석하기] 차단**(05-19 동의 전, `hasUploadedInput()`)
   - 권한: 화면·미리보기 = 경영지원 view, 저장 = confirm (`upload/rules.ts`)
-- **미수금 관리(6단계 ③)**: `modules/management/receivables/`, `/management/receivables` — 규칙은 `rules.ts`의 `receivableAbilities()`(화면·Server Action 공용). 등록·미수 건 수정·수금 처리 = edit, 수금 완료 건 수정·수금 취소·숨김·복구 = confirm
+- **미수금 건별 기록(6단계 ③)**: `modules/management/receivables/`, `/management/receivables` — 규칙은 `rules.ts`의 `receivableAbilities()`(화면·Server Action 공용). 등록·미수 건 수정·수금 처리 = edit, 수금 완료 건 수정·수금 취소·숨김·복구 = confirm
   - **삭제 대신 숨김**(`deletedAt`·`deletedById`): 미수금을 새로 조회할 때는 **반드시 `deletedAt: null` 조건**을 넣는다 (지표용 `loadReceivables()`는 이미 제외). 숨긴 건은 복구 외 모든 동작 불가
   - 날짜: 발생일·수금일은 오늘 이후 불가, 예정일·수금일은 발생일 이후 (`receivableDateErrors()`), 오늘 = `getTodayKst()`
-- **채권·채무 관리(2026-10-24 1단계)**: `modules/management/ledger/`, `/management/ledger`, 테이블 `mgmt_ledger_entry`(모델 `LedgerEntry`) — 고객사 엑셀 `경영지원_관리.xlsx`를 옮긴 화면이라 **항목명·구분·열 순서는 엑셀과 같게** 둔다 (`labels.ts`)
+- **경영지원 관리(2026-10-24 1단계)**: `modules/management/ledger/`, `/management/ledger`, 테이블 `mgmt_ledger_entry`(모델 `LedgerEntry`) — 고객사 엑셀 `경영지원_관리.xlsx`를 옮긴 화면이라 **항목명·구분·열 순서는 엑셀과 같게** 둔다 (`labels.ts`)
   - 기준년월(`year`·`month`)별 거래처 잔액. 구분 4개(외상매출금 / 외상매입금 / 미지급비용-직원 / 미지급비용-업체)를 한 테이블에 두고, 구분마다 쓰는 칸(`arStatus`·`partnerCode` / `purchaseType` / `expenseType`·`autoTransfer`)은 `schemas.ts`의 discriminated union + `toLedgerData()`로 나머지를 null 처리
-  - 거래처코드는 외상매출금만, 선택, 입력하면 숫자 10자리 **문자열**(앞자리 0 유지). 당월수금완료는 완료일 필수(오늘 이후 불가), 다른 외상매출금 상태엔 완료일 불가 (`ledgerDateErrors()`)
+  - 거래처코드는 외상매출금만, 선택, 입력하면 숫자 10자리 **문자열**(앞자리 0 유지). 당월 수금은 완료일 필수(오늘 이후 불가), 다른 외상매출금 상태엔 완료일 불가 (`ledgerDateErrors()`)
   - 권한 `ledgerAbilities()`(화면·Server Action 공용): 열람 = 경영지원 view, 추가·수정 = edit, 숨김·복구 = confirm. 고객사 원문 "경영지원팀장만 수정"은 05-14·15에서 경영지원팀 전원 + 관리자(대표)로 확정 (2026-10-26)
   - 삭제 대신 숨김(`deletedAt`) — 조회 시 `deletedAt: null`. 샘플은 `npm run seed:ledger`(작성자 `seed-ledger`, `-- --remove`로 삭제)
   - **외상매출금 = 대시보드·리포트 미수금** (2026-10-26, 05-22 — 위 "지표 계산"). 잔액은 ERP 잔액 그대로(부가세 포함). 총액 ↔ 월간 입력 불러오기(05-24)·전월 이월(05-23)은 결정 반영 PR ③·④
-  - 시드: `prisma/seed.ts`의 `seedLedgerHistory()` — 시드 24개월 채권·채무(외상매출금 = 건별 시드의 월말 잔액, 외상매입금·업체 = 월간 입력 × 1.1, 직원 = 경비 그대로). 이미 행이 있는 달은 건너뜀
+  - 시드: `prisma/seed.ts`의 `seedLedgerHistory()` — 시드 24개월 경영지원 관리(외상매출금 = 건별 시드의 월말 잔액, 외상매입금·업체 = 월간 입력 × 1.1, 직원 = 경비 그대로). 이미 행이 있는 달은 건너뜀
   - 미지급비용-업체 합계는 3줄: 총액(자동이체 제외 = 엑셀 F열 SUM(D67:D79)과 같은 값) / 자동이체 합계 / 전체 합계 (`vendorTotals()`, 05-25)
-- **채권·채무 엑셀 이관(2026-10-25 2단계)**: `ledger/import/`, `/management/ledger/import` — 고객사 원본 양식 기준 (`ledger/export/ledger-template.xlsx` — 3단계 다운로드가 실행 중에 읽는 원본, 가짜 데이터 `ledger-sample.xlsx`·경고 확인용 `ledger-sample-issues.xlsx`는 `scripts/make-ledger-fixture.ts`로 생성). **PDF 변환본은 병합·색·수식이 없어 기준 자료로 쓰지 않는다**
+- **경영지원 관리 엑셀 이관(2026-10-25 2단계)**: `ledger/import/`, `/management/ledger/import` — 고객사 원본 양식 기준 (`ledger/export/ledger-template.xlsx` — 3단계 다운로드가 실행 중에 읽는 원본, 가짜 데이터 `ledger-sample.xlsx`·경고 확인용 `ledger-sample-issues.xlsx`는 `scripts/make-ledger-fixture.ts`로 생성). **PDF 변환본은 병합·색·수식이 없어 기준 자료로 쓰지 않는다**
   - 읽기는 `shared/upload/read-styled-sheet.ts`(병합·글자색·배경·수식·숨김 열), 해석은 `parse-ledger-sheet.ts`(순수 함수): C열 제목 글자로 블록 찾기(행 번호 고정 아님), 다음 행 머리글 확인, 거래처명·잔액 둘 다 비면 건너뜀(코드만 있으면 "코드만 있는 행"으로 안내), 0원 제외, 음수·소수·글자 금액은 오류
-  - 외상매출금 상태 = 그룹(F열 병합 범위, 또는 병합 없는 F열 SUM 칸 = 1행 그룹 — 다운로드 파일)의 H열 메모(공백 무시) → 빨간 글씨(FF0000)는 장기미수(다른 그룹이면 경고). 판별 안 되면 미분류 → 미리보기에서 골라야 가져오기 가능. **빨간 글씨 판별은 외상매출금 블록에서만** (업체 D77:E79는 무시, 05-28)
-  - 당월수금완료 완료일: 그 그룹 적요가 날짜면 기준년도 날짜로 후보 — **기준월 안·오늘 이전일 때만**(밖이면 "적요 날짜(10/15)가 기준월 밖이라 사용하지 않음" 표시), 아니면 min(기준월 말일, 오늘) — 모두 "확인 필요" 표시. 적요 원문은 날짜면 엑셀 표시대로 글자("10/15")로 보존
+  - 외상매출금 상태 = 그룹(F열 병합 범위, 또는 병합 없는 F열 SUM 칸 = 1행 그룹 — 다운로드 파일)의 H열 메모(공백 무시) → 빨간 글씨(FF0000)는 장기 미수금(다른 그룹이면 경고). 판별 안 되면 미분류 → 미리보기에서 골라야 가져오기 가능. **빨간 글씨 판별은 외상매출금 블록에서만** (업체 D77:E79는 무시, 05-28)
+  - 당월 수금 완료일: 그 그룹 적요가 날짜면 기준년도 날짜로 후보 — **기준월 안·오늘 이전일 때만**(밖이면 "적요 날짜(10/15)가 기준월 밖이라 사용하지 않음" 표시), 아니면 min(기준월 말일, 오늘) — 모두 "확인 필요" 표시. 적요 원문은 날짜면 엑셀 표시대로 글자("10/15")로 보존
   - 자동이체 = 적요에 "자동이체" 또는 연두 배경(원본은 **테마 색 9번**, 직접 색이면 초록 성분이 가장 큰 색)
-  - 원본 총액은 F열 병합 첫 칸의 계산값과 그 범위 행 합계 비교(`match`/`mismatch`/`noResult` 파일에 계산값 없음/`noTotal` 장기미수 F3:F4처럼 수식 없음). **원본 빈 양식의 F열 수식은 계산값 0이 저장돼 있다** — exceljs는 계산값 0을 `cell.value`에서 빼므로 `read-styled-sheet.ts`는 `cell.result`로 읽는다 (2026-10-25 정정)
+  - 원본 총액은 F열 병합 첫 칸의 계산값과 그 범위 행 합계 비교(`match`/`mismatch`/`noResult` 파일에 계산값 없음/`noTotal` 장기 미수금 F3:F4처럼 수식 없음). **원본 빈 양식의 F열 수식은 계산값 0이 저장돼 있다** — exceljs는 계산값 0을 `cell.value`에서 빼므로 `read-styled-sheet.ts`는 `cell.result`로 읽는다 (2026-10-25 정정)
   - 미리보기는 DB 쓰기 없음. 가져오기는 파일을 다시 보내 서버가 다시 읽고(파일 sha256·기존 행 수가 미리보기 때와 같아야 함) `buildImportPlan()`으로 다시 검증 → Serializable 트랜잭션: 덮어쓰기면 같은 달 행 숨김 → `mgmt_data_upload`(detail: 기준년월·방식·블록 합계·해시) → 행 저장(`uploadId`, 엑셀 순서대로 createdAt +1ms)
   - 권한 `importAbilities()`: 올리기·미리보기·추가 = edit, 덮어쓰기 = confirm
   - 여러 시트 파일: 양식 시트(C열 "외상매출금" 제목)만 후보, 1장이면 그 시트 → 기준년월과 같은 이름("2026-10") → 없으면 선택 (`selectLedgerSheet()`), 고른 시트 이름이 기준년월과 다르면 안내
-- **채권·채무 엑셀 다운로드(2026-10-25 3단계)**: `ledger/export/`, `GET /api/management/ledger/export?period=2026-10|2026-Q4|2026` (경영지원 view, `Cache-Control: no-store`, 서버 로그 `[ledger-export]`), 화면 [엑셀 다운로드 ▾]
+- **경영지원 관리 엑셀 다운로드(2026-10-25 3단계)**: `ledger/export/`, `GET /api/management/ledger/export?period=2026-10|2026-Q4|2026` (경영지원 view, `Cache-Control: no-store`, 서버 로그 `[ledger-export]`), 화면 [엑셀 다운로드 ▾]
   - 서식은 **원본 양식 파일 `ledger/export/ledger-template.xlsx`를 실행 중에 읽어** 역할 → 원본 셀 표(`template.ts`의 `ROLE_CELLS`)로 복사한다. 원본 시트를 고치지 않고 새 시트를 그린다(행 삽입은 병합을 못 옮김). 병합은 `mergeCellsWithoutStyle`(그냥 `mergeCells`는 첫 칸 서식을 범위 전체에 복사해 총액 테두리가 깨짐)
   - 배포 결과물 포함: `next.config.ts`의 `outputFileTracingIncludes` + 읽는 경로를 문자열 그대로(`readTemplateFile`) — 변수 경로면 Turbopack이 프로젝트 전체를 trace. 파일이 없으면 503 "양식 파일을 찾을 수 없습니다"
-  - 배치(`layout.ts`, 순수 함수): 그룹마다 max(데이터 수, 1)행, F열 그룹 병합 + `=SUM` + 계산값, H열 메모는 그룹 가운데 행, 장기미수 F열에도 SUM, 업체는 자동이체 행 위(E:F 병합, 적요 원문을 텍스트 `@`로)·총액은 자동이체 제외·H·I열에 "자동이체 합계 / 전체 합계"(I열 너비는 금액에 맞춰 넓힘). A열 숨김 + 텍스트 서식. 사용 열에 맑은 고딕 열 서식(exceljs 기본 글꼴 Calibri 대신)
+  - 배치(`layout.ts`, 순수 함수): 그룹마다 max(데이터 수, 1)행, F열 그룹 병합 + `=SUM` + 계산값, H열 메모는 그룹 가운데 행, 장기 미수금 F열에도 SUM, 업체는 자동이체 행 위(E:F 병합, 적요 원문을 텍스트 `@`로)·총액은 자동이체 제외·H·I열에 "자동이체 합계 / 전체 합계"(I열 너비는 금액에 맞춰 넓힘). A열 숨김 + 텍스트 서식. 사용 열에 맑은 고딕 열 서식(exceljs 기본 글꼴 Calibri 대신)
   - 인쇄: A4, 너비 1페이지에 맞춤·높이 자동 — 월별 시트 세로, 상세 시트 가로 (`printSetup()`). 통합 문서 기본 글꼴은 exceljs가 Calibri로 고정 — 후처리는 보류(`docs/excel-default-font-review.md`) — 사용 열에 맑은 고딕 열 서식으로 대신
   - 시트: 당월 1장 / 분기·연간은 데이터 있는 달만(없으면 빈 양식 1장, 이름 = 기간) + 맨 뒤 "상세"(원본에 없는 칸). 숨긴 행 제외. 파일명 `경영지원_관리_{기간}.xlsx`
   - 테스트: 원본 서식 대조(역할별), 왕복(다운로드 → `parseLedgerSheet` → 같은 행·상태·금액·코드, 총액 전부 match)
 - **경영지원 엑셀 내보내기(2026-10-25 PR ① 공용 엔진 + 월간 입력)**: 공용 `modules/management/export/`, `GET /api/management/export?kind=entry&period=2026-10|2026-Q3|2026|2026-YTD10` (경영지원 view, `no-store`, 서버 로그 `[mgmt-export]`, 변경 이력 `screen = entry-export` — 기록 실패 시 503)
   - **원본 경영지원_관리.xlsx 와 "같은 사람이 만든 파일"처럼**: 원본 파일을 불러와(`openTemplateWorkbook` — 새 통합 문서로 만들면 테마가 바뀌어 머리글 회색 E7E6E6·연두 테마 9가 다른 색이 됨) 원본 셀 서식을 역할별로 복사(`readRoleStyles`), 시트를 새로 그린다. 새 색·글꼴을 만들지 않음 (빨간 글씨도 원본 C3 색 `warnColor`). 문서 속성은 `WORKBOOK_AUTHOR`(원본 작성자·수정자 개인 이름 남기지 않음)
-  - 배치는 `blocks.ts`의 `SheetBuilder`(순수 함수): 제목(C:F 병합) → 머리글 → 그룹(F열 병합 + `=SUM` + 계산값, 가운데 행 H열 "← 메모") → 빈 행(원본 38·50·63행 높이). 숫자가 더 필요하면 열을 끼우지 않고 행으로 풀거나 H 라벨 + I 금액. 채권·채무 다운로드도 같은 엔진 (`ledger/export/__snapshots__` 결과물 스냅샷 — 리팩터링만 했으면 갱신 금지)
+  - 배치는 `blocks.ts`의 `SheetBuilder`(순수 함수): 제목(C:F 병합) → 머리글 → 그룹(F열 병합 + `=SUM` + 계산값, 가운데 행 H열 "← 메모") → 빈 행(원본 38·50·63행 높이). 숫자가 더 필요하면 열을 끼우지 않고 행으로 풀거나 H 라벨 + I 금액. 경영지원 관리 다운로드도 같은 엔진 (`ledger/export/__snapshots__` 결과물 스냅샷 — 리팩터링만 했으면 갱신 금지)
   - 기간·이름 `export/period.ts`: 시트 이름 = 기간("2026-Q3", 누적 "2026-01~10"), 파일 `경영지원_{화면}_{기간}.xlsx`, 메모 기간 "당월/3분기/2026년/1~10월"
-  - 월간 입력(`entry/export/`): 당월 = 월 시트 1장, 분기·연간·누적 = 맨 앞 합계 시트 + 데이터 있는 달(임시저장 포함). **합계는 확정 월만**(대시보드와 같은 숫자), 월 시트 H1 상태(임시저장·입력 없음 빨간 글씨), 합계 시트 H2 "제외: 9월 임시저장". 항목 이름은 고객사 문서 표기 — 월 시트 "월간 상품 매입액", 합계 시트 "상품 매입액" + 제목 "(2026년 3분기 합계)", H 메모 "← 당월 매입 (월간 입력)"(채권·채무 "← 당월 매입 지출"과 구분)
-  - 인쇄: 월간 입력·목표·미수금·채권·채무(월별·상세) 시트 모두 **A4 가로** + 너비 1페이지 맞춤 (2026-10-25 Excel 측정: 세로는 약 60~70%, 가로는 100%. 채권·채무 월별 시트는 2026-10-26 세로→가로, 스냅샷은 인쇄 방향 1칸만 바뀜). 월별 리포트 시트만 블록 단위 쪽 나눔이라 고정 배율
+  - 월간 입력(`entry/export/`): 당월 = 월 시트 1장, 분기·연간·누적 = 맨 앞 합계 시트 + 데이터 있는 달(임시저장 포함). **합계는 확정 월만**(대시보드와 같은 숫자), 월 시트 H1 상태(임시저장·입력 없음 빨간 글씨), 합계 시트 H2 "제외: 9월 임시저장". 항목 이름은 고객사 문서 표기 — 월 시트 "월간 상품 매입액", 합계 시트 "상품 매입액" + 제목 "(2026년 3분기 합계)", H 메모 "← 당월 매입 (월간 입력)"(경영지원 관리 "← 당월 매입 지출"과 구분)
+  - 인쇄: 월간 입력·목표·미수금·경영지원 관리(월별·상세) 시트 모두 **A4 가로** + 너비 1페이지 맞춤 (2026-10-25 Excel 측정: 세로는 약 60~70%, 가로는 100%. 경영지원 관리 월별 시트는 2026-10-26 세로→가로, 스냅샷은 인쇄 방향 1칸만 바뀜). 월별 리포트 시트만 블록 단위 쪽 나눔이라 고정 배율
   - 확인: `npm run export:report -- [entry|targets|receivables|report] 2026-Q3 [폴더]`(읽기만 — 원본 ↔ 새 파일 셀 단위 비교표, 엑셀 숫자 ↔ 대시보드 화면 숫자, 파일 저장). 테스트는 "의도하지 않은 차이 0건"(`compare.ts`)·테마·문서 속성·합계 = 화면 숫자를 고정
-  - **PR ②(2026-10-26) 목표 대비 실적·미수금**: 공용 쌓기형 엔진 `export/stacked.ts`(`buildStackedWorkbook` — 일반 행 = 원본 C41~F41, 빨간 행 = 장기미수 C3~F3, I열 보조 금액·비율, 목록형 시트), 비교 `export/compare-stacked.ts`
+  - **PR ②(2026-10-26) 목표 대비 실적·미수금**: 공용 쌓기형 엔진 `export/stacked.ts`(`buildStackedWorkbook` — 일반 행 = 원본 C41~F41, 빨간 행 = 장기 미수금 C3~F3, I열 보조 금액·비율, 목록형 시트), 비교 `export/compare-stacked.ts`
     - 목표 대비 실적(`settings/export/targets-layout.ts`, `?kind=targets` — 어떤 기간이든 그 해 시트 "2026", 파일 `경영지원_목표실적_2026.xlsx`): "연간 목표매출액"(1~4분기 목표 F = SUM) → "목표매출 달성률"(월 행 + 분기 그룹 F = SUM, 적요 "월 목표 234,166,666 (분기 ÷ 3)", 임시저장 = D 빈칸 + 빨간 "임시저장 — 합계 제외"). 분기 메모·빨간색은 **대시보드 `targetCardModel` 그대로**(끝났고 3개월 모두 확정 + 미달만 빨강, 미확정 "(9월 미확정)", 진행 중 "(경과 1/3개월)"). H·I: 연간 실적 합계·목표매출 달성률(분모 = 입력한 연간 목표)·부족분
-    - 미수금 관리(건별 참고)(`receivables/export/receivables-layout.ts`, `?kind=receivables`, 시트 = 기간 + "미수금 상세" 목록형): 2026-10-26부터 대시보드 미수금(외상매출금)이 아니라 건별 목록 `computeItemReceivables(기준일 = min(기간 말일, 오늘))`, 경과일 그룹 90일 초과(행 전체 빨강) → 61~90 → 31~60 → 0~30, "예정일 지남"은 적요 글자로만, 거래처별 블록 + H·I "90일 초과"·"수금 예정일 지남"
-    - 버튼: 목표·항목 설정(그 해), 미수금 관리(이번 달 오늘 기준 / 지난달 말 / 지난 분기 말) — `export/management-export-menu.tsx`. 변경 이력 `targets-export`·`receivables-export`
-    - 결과물 고정: `entry/export/__snapshots__`(월간 입력) + `export/__snapshots__`(목표·미수금) + 채권·채무 스냅샷 — 공용 엔진만 손댔으면 갱신 금지
+    - 미수금 건별 기록(`receivables/export/receivables-layout.ts`, `?kind=receivables`, 시트 = 기간 + "미수금 상세" 목록형): 2026-10-26부터 대시보드 미수금(외상매출금)이 아니라 건별 목록 `computeItemReceivables(기준일 = min(기간 말일, 오늘))`, 경과일 그룹 90일 초과(행 전체 빨강) → 61~90 → 31~60 → 0~30, "예정일 지남"은 적요 글자로만, 거래처별 블록 + H·I "90일 초과"·"수금 예정일 지남"
+    - 버튼: 목표·항목 설정(그 해), 미수금 건별 기록(이번 달 오늘 기준 / 지난달 말 / 지난 분기 말) — `export/management-export-menu.tsx`. 변경 이력 `targets-export`·`receivables-export`
+    - 결과물 고정: `entry/export/__snapshots__`(월간 입력) + `export/__snapshots__`(목표·미수금) + 경영지원 관리 스냅샷 — 공용 엔진만 손댔으면 갱신 금지
     - 확정된 달이 하나도 없는 분기는 달성률(0.0%)을 쓰지 않고 "← 4분기 진행 중 (경과 1/3개월, 확정된 달 없음)" / 끝남 "(7·8·9월 미확정, 확정된 달 없음)" (2026-10-26 — 대시보드 목표 카드도 같은 문장 `QuarterRow.noConfirmedText`, [진행 중] 배지 유지)
-  - **PR ③(2026-10-26) 월별 종합 리포트** (`report/report-layout.ts`, `?kind=report`, 파일 `경영지원_리포트_{기간}.xlsx`, 버튼 = 메인·상세 기간 선택 옆 [월별 리포트 엑셀] `export/report-download-button.tsx`): 리포트 시트(이름 = 기간) 블록 순서 = 새 대시보드 — 머리말("경 영 리 포 트" 16pt, 회사명 뉴토크코리아㈜·기간·작성일·작성자 / 집계 기준·비용 기준·확정 현황·생성, 직인·대표자·주소·연락처 없음) → 요약(대시보드 KPI 4개 `dashboardKpis`, F = 직전 기간 대비, H = 전년 동기) → 분기별 목표 달성 현황(`appendTargetBlocks` — 목표 엑셀과 같음) → 매출 → 지출(+ 기타 항목별) → 매출·지출 추이(대시보드와 같은 12개월 표, 그래프 없음) → 참고: 이익 구조(위 칸 가리키는 수식)·BEP(적용 기준, 각주 한 줄씩)·미수금(2026-10-26 외상매출금 기준월 — 원본 외상매출금 블록처럼 장기미수 빨간 그룹 → 당월 수금예정 그룹, H·I 미수금 합계 수식·당월 수금완료). 산업 분야별·제품별·AI 는 넣지 않음
-    - 붙는 시트: "채권·채무 2026-10"(단독 다운로드와 같은 `addLedgerSheets`, 분기·연간·누적은 데이터 있는 달) · "채권·채무 상세" (건별 "미수금 상세"는 2026-10-26부터 넣지 않음). 다시 올리면 `selectLedgerSheet` 가 이름 끝 기준년월로 자동 선택
+  - **PR ③(2026-10-26) 월별 종합 리포트** (`report/report-layout.ts`, `?kind=report`, 파일 `경영지원_리포트_{기간}.xlsx`, 버튼 = 메인·상세 기간 선택 옆 [월별 리포트 엑셀] `export/report-download-button.tsx`): 리포트 시트(이름 = 기간) 블록 순서 = 새 대시보드 — 머리말("경 영 리 포 트" 16pt, 회사명 뉴토크코리아㈜·기간·작성일·작성자 / 집계 기준·비용 기준·확정 현황·생성, 직인·대표자·주소·연락처 없음) → 요약(대시보드 KPI 4개 `dashboardKpis`, F = 직전 기간 대비, H = 전년 동기) → 분기별 목표 달성 현황(`appendTargetBlocks` — 목표 엑셀과 같음) → 매출 → 지출(+ 기타 항목별) → 매출·지출 추이(대시보드와 같은 12개월 표, 그래프 없음) → 참고: 이익 구조(위 칸 가리키는 수식)·BEP(적용 기준, 각주 한 줄씩)·미수금(2026-10-26 외상매출금 기준월 — 원본 외상매출금 블록처럼 장기 미수금 빨간 그룹 → 당월 수금예정 그룹, H·I 미수금 합계 수식·당월 수금). 산업 분야별·제품별·AI 는 넣지 않음
+    - 붙는 시트: "경영지원 관리 2026-10"(단독 다운로드와 같은 `addLedgerSheets`, 분기·연간·누적은 데이터 있는 달) · "경영지원 관리 상세" (건별 "미수금 상세"는 2026-10-26부터 넣지 않음). 다시 올리면 `selectLedgerSheet` 가 이름 끝 기준년월로 자동 선택
     - **인쇄: 블록 단위 쪽 나눔** — Excel 은 "페이지에 맞춤"이면 수동 쪽 나눔을 무시(2026-10-26 확인)하므로 리포트 시트만 맞춤 대신 고정 배율(`export/page-plan.ts` `planPages` — 열 너비로 계산, Mac Excel 이 약 1.1배 넓게 그려 숫자 폭 8px 기준) + 인쇄 범위 A:I(빈 열을 넣으면 빈 쪽이 생김) + 블록 앞 쪽 나눔. H열 메모가 잘리지 않게 I열을 넓힌다. 측정: 배율 85%, 리포트 시트 3쪽
-    - 채권·채무 다운로드에도 연초 누적(`2026-YTD10`, 파일 `_2026-01~10`) 추가
-- **변경 이력(2026-10-25 PR ①: 기록 표·공용 부품·채권·채무·미수금)**: 표 `audit_log`(`prisma/schema/audit.prisma`, 공용 — 관리자 화면 기록도 담음), 공용 부품 `shared/audit/`
+    - 경영지원 관리 다운로드에도 연초 누적(`2026-YTD10`, 파일 `_2026-01~10`) 추가
+- **변경 이력(2026-10-25 PR ①: 기록 표·공용 부품·경영지원 관리·미수금)**: 표 `audit_log`(`prisma/schema/audit.prisma`, 공용 — 관리자 화면 기록도 담음), 공용 부품 `shared/audit/`
   - 저장 Server Action 은 **원래 저장과 같은 `prisma.$transaction` 안에서 `recordAudit(tx, …)`** 를 부른다 → 기록이 실패하면 저장도 취소. `updatedAt` 동시 수정 확인도 트랜잭션 안(`updateMany` count 0 → `ConflictError` 로 취소)
   - 바뀐 칸만, 화면 표기 그대로: `diffFields(before, after, fields)` + 화면별 "기록할 칸" 목록(허용 목록 — `modules/management/audit-fields.ts`). 금액 `won`("12,500,000원"), 날짜 `date`, 선택값 `labelOf(…)`, 참·거짓 `flag(…)`. 목록에 없는 칸은 기록되지 않는다. 수정인데 바뀐 칸이 없으면 기록하지 않음
   - 금지 칸: password·hash·token·secret·session·salt 등 이름이 changes·meta 에 있으면 `recordAudit` 가 에러(`forbidden.ts`). 비밀번호 초기화는 값 없이 동작만
   - 사용자 표와 외래키 없음: `actorId` + `actorLoginId`(그때 아이디). 시각은 `getNow()`(UTC 저장, 표시는 한국 시간)
   - **수정·삭제 불가**: 마이그레이션의 DB 트리거가 UPDATE·DELETE·TRUNCATE 거부. **`db push` 로는 트리거가 생기지 않는다** → 기록 표가 있는 DB 는 `npm run db:deploy`(마이그레이션) 로 맞추고, `db:smoke` 가 트리거·롤백을 트랜잭션 안에서 점검 후 되돌린다. 테스트·점검은 트랜잭션 안에서 넣고 되돌리기, 로컬 전체 초기화는 `prisma migrate reset`
   - 확인용: `npm run audit:recent [건수] [화면]` (읽기만, 한국 시간). 보는 화면은 PR ③
-  - **PR ②(2026-10-25)**: 월간 입력(`entry` — 확정·확정 후 수정·확정 취소만, 임시저장 제외, 바뀌기 전 값은 같은 트랜잭션에서 그 달 값 조회, 그 외 지출은 "그 외 지출 · 항목명")·목표(`targets`, 빈 분기 "자동 배분")·지출 항목(`expense-categories`, 추가·수정·삭제 각각 + 순서 1건)·엑셀 이관 2곳(`ledger-import`·`upload` — 요약 1건, `targetId`·`meta.uploadId` = `mgmt_data_upload.id`)·채권·채무 다운로드(`ledger-export` — 기록 실패 시 503으로 다운로드 막음, 서버 로그 유지)
+  - **PR ②(2026-10-25)**: 월간 입력(`entry` — 확정·확정 후 수정·확정 취소만, 임시저장 제외, 바뀌기 전 값은 같은 트랜잭션에서 그 달 값 조회, 그 외 지출은 "그 외 지출 · 항목명")·목표(`targets`, 빈 분기 "자동 배분")·지출 항목(`expense-categories`, 추가·수정·삭제 각각 + 순서 1건)·엑셀 이관 2곳(`ledger-import`·`upload` — 요약 1건, `targetId`·`meta.uploadId` = `mgmt_data_upload.id`)·경영지원 관리 다운로드(`ledger-export` — 기록 실패 시 503으로 다운로드 막음, 서버 로그 유지)
   - **관리자 화면 기록은 `area: "admin"`, `screen: "admin-users"`** (권한 변경 사람별 1건·비밀번호 초기화 `meta.result = "초기화함"`만·계정 생성 아이디·이름·역할만·비활성화·복구, 칸 목록 `modules/admin/audit-fields.ts`). PR ③ 보는 화면은 **`area = "admin"` 행을 관리자(대표)만** 보이게 조회 조건에서 거른다
   - **PR ③(2026-10-25) 보는 화면**: `modules/management/history/`, `/management/history`(사이드바 경영지원 > 변경 이력). 권한·필터는 `rules.ts`(`historyAbilities()` — 열람 = 경영지원 view, 관리자 기록·엑셀 = `canManageUsers()`), **관리자(대표)가 아니면 `historyWhere()`가 어떤 필터에도 `area: "management"`를 붙인다** (화면 목록에서 숨기는 것과 별개로 서버 조회 조건에서 거름)
     - 표기는 `labels.ts`만: 화면 이름 한글(`HISTORY_SCREENS` — 새 화면을 기록하면 여기에 추가), 바뀐 내용 "잔액: A → B"(빈 값 "(없음)"), 추가 정보(meta)는 `metaSummary()`가 한글 문장으로 — **JSON 을 화면·엑셀에 그대로 보여 주지 않는다** (모르는 형식은 표시 안 함)
     - 필터: 기간(기본 오늘 포함 최근 30일, 한국 날짜)·사람·화면·동작·대상 검색(대상 이름, 대소문자 무시), 최신순 50건씩, 주소(GET 폼)로
-    - 행 [이력]: `RowHistoryButton`(채권·채무·미수금 모든 행, 숨긴 행 포함) → Server Action `getRowHistory()`(경영지원 view, 대상 종류 `LedgerEntry`·`Receivable`만, `area: "management"`만). 이관 행은 맨 아래 "엑셀 이관으로 생성 — 파일명, 이름(아이디), 일시" (이관 요약 기록, 없으면 `mgmt_data_upload` 값)
+    - 행 [이력]: `RowHistoryButton`(경영지원 관리·미수금 모든 행, 숨긴 행 포함) → Server Action `getRowHistory()`(경영지원 view, 대상 종류 `LedgerEntry`·`Receivable`만, `area: "management"`만). 이관 행은 맨 아래 "엑셀 이관으로 생성 — 파일명, 이름(아이디), 일시" (이관 요약 기록, 없으면 `mgmt_data_upload` 값)
     - 엑셀: `GET /api/management/history/export?…`(지금 필터 그대로, 관리자(대표)만 — 경영지원팀이 주소로 와도 403, `no-store`, 최대 10,000건), 원본 양식 스타일(맑은 고딕 10·머리글 E7E6E6 굵게·테두리·첫 행 고정·자동 필터·열 너비 자동), 일시는 엑셀 날짜(한국 시각) `yyyy-mm-dd hh:mm`. 2026-10-26부터 다른 엑셀과 같은 공용 엔진(원본 양식 파일을 불러와 테마 유지, 문서 속성 `WORKBOOK_AUTHOR`) — 스냅샷 `history/__snapshots__/history-export.json` 내려받기도 기록(`area: "admin"`, `screen: "history-export"`) — 기록 실패 시 503으로 막음
 
 ## 공통 정책
