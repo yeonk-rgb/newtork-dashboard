@@ -9,7 +9,7 @@ import { buildAiInput } from "../../ai/build-input";
 import { hashAiInput } from "../../ai/hash";
 import { DEFAULT_METRICS_SETTINGS } from "../../metrics/settings";
 import { computeManagementSummary } from "../../metrics/summary";
-import { date, financeMonth, receivable } from "../../metrics/test-fixtures";
+import { arEntry, date, financeMonth } from "../../metrics/test-fixtures";
 import type { FinanceMonth, ManagementSummary } from "../../metrics/types";
 import { revenueDonut } from "../donuts/donut-cards";
 import { DASHBOARD_LABELS } from "./labels";
@@ -76,10 +76,20 @@ function summaryOf(
         bigint | null,
       ],
     },
-    receivables: [
-      receivable("a", { occurredOn: date("2026-05-01"), amount: 32_000_000n }),
-      receivable("b", { occurredOn: date("2026-09-10"), amount: 18_000_000n }),
-    ],
+    // 채권·채무 외상매출금 8·9월 (2026-10-26부터 대시보드 미수금 기준)
+    receivables: [8, 9].flatMap((month) => [
+      arEntry(`a${month}`, {
+        month,
+        status: "LONG_OVERDUE",
+        partnerName: "가나(가상)",
+        amount: 32_000_000n,
+      }),
+      arEntry(`b${month}`, {
+        month,
+        partnerName: "다라(가상)",
+        amount: 18_000_000n,
+      }),
+    ]),
     today: TODAY,
   });
 }
@@ -105,7 +115,7 @@ describe("상단 KPI 4개 = summary 기존 값", () => {
       expect(expense.value).toBe(s.expenses.total);
       expect(profit.value).toBe(s.profit.profit);
       expect(receivables.value).toBe(s.receivables.total);
-      expect(receivables.sub).toBe(`${s.receivables.count}건`);
+      expect(receivables.sub).toBe(`거래처 ${s.receivables.customerCount}곳`);
       // 증감: 매출·지출 = 기존 증감률 그대로, 이익 = 금액 차이
       expect(revenue.deltas).toMatchObject({ kind: "rate" });
       expect(revenue.deltas!.rows[0].value).toBe(
@@ -148,7 +158,7 @@ describe("상단 KPI 4개 = summary 기존 값", () => {
     ).toEqual(["전년"]);
   });
 
-  it("적자면 빨강 + '적자' 글자, 미수금 90일 초과는 빨강·전체 보기 연결", () => {
+  it("적자면 빨강 + '적자' 글자, 미수금 장기미수는 빨강·전체 보기 연결", () => {
     const loss = computeManagementSummary({
       period: { unit: "quarter", year: 2025, quarter: 1 },
       financeMonths: months(),
@@ -161,15 +171,19 @@ describe("상단 KPI 4개 = summary 기존 값", () => {
     expect(profit.warn).toBe(true);
     expect(profit.sub).toMatch(/^적자/);
     const r = dashboardKpis(summaryOf(Q3))[3];
-    expect(r.title).toBe("미수금 (9/30 기준)");
-    expect(r.details?.[0]).toMatchObject({
-      label: "90일 초과",
-      amount: 32_000_000n,
-      count: 1,
-      warn: true,
-    });
+    expect(r.title).toBe("미수금 (9월 기준)");
+    expect(r.value).toBe(50_000_000n);
+    expect(r.details).toEqual([
+      { label: "장기미수", amount: 32_000_000n, count: 1, warn: true },
+      { label: "당월 수금예정", amount: 18_000_000n, count: 1, warn: false },
+    ]);
+    expect(r.emptyText).toBeUndefined();
     expect(r.link?.href).toBe("/management?period=2026-Q3#receivables");
-    expect(r.note).toBe("미수금 관리 기준");
+    expect(r.note).toBe("채권·채무 관리 외상매출금 기준");
+    // 기간에 채권·채무 입력이 없으면 "-" + 안내 (다른 기간 값을 끌어오지 않음)
+    const none = dashboardKpis(loss)[3];
+    expect(none.emptyText).toBe("이 기간에 채권·채무 입력 없음");
+    expect(none.details).toBeUndefined();
   });
 
   it("추정 이익 카드 아래 BEP 달성률 한 줄 → 상세 계산 내역", () => {

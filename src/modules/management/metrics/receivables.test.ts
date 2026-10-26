@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   agingBucket,
-  computeReceivables,
+  computeItemReceivables,
   isOutstandingAt,
 } from "./receivables";
 import { date, receivable } from "./test-fixtures";
@@ -50,7 +50,7 @@ describe("agingBucket", () => {
   });
 });
 
-describe("computeReceivables", () => {
+describe("computeItemReceivables", () => {
   const list = [
     receivable("1", {
       customerName: "다라(가상)",
@@ -83,7 +83,7 @@ describe("computeReceivables", () => {
       collectedOn: date("2026-02-01"),
     }),
   ];
-  const result = computeReceivables(list, asOf, 6);
+  const result = computeItemReceivables(list, asOf, 6);
 
   it("총액·건수 (수금 완료 제외)", () => {
     expect(result.total).toBe(1_200n);
@@ -127,7 +127,7 @@ describe("computeReceivables", () => {
   });
 
   it("미수금 없음", () => {
-    const empty = computeReceivables([], asOf, 6);
+    const empty = computeItemReceivables([], asOf, 6);
     expect(empty.total).toBe(0n);
     expect(empty.byCustomer).toEqual([]);
     expect(empty.aging.every((a) => a.amount === 0n)).toBe(true);
@@ -136,7 +136,7 @@ describe("computeReceivables", () => {
 
 describe("미수 건별 목록 (상세 표)", () => {
   const asOf = date("2026-09-30");
-  const result = computeReceivables(
+  const result = computeItemReceivables(
     [
       receivable("old", {
         occurredOn: date("2026-03-01"),

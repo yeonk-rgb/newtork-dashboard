@@ -32,7 +32,6 @@ import { SAMPLE_ROWS } from "../ledger/export/test-rows";
 import { DEFAULT_METRICS_SETTINGS } from "../metrics/settings";
 import { computeManagementSummary } from "../metrics/summary";
 import { computeTrend } from "../metrics/trend";
-import { receivablesListSheet } from "../receivables/export/receivables-layout";
 import { buildReportLayout } from "./report-layout";
 
 const NOW = new Date("2026-10-25T03:00:00Z");
@@ -94,7 +93,6 @@ async function workbook(period: Period, ledgerName = "채권·채무 2026-10") {
       sheets: [{ sheetName: ledgerName, month: "2026-10", rows: SAMPLE_ROWS }],
       detailName: "채권·채무 상세",
     },
-    lists: [receivablesListSheet(summary.receivables)],
     now: NOW,
   });
   const wb = new ExcelJS.Workbook();
@@ -107,7 +105,7 @@ async function workbook(period: Period, ledgerName = "채권·채무 2026-10") {
 }
 
 describe("리포트 블록 순서 = 새 대시보드 순서", () => {
-  it("머리말 → 요약 → 분기별 목표 달성 현황 → 매출 → 지출 → 매출·지출 추이 → 이익 구조 → BEP → 미수금 통계", () => {
+  it("머리말 → 요약 → 분기별 목표 달성 현황 → 매출 → 지출 → 매출·지출 추이 → 이익 구조 → BEP → 미수금(외상매출금)", () => {
     const { report } = reportFor(Q3);
     expect(report.blocks.map((b) => b.name)).toEqual([
       "머리말",
@@ -118,7 +116,7 @@ describe("리포트 블록 순서 = 새 대시보드 순서", () => {
       "매출·지출 추이",
       "이익 구조",
       "손익분기점(BEP)",
-      "미수금 통계",
+      "미수금",
     ]);
     const titles = cellsOf(report.layout)
       .filter((c) => c.role === "title")
@@ -132,11 +130,34 @@ describe("리포트 블록 순서 = 새 대시보드 순서", () => {
       "매출·지출 추이 (2025.10 ~ 2026.9)",
       "이익 구조 (참고)",
       "손익분기점(BEP) — 적용 기준 (참고)",
-      "미수금 통계 (9/30 기준)",
+      "미수금 (2026년 9월 채권·채무 외상매출금 기준)",
     ]);
     // 넣지 않는 것: 산업 분야별·제품별 매출(샘플), AI 분석
     const all = JSON.stringify(report.layout);
     expect(all).not.toMatch(/산업 분야|제품별|시리즈|AI/);
+  });
+
+  it("미수금 블록(외상매출금 9월): 장기미수 빨간 행 → 당월 수금예정, I열 미수금 합계 = 대시보드 KPI, 당월 수금완료는 따로", () => {
+    const { summary, report } = reportFor(Q3);
+    const cells = cellsOf(report.layout);
+    const start = rowOf(cells, "미수금 (2026년 9월 채권·채무 외상매출금 기준)");
+    const below = cells.filter((c) => c.row > start);
+    expect(
+      below.some((c) => c.value === "다라발전(가상)" && c.role === "warnName"),
+    ).toBe(true);
+    expect(below.map((c) => c.value)).toContain("← 장기 미수금 업체 1건");
+    expect(below.map((c) => c.value)).toContain("← 당월 수금예정인 업체 3건");
+    const total = below.find((c) => c.col === 9 && c.formula);
+    expect(total?.formula?.result).toBe(
+      Number(dashboardKpis(summary)[3].value),
+    );
+    expect(total?.formula?.result).toBe(363_300_000);
+    const collected = below.find(
+      (c) => c.col === 9 && !c.formula && c.role === "auxAmount",
+    );
+    expect(collected?.value).toBe(5_000_000);
+    // 요약 줄 H 메모 = 장기미수
+    expect(cells.map((c) => c.value)).toContain("← 장기미수 8,800만원 (1건)");
   });
 
   it("머리말: 경 영 리 포 트 + 회사명·기간·작성일·작성자 / 집계 기준·비용 기준·확정 현황·생성 (직인·대표자·주소·연락처 없음)", () => {
@@ -326,13 +347,12 @@ describe("원본 양식과 셀 단위 비교 — 의도하지 않은 차이 0건
     expect(unintended(rows)).toEqual([]);
   });
 
-  it("시트 구성: 리포트 → 채권·채무 2026-10 → 채권·채무 상세 → 미수금 상세", async () => {
+  it("시트 구성: 리포트 → 채권·채무 2026-10 → 채권·채무 상세 (건별 '미수금 상세'는 넣지 않음)", async () => {
     const { wb } = await workbook(Q3);
     expect(wb.worksheets.map((w) => w.name)).toEqual([
       "2026-Q3",
       "채권·채무 2026-10",
       "채권·채무 상세",
-      "미수금 상세",
     ]);
   });
 });

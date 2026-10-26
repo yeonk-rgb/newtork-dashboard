@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { computeManagementSummary } from "../metrics/summary";
-import { date, financeMonth, receivable } from "../metrics/test-fixtures";
+import { arEntry, date, financeMonth } from "../metrics/test-fixtures";
 import { buildAiInput } from "./build-input";
 import { hashAiInput, stableStringify } from "./hash";
 import { mockAiComment } from "./mock-comment";
@@ -55,18 +55,24 @@ function summaryFor(
       revenueTarget: 4_000_000_000n,
       quarterTargets: [null, null, null, null],
     },
+    // 2026년 9월 채권·채무 외상매출금 (대시보드 미수금 기준)
     receivables: [
-      receivable("r1", {
-        customerName: "비밀거래처(가상)",
+      arEntry("r1", {
+        status: "LONG_OVERDUE",
+        partnerName: "비밀거래처(가상)",
         note: "대표 친척 회사",
-        occurredOn: date("2026-05-01"),
         amount: 50_000_000n,
         dueOn: date("2026-07-31"),
       }),
-      receivable("r2", {
-        customerName: "다른거래처(가상)",
-        occurredOn: date("2026-09-15"),
+      arEntry("r2", {
+        partnerName: "다른거래처(가상)",
         amount: 10_000_000n,
+        dueOn: date("2026-09-10"),
+      }),
+      arEntry("r3", {
+        status: "COLLECTED",
+        partnerName: "받은거래처(가상)",
+        amount: 3_000_000n,
       }),
     ],
     today: date(options.today ?? "2026-10-20"),
@@ -80,6 +86,7 @@ describe("buildAiInput", () => {
   it("거래처명·비고·건별 id 는 보내지 않는다", () => {
     expect(text).not.toContain("비밀거래처");
     expect(text).not.toContain("다른거래처");
+    expect(text).not.toContain("받은거래처");
     expect(text).not.toContain("대표 친척");
     expect(text).not.toContain('"r1"');
   });
@@ -93,11 +100,14 @@ describe("buildAiInput", () => {
   it("금액은 '7.09억원'·'6,668만원' 형식", () => {
     expect(input.revenue.total).toBe("6.00억원");
     expect(input.receivables).toMatchObject({
+      baseMonth: "2026년 9월",
       asOf: "2026-09-30",
       total: "6,000만원",
       count: 2,
-      pastDue: { amount: "5,000만원", count: 1 },
-      noDueDate: { amount: "1,000만원", count: 1 },
+      longOverdue: { amount: "5,000만원", count: 1 },
+      scheduled: { amount: "1,000만원", count: 1 },
+      collectedThisMonth: { amount: "300만원", count: 1 },
+      pastDue: { amount: "1,000만원", count: 1 },
     });
   });
 
@@ -115,8 +125,11 @@ describe("buildAiInput", () => {
     expect(input.profit.estimatedProfit).toBe("1.80억원");
   });
 
-  it("90일 초과 미수금 금액·건수 (거래처명 없이)", () => {
-    expect(input.receivables.over90).toEqual({ amount: "5,000만원", count: 1 });
+  it("장기미수 금액·건수 (거래처명 없이)", () => {
+    expect(input.receivables.longOverdue).toEqual({
+      amount: "5,000만원",
+      count: 1,
+    });
   });
 
   it("[미확정 월 있는 분기] 미확정 달과 같은 월끼리 비교 범위를 전달", () => {
@@ -247,7 +260,7 @@ describe("mockAiComment (카드 3단이 모두 보이도록)", () => {
     ]);
     expect(mock.shortfalls).toEqual([
       "[모의] 기대치 대비 18.00억원 부족입니다.",
-      "[모의] 90일 초과 미수금 5,000만원(1건)입니다.",
+      "[모의] 장기미수 5,000만원(1건)입니다.",
     ]);
     expect(mock.improvements).toEqual([
       "[모의] 부족분만큼 수주·출하 일정을 앞당겨 점검합니다.",

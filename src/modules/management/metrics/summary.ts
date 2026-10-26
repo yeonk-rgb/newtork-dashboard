@@ -1,7 +1,6 @@
 // 기간 하나에 대한 경영지원 지표 종합 (순수 함수)
 import {
   monthIndex,
-  periodEndDate,
   periodLabel,
   periodMonths,
   previousPeriod,
@@ -10,13 +9,13 @@ import {
   type YearMonth,
 } from "@/shared/period/period";
 
+import { computeArReceivables } from "./ar-receivables";
 import { computeBreakEven } from "./break-even";
 import { selectConfirmed } from "./confirmation";
 import { computeExpenses } from "./expenses";
 import { changeRate } from "./math";
 import { computeProductivity } from "./productivity";
 import { computeProfit } from "./profit";
-import { computeReceivables } from "./receivables";
 import { computeRevenue } from "./revenue";
 import { DEFAULT_METRICS_SETTINGS, type MetricsSettings } from "./settings";
 import { computeAnnualProgress, computeTargets } from "./targets";
@@ -24,13 +23,13 @@ import type {
   AmountDiff,
   AmountShare,
   AnnualTargetInput,
+  ArEntryInput,
   Change,
   Comparison,
   FinanceMonth,
   ManagementSummary,
   MarginChange,
   PeriodCore,
-  ReceivableInput,
 } from "./types";
 
 export type SummaryInput = {
@@ -39,7 +38,8 @@ export type SummaryInput = {
   financeMonths: FinanceMonth[];
   /** 해당 연도 목표 (없으면 null) */
   annualTarget: AnnualTargetInput | null;
-  receivables: ReceivableInput[];
+  /** 채권·채무 외상매출금 행 (기간이 속한 해, 숨긴 행 제외) — 대시보드 미수금 기준 (2026-10-26, 05-22) */
+  receivables: ArEntryInput[];
   /** 오늘 (UTC 자정) — 마감 여부, 미수금 기준일 계산 */
   today: Date;
   settings?: MetricsSettings;
@@ -207,10 +207,6 @@ export function computeManagementSummary(
     settings,
   );
 
-  // 미수금 기준일 = min(기간 마지막 날, 오늘)
-  const end = periodEndDate(period);
-  const asOf = end.getTime() < today.getTime() ? end : today;
-
   return {
     ...core,
     targets: computeTargets(period, input.annualTarget, financeMonths),
@@ -224,9 +220,10 @@ export function computeManagementSummary(
       previous: compare(core, previous.core, previous.aligned),
       lastYear: compare(core, lastYear.core, lastYear.aligned),
     },
-    receivables: computeReceivables(
+    receivables: computeArReceivables(
       input.receivables,
-      asOf,
+      period,
+      today,
       settings.expectedCollectionMonths,
     ),
     productivity: computeProductivity(core, input.annualTarget?.headcount),

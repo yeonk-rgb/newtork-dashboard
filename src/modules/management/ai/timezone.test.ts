@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { lastCompletedQuarter } from "@/shared/period/url";
 
 import { monthState } from "../entry/rules";
-import { computeReceivables } from "../metrics/receivables";
+import { computeItemReceivables } from "../metrics/receivables";
 import { receivable } from "../metrics/test-fixtures";
 
 vi.mock("server-only", () => ({}));
@@ -77,7 +77,7 @@ describe("자정 전후 (한국 시간 1월 1일 00:30)", () => {
       receivable("r", { occurredOn: new Date("2026-10-02T00:00:00Z") }),
     ];
     const bucketOn = (now: Date) =>
-      computeReceivables(r, todayKst(now), 6).aging.find((a) => a.count > 0)
+      computeItemReceivables(r, todayKst(now), 6).aging.find((a) => a.count > 0)
         ?.bucket;
     expect(bucketOn(KST_NEWYEAR_EVE_2359)).toBe("61-90");
     expect(bucketOn(KST_NEWYEAR_0030)).toBe("90+");

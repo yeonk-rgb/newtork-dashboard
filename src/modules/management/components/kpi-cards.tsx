@@ -163,8 +163,6 @@ const valueClass =
 export function KpiCards({ summary }: { summary: ManagementSummary }) {
   const { period, changes, targets, receivables } = summary;
   const hasData = summary.confirmation.hasData;
-  const over90 = receivables.aging.find((a) => a.bucket === "90+");
-  const asOf = receivables.asOf;
   // "*" 가 실제로 붙은 값(미확정 포함 + 계산된 값)이 있을 때만 주석 표시
   const shownComparisons =
     period.unit === "month" || period.unit === "quarter"
@@ -246,29 +244,44 @@ export function KpiCards({ summary }: { summary: ManagementSummary }) {
         />
       </Card>
 
+      {/* 미수금 = 채권·채무 외상매출금 (장기미수 + 당월 수금예정, 2026-10-26 결정 05-22) */}
       <Card title="미수금 총액">
         <p className={valueClass}>
-          <Won value={receivables.total} unit="subtle" />
+          {receivables.month ? (
+            <Won value={receivables.total} unit="subtle" />
+          ) : (
+            "-"
+          )}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {receivables.count}건 · {asOf.getUTCMonth() + 1}/{asOf.getUTCDate()}{" "}
-          기준
+          {receivables.month
+            ? `거래처 ${receivables.customerCount}곳 · ${receivables.month.month}월 채권·채무 기준${receivables.isCurrentMonth ? " (작성 중)" : ""}`
+            : "이 기간에 채권·채무 입력 없음"}
         </p>
-        <dl className="mt-4 space-y-2 text-xs text-muted-foreground">
-          <div className="flex justify-between gap-2">
-            <dt>90일 초과</dt>
-            <dd className="text-foreground">
-              <Won value={over90?.amount ?? 0n} /> · {over90?.count ?? 0}건
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt>수금 예정일 지남</dt>
-            <dd className="text-foreground">
-              <Won value={receivables.expected.overdue.amount} /> ·{" "}
-              {receivables.expected.overdue.count}건
-            </dd>
-          </div>
-        </dl>
+        {receivables.month && (
+          <dl className="mt-4 space-y-2 text-xs text-muted-foreground">
+            <div className="flex justify-between gap-2">
+              <dt>장기미수</dt>
+              <dd
+                className={
+                  receivables.longOverdue.amount > 0n
+                    ? "font-semibold text-danger-strong"
+                    : "text-foreground"
+                }
+              >
+                <Won value={receivables.longOverdue.amount} /> ·{" "}
+                {receivables.longOverdue.count}건
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>당월 수금예정</dt>
+              <dd className="text-foreground">
+                <Won value={receivables.scheduled.amount} /> ·{" "}
+                {receivables.scheduled.count}건
+              </dd>
+            </div>
+          </dl>
+        )}
       </Card>
 
       {note && (

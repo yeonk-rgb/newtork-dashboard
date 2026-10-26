@@ -39,10 +39,10 @@ export function mockAiComment(input: AiInput): AiCommentResponse {
       "[모의] 부족분만큼 수주·출하 일정을 앞당겨 점검합니다.",
     ]);
   }
-  const { over90 } = input.receivables;
-  if (over90.count > 0) {
+  const { longOverdue } = input.receivables;
+  if (longOverdue.count > 0) {
     pairs.push([
-      `[모의] 90일 초과 미수금 ${over90.amount}(${over90.count}건)입니다.`,
+      `[모의] 장기미수 ${longOverdue.amount}(${longOverdue.count}건)입니다.`,
       "[모의] 장기 미수 거래처에 수금 일정을 확인합니다.",
     ]);
   }

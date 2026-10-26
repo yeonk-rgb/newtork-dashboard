@@ -14,7 +14,13 @@ export const DASHBOARD_LABELS = {
     excludePurchases: "매입을 빼고 계산한 참고 기준",
   },
   expenseNote: "상품 매입 + 원재료 매입 + 경비 + 기타",
-  receivablesBasis: "미수금 관리 기준",
+  /** 미수금 = 채권·채무 관리 외상매출금 (장기미수 + 당월수금예정) — 2026-10-26 결정 05-22 */
+  receivablesBasis: "채권·채무 관리 외상매출금 기준",
+  receivablesEmpty: "이 기간에 채권·채무 입력 없음",
+  receivablesInProgress: "이번 달 작성 중",
+  longOverdue: "장기미수",
+  scheduled: "당월 수금예정",
+  collected: "당월 수금완료",
   areas: {
     status: "분기별 목표 달성 현황",
     trend: "추이 및 분석",

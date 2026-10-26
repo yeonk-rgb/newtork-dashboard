@@ -14,7 +14,11 @@ import {
 import { buildTargetsLayout } from "../settings/export/targets-layout";
 import { buildStackedWorkbook } from "./stacked";
 import { dumpWorkbook } from "./testing/dump-workbook";
-import { FIXTURE_TODAY, fixtureInput } from "./testing/summary-fixture";
+import {
+  FIXTURE_TODAY,
+  fixtureInput,
+  fixtureItemResult,
+} from "./testing/summary-fixture";
 
 const NOW = new Date("2026-10-25T03:00:00Z");
 
@@ -26,9 +30,8 @@ describe("목표 대비 실적·미수금 다운로드 결과물 스냅샷", () 
       months: yearInput.financeMonths,
       today: FIXTURE_TODAY,
     });
-    const q3 = computeManagementSummary(
-      fixtureInput({ unit: "quarter", year: 2026, quarter: 3 }),
-    ).receivables;
+    // 미수금 관리(건별 참고) 엑셀 — 건별 목록 9/30 기준 (2026-10-26 전과 같은 입력)
+    const q3 = fixtureItemResult();
     const r = buildReceivablesLayout(q3);
     const buf = await buildStackedWorkbook({
       template: await readFile(TEMPLATE_PATH),

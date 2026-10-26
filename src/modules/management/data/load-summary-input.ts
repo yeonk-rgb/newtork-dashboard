@@ -12,11 +12,7 @@ import {
 } from "@/shared/period/period";
 
 import type { SummaryInput } from "../metrics/summary";
-import {
-  loadAnnualTarget,
-  loadFinanceMonths,
-  loadReceivables,
-} from "./queries";
+import { loadAnnualTarget, loadArEntries, loadFinanceMonths } from "./queries";
 
 /** 기간 + 직전 기간 + 전년 동기 + 해당 연도 1~12월 (목표 누적·연간 도넛용) */
 export function requiredMonthRange(period: Period) {
@@ -55,7 +51,7 @@ export async function loadSummaryInput(
   const [financeMonths, annualTarget, receivables] = await Promise.all([
     loadFinanceMonths(from, to),
     loadAnnualTarget(period.year),
-    loadReceivables(),
+    loadArEntries(period.year),
   ]);
   return { period, financeMonths, annualTarget, receivables, today };
 }

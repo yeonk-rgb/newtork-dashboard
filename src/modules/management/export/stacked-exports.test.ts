@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 
-import { dashboardKpis, targetCardModel } from "../components/dashboard/model";
+import { targetCardModel } from "../components/dashboard/model";
 import { TEMPLATE_PATH } from "../ledger/import/test-helpers";
 import { computeManagementSummary } from "../metrics/summary";
 import {
@@ -16,11 +16,14 @@ import { comparePackage, unintended } from "./compare";
 import { stackedComparison } from "./compare-stacked";
 import { buildStackedWorkbook } from "./stacked";
 import { readPackageParts } from "./testing/dump-workbook";
-import { FIXTURE_TODAY, fixtureInput } from "./testing/summary-fixture";
+import {
+  FIXTURE_TODAY,
+  fixtureInput,
+  fixtureItemResult,
+} from "./testing/summary-fixture";
 
 const NOW = new Date("2026-10-25T03:00:00Z");
 const YEAR = { unit: "year", year: 2026 } as const;
-const Q3 = { unit: "quarter", year: 2026, quarter: 3 } as const;
 
 const yearSummary = () => computeManagementSummary(fixtureInput(YEAR));
 const targetsSheet = () =>
@@ -51,20 +54,14 @@ const rowOf = (cells: Cell[], text: string) =>
 async function workbook() {
   const template = await readFile(TEMPLATE_PATH);
   const t = targetsSheet();
-  const r = buildReceivablesLayout(
-    computeManagementSummary(fixtureInput(Q3)).receivables,
-  );
+  const r = buildReceivablesLayout(fixtureItemResult());
   const buf = await buildStackedWorkbook({
     template,
     sheets: [
       { name: "2026", layout: t.layout, maxAux: t.maxAux },
       { name: "2026-Q3", layout: r.layout, maxAux: r.maxAux },
     ],
-    lists: [
-      receivablesListSheet(
-        computeManagementSummary(fixtureInput(Q3)).receivables,
-      ),
-    ],
+    lists: [receivablesListSheet(fixtureItemResult())],
     now: NOW,
   });
   const wb = new ExcelJS.Workbook();
@@ -217,14 +214,12 @@ describe("분기에 확정된 달이 없을 때 — 달성률(0.0%)을 쓰지 �
   });
 });
 
-describe("미수금 통계 시트 배치", () => {
-  const summary = () => computeManagementSummary(fixtureInput(Q3));
-
-  it("제목 기준일 = 대시보드 KPI 기준일, 경과일 그룹 순서·90일 초과 빨간 행", () => {
-    const s = summary();
-    const cells = cellsOf(buildReceivablesLayout(s.receivables).layout);
+// 미수금 관리(건별 참고) 엑셀 — 2026-10-26부터 대시보드 미수금(외상매출금)과 기준이 달라 건별 결과와 비교
+describe("미수금 통계 시트 배치 (건별 참고)", () => {
+  it("제목 기준일, 경과일 그룹 순서·90일 초과 빨간 행", () => {
+    const r = fixtureItemResult();
+    const cells = cellsOf(buildReceivablesLayout(r).layout);
     expect(at(cells, 1, 3)?.value).toBe("미수금 통계 (9/30 기준)");
-    expect(dashboardKpis(s)[3].title).toBe("미수금 (9/30 기준)");
     const memos = cells.filter((c) => c.col === 8).map((c) => c.value);
     expect(memos.slice(0, 4)).toEqual([
       "← 90일 초과 1건",
@@ -251,10 +246,10 @@ describe("미수금 통계 시트 배치", () => {
   });
 
   it("빈 그룹도 빈 행 1개 + 총액 0 + 메모", () => {
-    const s = summary();
+    const r = fixtureItemResult();
     const only = {
-      ...s.receivables,
-      items: s.receivables.items.filter((i) => i.bucket === "0-30"),
+      ...r,
+      items: r.items.filter((i) => i.bucket === "0-30"),
     };
     const cells = cellsOf(buildReceivablesLayout(only).layout) as (Cell & {
       formula?: { result: number };
@@ -266,9 +261,9 @@ describe("미수금 통계 시트 배치", () => {
     expect(at(cells, 3, 8)?.value).toBe("← 90일 초과 0건");
   });
 
-  it("거래처별 미수금: 금액 큰 순, '2건 · 최장 180일', H·I 90일 초과 = 대시보드 KPI", () => {
-    const s = summary();
-    const sheet = buildReceivablesLayout(s.receivables);
+  it("거래처별 미수금: 금액 큰 순, '2건 · 최장 180일', H·I 90일 초과 = 건별 결과", () => {
+    const r = fixtureItemResult();
+    const sheet = buildReceivablesLayout(r);
     const cells = cellsOf(sheet.layout) as (Cell & {
       formula?: { result: number };
     })[];
@@ -276,24 +271,21 @@ describe("미수금 통계 시트 배치", () => {
     const names = cells
       .filter((c) => c.row > start + 1 && c.col === 3)
       .map((c) => c.value);
-    expect(names).toEqual(s.receivables.byCustomer.map((c) => c.customerName));
+    expect(names).toEqual(r.byCustomer.map((c) => c.customerName));
     expect(cells.find((c) => c.row === start + 2 && c.col === 5)?.value).toBe(
       "2건 · 최장 180일",
     );
-    const kpi = dashboardKpis(s)[3];
+    const over90Amount = r.aging.find((a) => a.bucket === "90+")?.amount ?? 0n;
     const total = cells.filter((c) => c.col === 6 && c.formula).at(-1)!.formula!
       .result;
-    expect(total).toBe(Number(kpi.value));
+    expect(total).toBe(Number(r.total));
     const over90 = cells.find((c) => c.col === 9 && c.formula)!.formula!.result;
-    expect(over90).toBe(Number(kpi.details![0].amount));
-    expect(sheet.check).toMatchObject({
-      total: kpi.value,
-      over90: kpi.details![0].amount,
-    });
+    expect(over90).toBe(Number(over90Amount));
+    expect(sheet.check).toMatchObject({ total: r.total, over90: over90Amount });
   });
 
   it("미수금 상세(목록형): 7열, 숨긴·수금 건 제외, 경과일 큰 순", () => {
-    const list = receivablesListSheet(summary().receivables);
+    const list = receivablesListSheet(fixtureItemResult());
     expect(list.columns.map((c) => c.header)).toEqual([
       "거래처명",
       "발생일",
