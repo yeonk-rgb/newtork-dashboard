@@ -8,6 +8,10 @@ import { prisma } from "@/shared/db/client";
 
 import { auditActor } from "../audit-fields";
 import { getNow, getTodayKst } from "../data/load-summary-input";
+import {
+  ExportTemplateMissingError,
+  readExportTemplate,
+} from "../export/template";
 import { buildHistoryWorkbook } from "./build-history-workbook";
 import { HistoryTooManyRowsError, loadHistoryForExport } from "./load-history";
 import { historyAbilities, historyFileName, parseHistoryFilter } from "./rules";
@@ -53,11 +57,22 @@ export async function exportHistory(
     throw error;
   }
   const fileName = historyFileName(filter);
-  const body = await buildHistoryWorkbook(rows, "변경 이력");
+  let template: Buffer;
+  try {
+    template = await readExportTemplate();
+  } catch (error) {
+    if (error instanceof ExportTemplateMissingError) {
+      console.error(`[history-export] 양식 파일 없음: ${error.filePath}`);
+      throw new HistoryExportError(503, error.message);
+    }
+    throw error;
+  }
+  const now = await getNow();
+  const body = await buildHistoryWorkbook(rows, "변경 이력", { template, now });
 
   try {
     await recordAudit(prisma, {
-      occurredAt: await getNow(),
+      occurredAt: now,
       actor: auditActor(user),
       area: "admin",
       screen: "history-export",

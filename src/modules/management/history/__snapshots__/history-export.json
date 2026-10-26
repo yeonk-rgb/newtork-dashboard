@@ -1,0 +1,1127 @@
+{
+ "props": {
+  "creator": "NEWTORK 경영 대시보드",
+  "lastModifiedBy": "NEWTORK 경영 대시보드",
+  "created": "2026-10-26T03:00:00.000Z",
+  "modified": "2026-10-26T03:00:00.000Z",
+  "company": ""
+ },
+ "package": {
+  "entries": [
+   "[Content_Types].xml",
+   "_rels/",
+   "_rels/.rels",
+   "docProps/",
+   "docProps/app.xml",
+   "docProps/core.xml",
+   "xl/",
+   "xl/_rels/",
+   "xl/_rels/workbook.xml.rels",
+   "xl/sharedStrings.xml",
+   "xl/styles.xml",
+   "xl/theme/",
+   "xl/theme/theme1.xml",
+   "xl/workbook.xml",
+   "xl/worksheets/",
+   "xl/worksheets/sheet1.xml"
+  ],
+  "core": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:dcmitype=\"http://purl.org/dc/dcmitype/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><dc:creator>NEWTORK 경영 대시보드</dc:creator><cp:lastModifiedBy>NEWTORK 경영 대시보드</cp:lastModifiedBy><dcterms:created xsi:type=\"dcterms:W3CDTF\">2026-10-26T03:00:00Z</dcterms:created><dcterms:modified xsi:type=\"dcterms:W3CDTF\">2026-10-26T03:00:00Z</dcterms:modified></cp:coreProperties>",
+  "app": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<Properties xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\"><Application>Microsoft Excel</Application><DocSecurity>0</DocSecurity><ScaleCrop>false</ScaleCrop><HeadingPairs><vt:vector size=\"2\" baseType=\"variant\"><vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant><vt:variant><vt:i4>1</vt:i4></vt:variant></vt:vector></HeadingPairs><TitlesOfParts><vt:vector size=\"1\" baseType=\"lpstr\"><vt:lpstr>변경 이력</vt:lpstr></vt:vector></TitlesOfParts><Company></Company><LinksUpToDate>false</LinksUpToDate><SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged><AppVersion>16.0300</AppVersion></Properties>",
+  "themeSha": "71237304cdc99098",
+  "fullCalcOnLoad": true
+ },
+ "sheets": [
+  {
+   "name": "변경 이력",
+   "state": "visible",
+   "views": [
+    {
+     "workbookViewId": 0,
+     "rightToLeft": false,
+     "state": "frozen",
+     "xSplit": 0,
+     "ySplit": 1,
+     "topLeftCell": "A2",
+     "showRuler": true,
+     "showRowColHeaders": true,
+     "showGridLines": true,
+     "zoomScale": 100,
+     "zoomScaleNormal": 100
+    }
+   ],
+   "pageSetup": {
+    "fitToPage": true,
+    "margins": {
+     "left": 0.7,
+     "right": 0.7,
+     "top": 0.75,
+     "bottom": 0.75,
+     "header": 0.3,
+     "footer": 0.3
+    },
+    "paperSize": 9,
+    "orientation": "landscape",
+    "horizontalDpi": 4294967295,
+    "verticalDpi": 4294967295,
+    "pageOrder": "downThenOver",
+    "blackAndWhite": false,
+    "draft": false,
+    "cellComments": "None",
+    "errors": "displayed",
+    "scale": 100,
+    "fitToWidth": 1,
+    "fitToHeight": 0,
+    "firstPageNumber": 1,
+    "useFirstPageNumber": false,
+    "usePrinterDefaults": false,
+    "copies": 1,
+    "printTitlesRow": "1:1"
+   },
+   "autoFilter": "A1:G1",
+   "merges": [],
+   "columns": [
+    {
+     "col": 1,
+     "width": 18,
+     "hidden": false,
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {},
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      }
+     }
+    },
+    {
+     "col": 2,
+     "width": 8,
+     "hidden": false,
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {},
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      }
+     }
+    },
+    {
+     "col": 3,
+     "width": 13,
+     "hidden": false,
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {},
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      }
+     }
+    },
+    {
+     "col": 4,
+     "width": 27,
+     "hidden": false,
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {},
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      }
+     }
+    },
+    {
+     "col": 5,
+     "width": 15,
+     "hidden": false,
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {},
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      }
+     }
+    },
+    {
+     "col": 6,
+     "width": 37,
+     "hidden": false,
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {},
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      }
+     }
+    },
+    {
+     "col": 7,
+     "width": 51,
+     "hidden": false,
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {},
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      }
+     }
+    }
+   ],
+   "rows": [
+    {
+     "row": 1,
+     "hidden": false
+    },
+    {
+     "row": 2,
+     "hidden": false
+    },
+    {
+     "row": 3,
+     "hidden": false
+    },
+    {
+     "row": 4,
+     "hidden": false
+    }
+   ],
+   "cells": [
+    {
+     "address": "A1",
+     "value": "일시",
+     "style": {
+      "font": {
+       "bold": true,
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "solid",
+       "fgColor": {
+        "argb": "FFE7E6E6"
+       }
+      },
+      "alignment": {
+       "horizontal": "center",
+       "vertical": "middle"
+      }
+     }
+    },
+    {
+     "address": "B1",
+     "value": "이름",
+     "style": {
+      "font": {
+       "bold": true,
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "solid",
+       "fgColor": {
+        "argb": "FFE7E6E6"
+       }
+      },
+      "alignment": {
+       "horizontal": "center",
+       "vertical": "middle"
+      }
+     }
+    },
+    {
+     "address": "C1",
+     "value": "아이디",
+     "style": {
+      "font": {
+       "bold": true,
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "solid",
+       "fgColor": {
+        "argb": "FFE7E6E6"
+       }
+      },
+      "alignment": {
+       "horizontal": "center",
+       "vertical": "middle"
+      }
+     }
+    },
+    {
+     "address": "D1",
+     "value": "화면",
+     "style": {
+      "font": {
+       "bold": true,
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "solid",
+       "fgColor": {
+        "argb": "FFE7E6E6"
+       }
+      },
+      "alignment": {
+       "horizontal": "center",
+       "vertical": "middle"
+      }
+     }
+    },
+    {
+     "address": "E1",
+     "value": "동작",
+     "style": {
+      "font": {
+       "bold": true,
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "solid",
+       "fgColor": {
+        "argb": "FFE7E6E6"
+       }
+      },
+      "alignment": {
+       "horizontal": "center",
+       "vertical": "middle"
+      }
+     }
+    },
+    {
+     "address": "F1",
+     "value": "대상",
+     "style": {
+      "font": {
+       "bold": true,
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "solid",
+       "fgColor": {
+        "argb": "FFE7E6E6"
+       }
+      },
+      "alignment": {
+       "horizontal": "center",
+       "vertical": "middle"
+      }
+     }
+    },
+    {
+     "address": "G1",
+     "value": "바뀐 내용",
+     "style": {
+      "font": {
+       "bold": true,
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "solid",
+       "fgColor": {
+        "argb": "FFE7E6E6"
+       }
+      },
+      "alignment": {
+       "horizontal": "center",
+       "vertical": "middle"
+      }
+     }
+    },
+    {
+     "address": "A2",
+     "value": "2026-10-25T13:45:00.000Z",
+     "style": {
+      "numFmt": "yyyy-mm-dd hh:mm",
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "B2",
+     "value": "윤경영",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "C2",
+     "value": "mgmt_member",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "D2",
+     "value": "채권·채무 관리",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "E2",
+     "value": "수정",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "F2",
+     "value": "가나상사(가상) · 2026-10 외상매출금",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "G2",
+     "value": "잔액: 12,500,000원 → 13,000,000원\n적요: (없음) → 10/15",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top",
+       "wrapText": true
+      }
+     }
+    },
+    {
+     "address": "A3",
+     "value": "2026-10-26T01:47:00.000Z",
+     "style": {
+      "numFmt": "yyyy-mm-dd hh:mm",
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "B3",
+     "value": "관리자",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "C3",
+     "value": "admin",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "D3",
+     "value": "월별 리포트 엑셀 다운로드",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "E3",
+     "value": "엑셀 다운로드",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "F3",
+     "value": "월별 리포트 엑셀 다운로드 · 2026-Q3",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "G3",
+     "value": "2026-Q3 · 시트 4장 · 경영지원_리포트_2026-Q3.xlsx",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top",
+       "wrapText": true
+      }
+     }
+    },
+    {
+     "address": "A4",
+     "value": "2026-10-26T02:10:00.000Z",
+     "style": {
+      "numFmt": "yyyy-mm-dd hh:mm",
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "B4",
+     "value": "",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "C4",
+     "value": "old_user",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "D4",
+     "value": "미수금 관리",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "E4",
+     "value": "숨김",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "F4",
+     "value": "자차석유(가상) · 2026-09-30 발생",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top"
+      }
+     }
+    },
+    {
+     "address": "G4",
+     "value": "",
+     "style": {
+      "font": {
+       "size": 10,
+       "name": "맑은 고딕"
+      },
+      "border": {
+       "left": {
+        "style": "thin"
+       },
+       "right": {
+        "style": "thin"
+       },
+       "top": {
+        "style": "thin"
+       },
+       "bottom": {
+        "style": "thin"
+       }
+      },
+      "fill": {
+       "type": "pattern",
+       "pattern": "none"
+      },
+      "alignment": {
+       "vertical": "top",
+       "wrapText": true
+      }
+     }
+    }
+   ]
+  }
+ ]
+}
