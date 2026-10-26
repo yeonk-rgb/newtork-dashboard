@@ -21,7 +21,8 @@ describe("hashPassword / verifyPassword", () => {
     expect(a.startsWith("scrypt$1024$8$1$")).toBe(true);
   });
 
-  it("기본 비용(N=2^17)으로도 동작", async () => {
+  // 운영 비용 그대로 해시 + 검증 2번 — 이 PC 에서 한 번에 1.4~5.5초라 다른 테스트와 겹치면 기본 제한(5초)을 넘겼다 (2026-10-26)
+  it("기본 비용(N=2^17)으로도 동작", { timeout: 60_000 }, async () => {
     const hash = await hashPassword("abc12345");
     expect(hash.startsWith(`scrypt$${2 ** 17}$8$1$`)).toBe(true);
     expect(await verifyPassword("abc12345", hash)).toBe(true);
