@@ -1,7 +1,7 @@
 // 월별 종합 리포트 — 리포트 시트 한 장의 행 배치 (순수 함수, exceljs 모름, 2026-10-26)
 // 담당자님이 대표님께 매달 드리는 리포트. 블록 순서 = 새 경영 대시보드 순서:
 //   머리말(견적서 제목·정보 칸 배치) → 요약(KPI 4개) → 분기별 목표 달성 현황(목표 엑셀과 같은 블록) → 매출 → 지출
-//   → 매출·지출 추이(월별 표, 그래프 없음) → 참고: 이익 구조 / 손익분기점(BEP, 적용 기준) / 미수금 통계(경과일 그룹)
+//   → 매출·지출 추이(월별 표, 그래프 없음) → 참고: 이익 구조 / 손익분기점(BEP, 적용 기준) / 미수금(채권·채무 외상매출금 기준월 — 2026-10-26)
 // 넣지 않는 것: 산업 분야별·제품별 매출(샘플 데이터), AI 분석
 // 숫자는 모두 대시보드와 같은 계산(summary·표시 모델·추이)에서 — 이 파일은 배치만 한다
 import { formatWonShort } from "@/shared/format/money";
@@ -20,7 +20,6 @@ import type { StackedLayout, StackedRole } from "../export/stacked";
 import { WORKBOOK_AUTHOR } from "../export/template";
 import type { TrendPoint } from "../metrics/trend";
 import type { FinanceMonth, ManagementSummary } from "../metrics/types";
-import { appendAgingBlock } from "../receivables/export/receivables-layout";
 import { appendTargetBlocks } from "../settings/export/targets-layout";
 
 type Builder = SheetBuilder<StackedRole, number>;
@@ -30,6 +29,14 @@ const NORMAL: GroupStyle<StackedRole> = {
   amount: "amount",
   note: "note",
   total: "total",
+  memo: "memo",
+};
+/** 원본 장기미수(C3~F3) — 행 전체 빨간 글씨 */
+const WARN: GroupStyle<StackedRole> = {
+  name: "warnName",
+  amount: "warnAmount",
+  note: "warnNote",
+  total: "warnTotal",
   memo: "memo",
 };
 
@@ -180,6 +187,8 @@ function summaryBlock(b: Builder, summary: ManagementSummary) {
     note: string,
     opts: {
       formula?: { expr: string; result: number };
+      /** 금액 대신 글자 (미수금 입력 없음 "-") */
+      valueText?: string;
       warn?: boolean;
       memo?: string | null;
       memoWarn?: boolean;
@@ -193,7 +202,7 @@ function summaryBlock(b: Builder, summary: ManagementSummary) {
         role: warn ? "warnAmount" : "amount",
         ...(opts.formula
           ? { formula: opts.formula }
-          : { value: Number(k.value) }),
+          : { value: opts.valueText ?? Number(k.value) }),
       },
       { col: COL.E, role: warn ? "warnNote" : "note", value: note },
       {
@@ -237,13 +246,90 @@ function summaryBlock(b: Builder, summary: ManagementSummary) {
         : {}),
     },
   );
-  const over90 = receivables.details?.[0];
-  line(receivables, `${receivables.sub} · ${receivables.note}`, {
-    memo: over90
-      ? `← 90일 초과 ${formatWonShort(over90.amount)} (${over90.count}건)`
-      : null,
-    memoWarn: over90?.warn ?? false,
+  // 미수금 = 채권·채무 외상매출금 기준월 (2026-10-26) — 입력이 없으면 금액 "-"
+  const longOverdue = receivables.details?.[0];
+  line(
+    receivables,
+    receivables.emptyText ?? `${receivables.sub} · ${receivables.note}`,
+    {
+      ...(receivables.emptyText ? { valueText: "-" } : {}),
+      memo: longOverdue
+        ? `← 장기미수 ${formatWonShort(longOverdue.amount)} (${longOverdue.count}건)`
+        : null,
+      memoWarn: longOverdue?.warn ?? false,
+    },
+  );
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const md = (d: Date) => `${pad2(d.getUTCMonth() + 1)}/${pad2(d.getUTCDate())}`;
+
+/**
+ * 참고 — 미수금 (채권·채무 외상매출금 기준월, 2026-10-26): 원본 「경영지원 관리」 외상매출금 블록처럼
+ * 장기미수(빨간 글씨) → 당월 수금예정 그룹, H·I 미수금 합계(수식)·당월 수금완료(미수 아님)
+ */
+function receivablesBlock(b: Builder, summary: ManagementSummary) {
+  const r = summary.receivables;
+  if (!r.month) {
+    b.title("미수금 (채권·채무 외상매출금 기준)", "title");
+    b.push("data", [
+      {
+        col: COL.C,
+        role: "footnote",
+        value: "이 기간에 채권·채무 관리의 외상매출금 입력이 없습니다.",
+      },
+    ]);
+    return { maxAux: 0 };
+  }
+  b.title(
+    `미수금 (${r.month.year}년 ${r.month.month}월 채권·채무 외상매출금 기준)`,
+    "title",
+  );
+  headerRow(b, ["거래처명", "잔액", "적요", "총액"]);
+  const rows = (status: "LONG_OVERDUE" | "SCHEDULED") =>
+    r.items
+      .filter((i) => i.status === status)
+      .map((i) => ({
+        name: i.customerName,
+        amount: Number(i.amount),
+        note:
+          [
+            i.dueOn ? `예정 ${md(i.dueOn)}${i.isOverdue ? " 지남" : ""}` : "",
+            i.note ?? "",
+          ]
+            .filter(Boolean)
+            .join(" · ") || null,
+      }));
+  const long = b.group(rows("LONG_OVERDUE"), WARN, {
+    text: `장기 미수금 업체 ${r.longOverdue.count}건`,
+    warn: r.longOverdue.count > 0,
   });
+  const scheduled = b.group(rows("SCHEDULED"), NORMAL, {
+    text: `당월 수금예정인 업체 ${r.scheduled.count}건`,
+  });
+  const aux: [string, CellSpec<StackedRole>][] = [
+    [
+      "미수금 합계",
+      {
+        col: COL.I,
+        role: "auxAmount",
+        formula: {
+          expr: `F${long.first}+F${scheduled.first}`,
+          result: Number(r.total),
+        },
+      },
+    ],
+    [
+      "당월 수금완료",
+      { col: COL.I, role: "auxAmount", value: Number(r.collected.amount) },
+    ],
+  ];
+  aux.forEach(([label, cell], i) => {
+    const row = scheduled.memoRow + 1 + i;
+    b.cell(row, { col: COL.H, role: "auxLabel", value: label });
+    b.cell(row, cell);
+  });
+  return { maxAux: Math.max(Number(r.total), Number(r.collected.amount)) };
 }
 
 /** 매출: 제품·상품·용역 (월간 입력 엑셀 매출 블록과 같은 이름 — 당월 "월간 제품 매출액", 합계 "제품 매출액") */
@@ -582,13 +668,14 @@ export function buildReportLayout(input: {
   block("손익분기점(BEP)", () => {
     bepAux = breakEvenBlock(b, input.summary).maxAux;
   });
-  block("미수금 통계", () => {
-    appendAgingBlock(b, input.summary.receivables);
+  let receivablesAux = 0;
+  block("미수금", () => {
+    receivablesAux = receivablesBlock(b, input.summary).maxAux;
   });
 
   return {
     layout: b.layout(),
-    maxAux: Math.max(targetsAux, bepAux),
+    maxAux: Math.max(targetsAux, bepAux, receivablesAux),
     blocks,
   };
 }

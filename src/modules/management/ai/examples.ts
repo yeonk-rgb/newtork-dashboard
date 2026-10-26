@@ -19,7 +19,7 @@ export const exampleId = (year: number, quarter: number) =>
 export const EXAMPLE_QUARTERS = [
   {
     quarter: { unit: "quarter", year: 2026, quarter: 2 },
-    situation: "a) 목표 미달 + 90일 초과 미수금",
+    situation: "a) 목표 미달 + 장기미수",
   },
   {
     quarter: { unit: "quarter", year: 2025, quarter: 1 },
@@ -132,11 +132,11 @@ export function buildExampleComment(
       `${down.label} 거래처별 발주 추이를 확인합니다.`,
     ]);
   }
-  const over90 = input.receivables.over90;
-  if (over90.count > 0) {
+  const longOverdue = input.receivables.longOverdue;
+  if (longOverdue.count > 0) {
     pairs.push([
-      `90일 초과 미수금이 ${over90.amount}(${over90.count}건)입니다.`,
-      `90일 초과 ${over90.count}건의 수금 일정을 거래처별로 확정합니다.`,
+      `장기미수가 ${longOverdue.amount}(${longOverdue.count}건)입니다.`,
+      `장기미수 ${longOverdue.count}건의 수금 일정을 거래처별로 확정합니다.`,
     ]);
   }
   const top = pairs.slice(0, 3);

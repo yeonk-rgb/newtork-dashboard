@@ -17,10 +17,11 @@ import {
 import { buildEntryWorkbook } from "../entry/export/build-entry-workbook";
 import { loadEntryExportData } from "../entry/export/load-entry-export";
 import { planEntrySheets } from "../entry/export/plan";
-import { loadFinanceMonths } from "../data/queries";
+import { loadFinanceMonths, loadReceivables } from "../data/queries";
 import { planExportSheets } from "../ledger/export/period";
 import { loadLedgerRowsByMonth } from "../ledger/load-ledger";
 import { formatLedgerMonth } from "../ledger/rules";
+import { computeItemReceivables } from "../metrics/receivables";
 import { DEFAULT_METRICS_SETTINGS } from "../metrics/settings";
 import { computeManagementSummary } from "../metrics/summary";
 import { computeTrend, trendRange } from "../metrics/trend";
@@ -36,7 +37,7 @@ import {
   parseExportPeriod,
   periodSheetName,
 } from "./period";
-import { monthIndex } from "@/shared/period/period";
+import { monthIndex, periodEndDate } from "@/shared/period/period";
 import { buildStackedWorkbook } from "./stacked";
 import { readExportTemplate } from "./template";
 
@@ -148,7 +149,7 @@ export async function buildExportFile(
         ...s,
         sheetName: `${REPORT_LEDGER_PREFIX}${s.sheetName}`,
       }));
-      const list = receivablesListSheet(summary.receivables);
+      // "미수금 상세"(건별) 시트는 넣지 않음 — 미수금은 채권·채무 외상매출금 기준이고 채권·채무 시트가 이미 붙음 (2026-10-26)
       const name = periodSheetName(period);
       return {
         body: await buildStackedWorkbook({
@@ -162,14 +163,12 @@ export async function buildExportFile(
             },
           ],
           ledger: { sheets: ledger, detailName: REPORT_LEDGER_DETAIL },
-          lists: [list],
           now,
         }),
         sheetNames: [
           name,
           ...ledger.map((s) => s.sheetName),
           REPORT_LEDGER_DETAIL,
-          list.name,
         ],
       };
     }
@@ -196,11 +195,17 @@ export async function buildExportFile(
       };
     }
     case "receivables": {
-      const [template, input] = await Promise.all([
+      // 미수금 관리(건별 참고) 엑셀 — 대시보드 미수금(외상매출금)이 아니라 건별 목록의 기준일 잔액 (2026-10-26)
+      const end = periodEndDate(period);
+      const [template, items] = await Promise.all([
         readExportTemplate(),
-        loadSummaryInput(period, today),
+        loadReceivables(),
       ]);
-      const { receivables } = computeManagementSummary(input);
+      const receivables = computeItemReceivables(
+        items,
+        end.getTime() < today.getTime() ? end : today,
+        DEFAULT_METRICS_SETTINGS.expectedCollectionMonths,
+      );
       const sheet = buildReceivablesLayout(receivables);
       const list = receivablesListSheet(receivables);
       const name = periodSheetName(period);

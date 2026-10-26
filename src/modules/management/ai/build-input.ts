@@ -8,7 +8,6 @@ import { formatWonShort } from "@/shared/format/money";
 import { periodMonths, type YearMonth } from "@/shared/period/period";
 
 import type {
-  AgingBucket,
   AmountShare,
   Change,
   Comparison,
@@ -68,20 +67,10 @@ export function expectedToDate(annualTarget: bigint, quarter: number): bigint {
   return (annualTarget * BigInt(quarter)) / 4n;
 }
 
-function over90Of(aging: ManagementSummary["receivables"]["aging"]) {
-  const bucket = aging.find((a) => a.bucket === "90+");
-  return {
-    amount: formatWonShort(bucket?.amount ?? 0n),
-    count: bucket?.count ?? 0,
-  };
-}
-
-const BUCKET_LABEL: Record<AgingBucket, string> = {
-  "0-30": "0~30일",
-  "31-60": "31~60일",
-  "61-90": "61~90일",
-  "90+": "90일 초과",
-};
+const amountCount = (v: { amount: bigint; count: number }) => ({
+  amount: formatWonShort(v.amount),
+  count: v.count,
+});
 
 /** @param labels 항목 key → 한글 이름 (AI 가 "goods" 같은 내부 키를 쓰지 않게) */
 function comparison(c: Comparison, labels: Map<string, string>) {
@@ -155,7 +144,7 @@ export function buildAiInput(
       margin: profit.margin === null ? "-" : pct(profit.margin),
       costBasis:
         profit.costMode === "purchases"
-          ? "이익 = 매출 − 전체 지출(상품·원재료 매입 포함) — 임시 기준, 고객사 확인 중"
+          ? "이익 = 매출 − 전체 지출(상품·원재료 매입 포함) — 적용 기준: 매입액 = 원가, 공급가액"
           : "이익 = 매출 − (경비 + 그 외 지출), 매입 제외 — 참고 기준",
     },
     changes: {
@@ -205,26 +194,22 @@ export function buildAiInput(
     // 프롬프트 7번 규칙(is_sample 이면 "샘플 데이터 기준")이 그대로 적용된다:
     //   industryShares: { is_sample: source === "mock", items: [{ item, amount: formatWonShort(..), share: pct(..) }] },
     //   seriesShares:   { is_sample: ..., items: [...] },
+    // 미수금 = 채권·채무 외상매출금 기준월 (2026-10-26, 05-22) — 거래처명은 보내지 않음 (05-19)
     receivables: {
+      basis: "채권·채무 관리 외상매출금 — 미수 = 장기미수 + 당월 수금예정",
+      baseMonth: receivables.month
+        ? `${receivables.month.year}년 ${receivables.month.month}월`
+        : "입력 없음",
       asOf: receivables.asOf.toISOString().slice(0, 10),
       total: formatWonShort(receivables.total),
       count: receivables.count,
-      agingBasis: "경과일은 발생일부터 계산",
-      /** 90일 초과 (거래처명은 보내지 않음) */
-      over90: over90Of(receivables.aging),
-      aging: receivables.aging.map((a) => ({
-        bucket: BUCKET_LABEL[a.bucket],
-        amount: formatWonShort(a.amount),
-        count: a.count,
-      })),
-      pastDue: {
-        amount: formatWonShort(receivables.expected.overdue.amount),
-        count: receivables.expected.overdue.count,
-      },
-      noDueDate: {
-        amount: formatWonShort(receivables.expected.noDueDate.amount),
-        count: receivables.expected.noDueDate.count,
-      },
+      /** 장기미수 (담당자가 정한 구분) */
+      longOverdue: amountCount(receivables.longOverdue),
+      scheduled: amountCount(receivables.scheduled),
+      /** 기준월에 받은 돈 (미수에 넣지 않음) */
+      collectedThisMonth: amountCount(receivables.collected),
+      pastDue: amountCount(receivables.expected.overdue),
+      noDueDate: amountCount(receivables.expected.noDueDate),
       expectedCollections: receivables.expected.months
         .filter((m) => m.count > 0)
         .map((m) => ({

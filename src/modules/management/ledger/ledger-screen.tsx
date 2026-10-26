@@ -57,7 +57,8 @@ export async function LedgerScreen({
         <h1 className={pageTitleClass}>채권·채무 관리</h1>
         <p className="mt-1 text-xs text-muted-foreground">
           경영지원_관리 엑셀 양식을 옮긴 화면입니다. 기준년월별 거래처 잔액이며,
-          잔액은 ERP 잔액 그대로(부가세 포함) 입력하세요.
+          잔액은 ERP 잔액 그대로(부가세 포함) 입력하세요. 외상매출금의 장기미수
+          + 당월수금예정이 대시보드·리포트의 미수금이 됩니다.
         </p>
         <AuditNotice />
       </div>

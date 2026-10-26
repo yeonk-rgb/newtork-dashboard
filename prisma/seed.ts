@@ -16,8 +16,12 @@ import {
 import {
   AuthRole,
   AuthTeam,
+  MgmtArStatus,
   MgmtCostType,
   MgmtEntryStatus,
+  MgmtLedgerKind,
+  MgmtPurchaseType,
+  MgmtVendorExpenseType,
   PrismaClient,
 } from "../src/shared/db/generated/client";
 
@@ -352,6 +356,141 @@ async function seedReceivables() {
   }
 }
 
+/**
+ * 채권·채무 샘플 — 시드 24개월 (2026-10-26: 대시보드 미수금 = 채권·채무 외상매출금)
+ * - 외상매출금: 위 건별 미수금을 월말 잔액으로 옮김 (월말에 90일 넘은 건 = 장기미수, 남은 건 = 당월수금예정,
+ *   그 달에 수금한 건 = 당월수금완료) → 시드 달의 대시보드 미수금이 예전(건별 기준)과 같은 금액
+ * - 외상매입금·미지급비용: 그 달 월간 입력과 같은 숫자 (05-24) — 외상매입금·업체는 부가세 포함(× 1.1, 원 반올림),
+ *   직원은 그대로 (05-1). 업체 차량유지비는 자동이체 예시
+ * - 이미 행이 있는 달(직접 입력·이관한 달)은 건드리지 않는다
+ */
+async function seedLedgerHistory() {
+  const DAY = 24 * 60 * 60 * 1000;
+  const withVat = (v: bigint) => (v * 11n + 5n) / 10n;
+  const [receivables, finances] = await Promise.all([
+    prisma.receivable.findMany({
+      where: { createdById: SEED_USER_ID, deletedAt: null },
+    }),
+    prisma.monthlyFinance.findMany({
+      include: { otherExpenses: { include: { category: true } } },
+    }),
+  ]);
+  let created = 0;
+  let skipped = 0;
+  for (const { year, month } of recentMonths()) {
+    const exists = await prisma.ledgerEntry.count({
+      where: { year, month, deletedAt: null },
+    });
+    if (exists > 0) {
+      skipped++;
+      continue;
+    }
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 0));
+    type Row = Omit<
+      Parameters<typeof prisma.ledgerEntry.create>[0]["data"],
+      "year" | "month" | "createdById" | "updatedById"
+    >;
+    const rows: Row[] = [];
+
+    // 외상매출금: 거래처 + 상태별로 묶음
+    const ar = new Map<string, Row>();
+    for (const r of receivables) {
+      if (r.occurredOn.getTime() > end.getTime()) continue;
+      const collectedInMonth =
+        r.collectedOn !== null &&
+        r.collectedOn.getTime() >= start.getTime() &&
+        r.collectedOn.getTime() <= end.getTime();
+      const open =
+        !r.isCollected ||
+        (r.collectedOn !== null && r.collectedOn.getTime() > end.getTime());
+      if (!open && !collectedInMonth) continue;
+      const status = collectedInMonth
+        ? MgmtArStatus.COLLECTED
+        : (end.getTime() - r.occurredOn.getTime()) / DAY > 90
+          ? MgmtArStatus.LONG_OVERDUE
+          : MgmtArStatus.SCHEDULED;
+      const key = `${r.customerName}|${status}`;
+      const prev = ar.get(key);
+      const dueOn =
+        status === MgmtArStatus.SCHEDULED ? (r.dueOn ?? null) : null;
+      ar.set(key, {
+        kind: MgmtLedgerKind.AR,
+        arStatus: status,
+        partnerName: r.customerName,
+        amount: ((prev?.amount as bigint | undefined) ?? 0n) + r.amount,
+        dueOn:
+          prev?.dueOn && dueOn
+            ? (prev.dueOn as Date) < dueOn
+              ? prev.dueOn
+              : dueOn
+            : (prev?.dueOn ?? dueOn),
+        settledOn:
+          status === MgmtArStatus.COLLECTED ? (r.collectedOn as Date) : null,
+      });
+    }
+    rows.push(...ar.values());
+
+    const f = finances.find((m) => m.year === year && m.month === month);
+    if (f) {
+      const ap = (
+        purchaseType: MgmtPurchaseType,
+        partnerName: string,
+        amount: bigint,
+      ) =>
+        amount > 0n &&
+        rows.push({
+          kind: MgmtLedgerKind.AP,
+          purchaseType,
+          partnerName,
+          amount: withVat(amount),
+        });
+      ap(MgmtPurchaseType.GOODS, "가나상사(가상)", f.goodsPurchase);
+      ap(MgmtPurchaseType.RAW_MATERIAL, "다라금속(가상)", f.materialPurchase);
+      // 미지급비용-직원: 두 사람으로 나눔 (합계 = 경비 지출액)
+      const half = f.operatingExpense / 2n;
+      for (const [name, amount] of [
+        ["김가상", half],
+        ["이가상", f.operatingExpense - half],
+      ] as const) {
+        if (amount > 0n)
+          rows.push({
+            kind: MgmtLedgerKind.ACCRUED_STAFF,
+            partnerName: name,
+            amount,
+          });
+      }
+      for (const e of f.otherExpenses) {
+        if (e.amount === 0n) continue;
+        const expenseType =
+          e.category.name === "광고선전비"
+            ? MgmtVendorExpenseType.ADVERTISING
+            : e.category.name === "접대비"
+              ? MgmtVendorExpenseType.ENTERTAINMENT
+              : MgmtVendorExpenseType.OTHER;
+        const autoTransfer = e.category.name === "차량유지비";
+        rows.push({
+          kind: MgmtLedgerKind.ACCRUED_VENDOR,
+          expenseType,
+          autoTransfer,
+          partnerName: `${e.category.name} 거래처(가상)`,
+          amount: withVat(e.amount),
+          note: autoTransfer ? "자동이체" : null,
+        });
+      }
+    }
+
+    if (rows.length === 0) continue;
+    await prisma.ledgerEntry.createMany({
+      data: rows.map((r) => ({ ...r, year, month, ...audit })),
+    });
+    created += rows.length;
+  }
+  console.log(
+    `채권·채무 샘플: ${created}행 추가 (이미 행이 있어 건너뛴 달 ${skipped}개)`,
+  );
+}
+
 // 직원 계정 7명 (관리자 설정 화면 예시와 같은 구성)
 // 초기 비밀번호: .env 의 SEED_INITIAL_PASSWORD, 없으면 실행할 때 만들어서 화면에 한 번만 출력한다 (코드·git에 남기지 않음)
 // 이미 있는 계정은 건드리지 않는다 (비밀번호·권한을 덮어쓰지 않음)
@@ -521,6 +660,7 @@ async function main() {
   await seedAnnualTargets();
   await seedMonthlyFinance(categories);
   await seedReceivables();
+  await seedLedgerHistory();
   console.log("시드 완료");
 }
 

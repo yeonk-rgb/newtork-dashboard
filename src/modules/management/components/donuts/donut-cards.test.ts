@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { donutCsv, donutRows, listRows } from "@/shared/ui/donut-data";
 
 import { computeManagementSummary } from "../../metrics/summary";
-import { date, financeMonth, receivable } from "../../metrics/test-fixtures";
+import { arEntry, date, financeMonth } from "../../metrics/test-fixtures";
 import {
   annualTargetDonut,
   bepDonut,
@@ -45,11 +45,13 @@ function summaryFor(
             revenueTarget: opts.target ?? 4_000_000_000n,
             quarterTargets: [null, null, null, null],
           },
+    // 9월 채권·채무 외상매출금
     receivables: [
-      receivable("a", { occurredOn: date("2026-09-20"), amount: 30_000_000n }),
-      receivable("b", { occurredOn: date("2026-08-15"), amount: 20_000_000n }),
-      receivable("c", { occurredOn: date("2026-05-01"), amount: 50_000_000n }),
-      receivable("d", { occurredOn: date("2026-05-02"), amount: 10_000_000n }),
+      arEntry("a", { amount: 30_000_000n }),
+      arEntry("b", { amount: 20_000_000n }),
+      arEntry("c", { status: "LONG_OVERDUE", amount: 50_000_000n }),
+      arEntry("d", { status: "LONG_OVERDUE", amount: 10_000_000n }),
+      arEntry("e", { status: "COLLECTED", amount: 7_000_000n }),
     ],
     today: date("2026-10-21"),
   });
@@ -144,18 +146,27 @@ describe("이익 구조 도넛", () => {
 });
 
 describe("미수금 도넛", () => {
-  it("경과 구간 4개 + 건수, 가운데 총액·기준일", () => {
+  it("장기미수 · 당월 수금예정 + 건수, 가운데 미수 총액·기준월", () => {
     const d = receivablesDonut(summaryFor());
     expect(d.slices.map((x) => [x.label, x.value, x.extra])).toEqual([
-      ["0~30일", "30000000", "1건"],
-      ["31~60일", "20000000", "1건"],
-      ["61~90일", "0", "0건"],
-      ["90일 초과", "60000000", "2건"],
+      ["장기미수", "60000000", "2건"],
+      ["당월 수금예정", "50000000", "2건"],
     ]);
+    // 당월 수금완료(700만)는 미수가 아니라 조각·가운데 합계에 넣지 않음
     expect(d.center).toEqual({
       value: "1.10억원",
-      label: "미수금 총액 (9/30 기준)",
+      label: "미수금 총액 (9월 기준)",
     });
+  });
+
+  it("기간에 채권·채무 외상매출금 입력이 없으면 빈 안내", () => {
+    const s = summaryFor();
+    const d = receivablesDonut({
+      ...s,
+      receivables: { ...s.receivables, month: null },
+    });
+    expect(d.slices).toEqual([]);
+    expect(d.emptyText).toMatch("입력이 없습니다");
   });
 });
 

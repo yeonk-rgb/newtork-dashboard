@@ -154,7 +154,11 @@ export function AiCommentPanel({
                       <span>
                         장기 미수 거래처:{" "}
                         {latest.result.longOverdue
-                          .map((c) => `${c.name}(${c.amount}·${c.ageDays}일)`)
+                          .map((c) =>
+                            c.ageDays === undefined
+                              ? `${c.name}(${c.amount})`
+                              : `${c.name}(${c.amount}·${c.ageDays}일)`,
+                          )
                           .join(", ")}
                       </span>
                     </li>

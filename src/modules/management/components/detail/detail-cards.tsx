@@ -183,14 +183,13 @@ export function ProfitStructureCard({
   );
 }
 
-/** 미수금 원형: 경과일 구간별 금액·건수, 90일 초과·예정일 지남 */
+/** 미수금 원형 (채권·채무 외상매출금 기준): 장기미수 / 당월 수금예정, 아래 당월 수금완료·예정일 지남 */
 export function ReceivablesDonutCard({
   summary,
 }: {
   summary: ManagementSummary;
 }) {
   const { receivables } = summary;
-  const over90 = receivables.aging.find((a) => a.bucket === "90+");
   return (
     <DonutCard
       title="미수금 총액"
@@ -199,21 +198,24 @@ export function ReceivablesDonutCard({
       extraHeader="건수"
       csvName={csvOf(summary, "미수금")}
       footer={
-        <dl className="space-y-1">
-          <div className="flex justify-between gap-2">
-            <dt>90일 초과</dt>
-            <dd className="text-foreground">
-              {formatWonShort(over90?.amount ?? 0n)} · {over90?.count ?? 0}건
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt>수금 예정일 지남</dt>
-            <dd className="text-foreground">
-              {formatWonShort(receivables.expected.overdue.amount)} ·{" "}
-              {receivables.expected.overdue.count}건
-            </dd>
-          </div>
-        </dl>
+        receivables.month && (
+          <dl className="space-y-1">
+            <div className="flex justify-between gap-2">
+              <dt>당월 수금완료 (미수에 넣지 않음)</dt>
+              <dd className="text-foreground">
+                {formatWonShort(receivables.collected.amount)} ·{" "}
+                {receivables.collected.count}건
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>수금 예정일 지남</dt>
+              <dd className="text-foreground">
+                {formatWonShort(receivables.expected.overdue.amount)} ·{" "}
+                {receivables.expected.overdue.count}건
+              </dd>
+            </div>
+          </dl>
+        )
       }
     />
   );

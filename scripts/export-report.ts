@@ -30,6 +30,8 @@ import {
 } from "@/modules/management/export/period";
 import { TEMPLATE_RELATIVE_PATH } from "@/modules/management/export/template";
 import { readPackageParts } from "@/modules/management/export/testing/dump-workbook";
+import { loadReceivables } from "@/modules/management/data/queries";
+import { computeItemReceivables } from "@/modules/management/metrics/receivables";
 import { computeManagementSummary } from "@/modules/management/metrics/summary";
 import {
   dashboardKpis,
@@ -47,7 +49,7 @@ import {
 import { buildTargetsLayout } from "@/modules/management/settings/export/targets-layout";
 import { prisma } from "@/shared/db/client";
 import { formatAmount } from "@/shared/format/money";
-import type { Period } from "@/shared/period/period";
+import { periodEndDate, type Period } from "@/shared/period/period";
 import { toPeriodParam } from "@/shared/period/url";
 
 const pct = (v: number | null | undefined) =>
@@ -215,15 +217,21 @@ async function stackedReport(
   const input = await loadSummaryInput(sheetPeriod, today);
   const summary = computeManagementSummary(input);
   const name = periodSheetName(sheetPeriod);
+  // 미수금 엑셀 = 미수금 관리(건별 참고) — 대시보드 미수금(외상매출금)과 기준이 다르다 (2026-10-26)
+  const end = periodEndDate(sheetPeriod);
+  const items = computeItemReceivables(
+    await loadReceivables(),
+    end.getTime() < today.getTime() ? end : today,
+    6,
+  );
   const built =
     kind === "targets"
       ? buildTargetsLayout({ summary, months: input.financeMonths, today })
-      : buildReceivablesLayout(summary.receivables);
+      : buildReceivablesLayout(items);
   const buf = await buildStackedWorkbook({
     template,
     sheets: [{ name, layout: built.layout, maxAux: built.maxAux }],
-    lists:
-      kind === "receivables" ? [receivablesListSheet(summary.receivables)] : [],
+    lists: kind === "receivables" ? [receivablesListSheet(items)] : [],
     now: new Date(),
   });
   const file = exportFileName(
@@ -249,7 +257,7 @@ async function stackedReport(
   ];
   const count = (r: string) => rows.filter((x) => x.result === r).length;
   console.log(
-    `# ${kind === "targets" ? "목표 대비 실적" : "미수금 통계"} 엑셀 검산 — ${toPeriodParam(period)}\n\n파일: ${filePath}\n시트: ${wb.worksheets.map((w) => w.name).join(", ")}\n`,
+    `# ${kind === "targets" ? "목표 대비 실적" : "미수금 관리(건별 참고)"} 엑셀 검산 — ${toPeriodParam(period)}\n\n파일: ${filePath}\n시트: ${wb.worksheets.map((w) => w.name).join(", ")}\n`,
   );
   console.log(
     `## ① 원본 ↔ 새 파일 셀 단위 비교\n\n같음 ${count("같음")} · 의도한 차이 ${count("의도한 차이")} · **의도하지 않은 차이 ${unintended(rows).length}**\n`,
@@ -264,7 +272,9 @@ async function stackedReport(
       if (cellText(r, 3) === text) return r;
     return -1;
   };
-  console.log(`\n## ② 엑셀 숫자 = 대시보드 화면 숫자\n`);
+  console.log(
+    `\n## ② 엑셀 숫자 = ${kind === "targets" ? "대시보드" : "미수금 관리(건별)"} 화면 숫자\n`,
+  );
   console.log("| 항목 | 엑셀 | 대시보드 | 결과 |\n|---|---:|---:|---|");
   const line = (label: string, excel: string, screen: string) =>
     console.log(
@@ -320,7 +330,6 @@ async function stackedReport(
       targetCardModel(summary, today).donut.center.value,
     );
   } else {
-    const kpi = dashboardKpis(summary)[3];
     const totals: number[] = [];
     ws.eachRow((row) => {
       if (row.getCell(6).formula) totals.push(Number(row.getCell(6).result));
@@ -330,26 +339,28 @@ async function stackedReport(
       if (row.getCell(8).value === "90일 초과")
         over90 = Number(row.getCell(9).result ?? row.getCell(9).value);
     });
-    console.log(`제목: ${cellText(1, 3)} / 대시보드 KPI: ${kpi.title}\n`);
+    const itemOver90 =
+      items.aging.find((a) => a.bucket === "90+")?.amount ?? 0n;
+    console.log(`제목: ${cellText(1, 3)}\n`);
     line(
       "미수금 총액 (거래처별 F)",
       formatAmount(BigInt(totals.at(-1) ?? 0)),
-      formatAmount(kpi.value),
+      formatAmount(items.total),
     );
     line(
       "미수금 총액 (경과일 그룹 F 4개 합)",
       formatAmount(BigInt(totals.slice(0, 4).reduce((a, b) => a + b, 0))),
-      formatAmount(kpi.value),
+      formatAmount(items.total),
     );
     line(
       "90일 초과 (I열)",
       formatAmount(BigInt(over90)),
-      formatAmount(kpi.details![0].amount),
+      formatAmount(itemOver90),
     );
     line(
       "건수",
       `${wb.getWorksheet("미수금 상세")!.rowCount - 1}건`,
-      kpi.sub ?? "",
+      `${items.count}건`,
     );
   }
 }

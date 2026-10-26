@@ -7,6 +7,7 @@ import { fromMonthIndex, type YearMonth } from "@/shared/period/period";
 import type {
   AnnualTargetInput,
   FinanceMonth,
+  ArEntryInput,
   ReceivableInput,
 } from "../metrics/types";
 
@@ -72,7 +73,30 @@ export async function loadAnnualTarget(
   };
 }
 
-/** 지표 계산용 미수금 — 숨긴 건(deletedAt)은 대시보드·통계에서 모두 제외 */
+/**
+ * 대시보드·리포트 미수금 = 채권·채무 외상매출금 (2026-10-26, 05-22) — 그 해 행, 숨긴 행(deletedAt) 제외
+ * 기준월 고르기·합계는 metrics/ar-receivables.ts
+ */
+export async function loadArEntries(year: number): Promise<ArEntryInput[]> {
+  const rows = await prisma.ledgerEntry.findMany({
+    where: { kind: "AR", year, deletedAt: null },
+    orderBy: [{ month: "asc" }, { createdAt: "asc" }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    year: r.year,
+    month: r.month,
+    // 외상매출금은 상태 필수 (schemas.ts) — 비어 있으면 미수(수금예정)로 본다
+    status: r.arStatus ?? "SCHEDULED",
+    partnerName: r.partnerName,
+    amount: r.amount,
+    dueOn: r.dueOn,
+    settledOn: r.settledOn,
+    note: r.note,
+  }));
+}
+
+/** 미수금 관리(건별) — 숨긴 건(deletedAt) 제외. 2026-10-26부터 건별 참고용 (미수금 관리 화면·건별 엑셀) */
 export async function loadReceivables(): Promise<ReceivableInput[]> {
   const rows = await prisma.receivable.findMany({
     where: { deletedAt: null },

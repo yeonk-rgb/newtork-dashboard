@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { computeManagementSummary } from "./summary";
-import { date, financeMonth, receivable } from "./test-fixtures";
+import { arEntry, date, financeMonth } from "./test-fixtures";
 
 const today = date("2026-10-16");
 const sales = (amount: bigint) => ({
@@ -34,7 +34,8 @@ describe("computeManagementSummary", () => {
       quarterTargets: [null, null, null, null],
     },
     receivables: [
-      receivable("r", { occurredOn: date("2026-09-01"), amount: 70n }),
+      // 채권·채무 외상매출금 9월 당월수금예정 (2026-10-26부터 대시보드 미수금 기준)
+      arEntry("r", { amount: 70n }),
     ],
     today,
   });
@@ -198,11 +199,12 @@ describe("computeManagementSummary", () => {
     });
   });
 
-  it("미수금 기준일 = min(기간 마지막 날, 오늘)", () => {
+  it("미수금 기준일 = min(기준월 말일, 오늘), 기준월이 없으면 min(기간 마지막 날, 오늘)", () => {
     expect(summary.receivables.asOf.toISOString()).toBe(
       "2026-09-30T00:00:00.000Z",
     );
     expect(summary.receivables.total).toBe(70n);
+    expect(summary.receivables.month).toEqual({ year: 2026, month: 9 });
 
     const current = computeManagementSummary({
       period: { unit: "year", year: 2026 },
@@ -212,6 +214,7 @@ describe("computeManagementSummary", () => {
       today,
     });
     expect(current.receivables.asOf).toBe(today);
+    expect(current.receivables.month).toBeNull();
   });
 });
 

@@ -2,7 +2,7 @@
 // 금액은 정수 문자열로 넘기고(BigInt 직렬화), 표시는 DonutCard 가 한다
 import { formatWonShort } from "@/shared/format/money";
 import {
-  AGING_COLORS,
+  AR_STATUS_COLORS,
   METER,
   PALETTE,
   PROFIT_COLORS,
@@ -11,11 +11,7 @@ import {
 } from "@/shared/ui/chart-colors";
 import type { DonutSlice } from "@/shared/ui/donut-data";
 
-import type {
-  AgingBucket,
-  BreakEvenResult,
-  ManagementSummary,
-} from "../../metrics/types";
+import type { BreakEvenResult, ManagementSummary } from "../../metrics/types";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 const s = (v: bigint) => v.toString();
@@ -154,33 +150,37 @@ export function annualTargetDonut(
   };
 }
 
-const AGING: { bucket: AgingBucket; label: string; color: string }[] = [
-  { bucket: "0-30", label: "0~30일", color: AGING_COLORS["0-30"] },
-  { bucket: "31-60", label: "31~60일", color: AGING_COLORS["31-60"] },
-  { bucket: "61-90", label: "61~90일", color: AGING_COLORS["61-90"] },
-  { bucket: "90+", label: "90일 초과", color: AGING_COLORS["90+"] },
-];
-
-/** 미수금 총액: 경과 구간 — 가운데 총액, 목록에 건수 */
+/**
+ * 미수금 총액 (채권·채무 외상매출금 기준, 2026-10-26): 장기미수 / 당월 수금예정 — 가운데 미수 총액, 목록에 행 수
+ * 기준월이 없으면 "입력 없음"
+ */
 export function receivablesDonut(summary: ManagementSummary): DonutCardData {
   const r = summary.receivables;
-  const asOf = `${r.asOf.getUTCMonth() + 1}/${r.asOf.getUTCDate()}`;
+  if (!r.month) {
+    return {
+      slices: [],
+      center: { value: "-", label: "" },
+      emptyText: "이 기간에 채권·채무 외상매출금 입력이 없습니다.",
+    };
+  }
+  const slices = [
+    { key: "LONG_OVERDUE", label: "장기미수", total: r.longOverdue },
+    { key: "SCHEDULED", label: "당월 수금예정", total: r.scheduled },
+  ] as const;
   return {
-    slices: AGING.map(({ bucket, label, color }) => {
-      const a = r.aging.find((x) => x.bucket === bucket);
-      return {
-        key: bucket,
-        label,
-        value: s(a?.amount ?? 0n),
-        color,
-        extra: `${a?.count ?? 0}건`,
-      };
-    }),
+    slices: slices.map(({ key, label, total }) => ({
+      key,
+      label,
+      value: s(total.amount),
+      color: AR_STATUS_COLORS[key],
+      extra: `${total.count}건`,
+    })),
     center: {
       value: formatWonShort(r.total),
-      label: `미수금 총액 (${asOf} 기준)`,
+      label: `미수금 총액 (${r.month.month}월 기준)`,
     },
-    emptyText: r.total === 0n ? `${asOf} 기준 미수금이 없습니다.` : null,
+    emptyText:
+      r.total === 0n ? `${r.month.month}월 기준 미수금이 없습니다.` : null,
   };
 }
 

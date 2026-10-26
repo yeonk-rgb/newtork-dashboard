@@ -80,7 +80,9 @@ export type KpiModel = {
     | { kind: "rate"; rows: DeltaRow<number>[] }
     | { kind: "amount"; rows: DeltaRow<bigint>[] }
     | null;
-  /** 미수금 아래 목록 (90일 초과 = 빨강) */
+  /** 값 대신 "-"와 이 글을 보여 줌 (미수금: 기간 안에 채권·채무 외상매출금 입력이 없음) */
+  emptyText?: string;
+  /** 미수금 아래 목록 (장기미수 = 빨강) */
   details?: { label: string; amount: bigint; count: number; warn: boolean }[];
   /** BEP 달성률 한 줄 (추정 이익 카드) — 상세로 옮긴 BEP 카드로 가는 연결 */
   link?: { label: string; href: string };
@@ -99,8 +101,6 @@ function bepLine(summary: ManagementSummary): KpiModel["link"] {
 export function dashboardKpis(summary: ManagementSummary): KpiModel[] {
   const { revenue, expenses, profit, receivables, confirmation } = summary;
   const months = periodMonths(summary.period).length;
-  const asOf = `${receivables.asOf.getUTCMonth() + 1}/${receivables.asOf.getUTCDate()}`;
-  const over90 = receivables.aging.find((a) => a.bucket === "90+");
   return [
     {
       key: "revenue",
@@ -154,26 +154,31 @@ export function dashboardKpis(summary: ManagementSummary): KpiModel[] {
     },
     {
       key: "receivables",
-      title: `${L.kpi.receivables} (${asOf} 기준)`,
+      title: receivables.month
+        ? `${L.kpi.receivables} (${receivables.month.month}월 기준)`
+        : L.kpi.receivables,
       value: receivables.total,
       warn: false,
-      sub: `${receivables.count}건`,
+      sub: `거래처 ${receivables.customerCount}곳${receivables.isCurrentMonth ? ` · ${L.receivablesInProgress}` : ""}`,
       note: L.receivablesBasis,
+      ...(receivables.month ? {} : { emptyText: L.receivablesEmpty }),
       deltas: null,
-      details: [
-        {
-          label: "90일 초과",
-          amount: over90?.amount ?? 0n,
-          count: over90?.count ?? 0,
-          warn: (over90?.amount ?? 0n) > 0n,
-        },
-        {
-          label: "수금 예정일 지남",
-          amount: receivables.expected.overdue.amount,
-          count: receivables.expected.overdue.count,
-          warn: false,
-        },
-      ],
+      details: receivables.month
+        ? [
+            {
+              label: L.longOverdue,
+              amount: receivables.longOverdue.amount,
+              count: receivables.longOverdue.count,
+              warn: receivables.longOverdue.amount > 0n,
+            },
+            {
+              label: L.scheduled,
+              amount: receivables.scheduled.amount,
+              count: receivables.scheduled.count,
+              warn: false,
+            },
+          ]
+        : undefined,
       link: {
         label: "전체 보기",
         href: `/management?period=${toPeriodParam(summary.period)}#receivables`,

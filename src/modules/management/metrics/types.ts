@@ -32,6 +32,7 @@ export type AnnualTargetInput = {
   headcount?: number | null;
 };
 
+/** 미수금 관리(건별) 한 건 — 2026-10-26부터 대시보드 기준이 아니라 건별 참고용 (미수금 관리 화면·건별 엑셀) */
 export type ReceivableInput = {
   id: string;
   customerName: string;
@@ -204,12 +205,85 @@ export type AnnualProgress = {
 export type TargetKind =
   "quarter" | "quarter-progress" | "annual" | "ytd-prorated";
 
-// ---------- 미수금 ----------
+// ---------- 미수금 (2026-10-26부터 채권·채무 외상매출금 기준, 05-22) ----------
+
+/** 외상매출금 상태 — 원본 「경영지원 관리」 그룹 (장기미수 / 당월수금완료 / 당월수금예정) */
+export type ArStatus = "LONG_OVERDUE" | "COLLECTED" | "SCHEDULED";
+
+/** 채권·채무 관리 외상매출금 한 행 (숨긴 행 제외) */
+export type ArEntryInput = {
+  id: string;
+  year: number;
+  month: number;
+  status: ArStatus;
+  partnerName: string;
+  amount: bigint;
+  /** 수금 예정일 */
+  dueOn: Date | null;
+  /** 수금 완료일 (당월수금완료) */
+  settledOn: Date | null;
+  note: string | null;
+};
+
+export type AmountCount = { amount: bigint; count: number };
+
+/** 기준월 미수 행 (장기미수 + 당월수금예정, 금액 큰 순) */
+export type ReceivableItem = {
+  id: string;
+  customerName: string;
+  amount: bigint;
+  status: "LONG_OVERDUE" | "SCHEDULED";
+  dueOn: Date | null;
+  note: string | null;
+  /** 당월수금예정인데 수금 예정일이 기준일보다 앞섬 */
+  isOverdue: boolean;
+};
+
+/**
+ * 대시보드·리포트 미수금 — 기준월 외상매출금의 장기미수 + 당월수금예정 (당월수금완료는 미수가 아님)
+ * 기준월 = 기간 안에서 오늘 이전, 채권·채무 외상매출금 입력이 있는 마지막 달 (없으면 null → "입력 없음")
+ */
+export type ReceivableResult = {
+  /** 기준일 = min(기준월 말일, 오늘). 기준월이 없으면 min(기간 말일, 오늘) */
+  asOf: Date;
+  month: YearMonth | null;
+  /** 기준월이 이번 달 (작성 중일 수 있음) */
+  isCurrentMonth: boolean;
+  /** 미수 = 장기미수 + 당월수금예정 */
+  total: bigint;
+  /** 미수 행 수 */
+  count: number;
+  /** 미수가 있는 거래처 수 */
+  customerCount: number;
+  longOverdue: AmountCount;
+  scheduled: AmountCount;
+  /** 기준월 당월수금완료 (그 달에 받은 돈 — 미수에 넣지 않음) */
+  collected: AmountCount;
+  items: ReceivableItem[];
+  /** 거래처별 미수 (금액 큰 순) — longOverdue = 그중 장기미수 */
+  byCustomer: {
+    customerName: string;
+    amount: bigint;
+    count: number;
+    longOverdue: bigint;
+  }[];
+  /** 당월수금예정 행의 수금 예정일 */
+  expected: {
+    /** 예정일이 기준일보다 앞섬 */
+    overdue: AmountCount;
+    /** 기준월부터 N개월 (예정일 기준) */
+    months: (YearMonth & AmountCount)[];
+    later: AmountCount;
+    noDueDate: AmountCount;
+  };
+};
+
+// ---------- 미수금 관리 (건별, 참고용) ----------
 
 export type AgingBucket = "0-30" | "31-60" | "61-90" | "90+";
 
-/** 기준일 시점 미수 건 (상세 표용) */
-export type ReceivableItem = {
+/** 기준일 시점 미수 건 (건별 — 미수금 관리 건별 엑셀) */
+export type ItemReceivable = {
   id: string;
   customerName: string;
   occurredOn: Date;
@@ -223,12 +297,13 @@ export type ReceivableItem = {
   isOverdue: boolean;
 };
 
-export type ReceivableResult = {
+/** 미수금 관리(건별) 기준일 잔액 — 건별 참고 엑셀용 (대시보드는 ReceivableResult) */
+export type ItemReceivableResult = {
   asOf: Date;
   total: bigint;
   count: number;
   /** 미수 건 전체 (금액 큰 순) */
-  items: ReceivableItem[];
+  items: ItemReceivable[];
   byCustomer: { customerName: string; amount: bigint; count: number }[];
   aging: { bucket: AgingBucket; amount: bigint; count: number }[];
   expected: {

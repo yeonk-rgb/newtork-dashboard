@@ -1,5 +1,6 @@
-// 미수금 통계 엑셀 — 시트 배치 (순수 함수, exceljs 모름)
-// 기준일 = 대시보드 KPI 와 같은 min(기간 말일, 오늘) (summary.receivables 그대로 — 숨긴 건은 이미 빠짐)
+// 미수금 관리(건별 참고) 엑셀 — 시트 배치 (순수 함수, exceljs 모름)
+// 2026-10-26부터 대시보드 미수금은 채권·채무 외상매출금 기준이고, 이 엑셀은 미수금 관리 화면의 건별 참고 자료
+// 기준일 = min(기간 말일, 오늘) (computeItemReceivables — 숨긴 건은 이미 빠짐)
 // "미수금 통계 (9/30 기준)" 블록: 경과일 그룹 90일 초과 → 61~90일 → 31~60일 → 0~30일 (원본 외상매출금의 상태별 그룹처럼)
 //   - 90일 초과 그룹은 원본 장기미수처럼 행 전체 빨간 글씨, "예정일 지남"은 새 색 없이 적요 글자로만
 //   - 빈 그룹도 빈 행 1개 + 총액 0 + 메모
@@ -12,7 +13,7 @@ import type {
   StackedLayout,
   StackedRole,
 } from "../../export/stacked";
-import type { AgingBucket, ReceivableResult } from "../../metrics/types";
+import type { AgingBucket, ItemReceivableResult } from "../../metrics/types";
 
 export const AGING_ORDER: { bucket: AgingBucket; label: string }[] = [
   { bucket: "90+", label: "90일 초과" },
@@ -59,7 +60,9 @@ export type ReceivablesSheet = {
   check: { total: bigint; over90: bigint; count: number };
 };
 
-export function buildReceivablesLayout(r: ReceivableResult): ReceivablesSheet {
+export function buildReceivablesLayout(
+  r: ItemReceivableResult,
+): ReceivablesSheet {
   const b = new SheetBuilder<StackedRole, number>();
   const { over90Row } = appendAgingBlock(b, r);
   b.separator(0);
@@ -70,7 +73,7 @@ export function buildReceivablesLayout(r: ReceivableResult): ReceivablesSheet {
 /** "미수금 통계 (9/30 기준)" 경과일 그룹 블록 (단독 다운로드·월별 종합 리포트 공용) — 90일 초과 그룹 첫 행을 돌려준다 */
 export function appendAgingBlock(
   b: SheetBuilder<StackedRole, number>,
-  r: ReceivableResult,
+  r: ItemReceivableResult,
 ): { over90Row: number } {
   // ── 미수금 통계 (경과일 그룹) ──
   b.title(`미수금 통계 (${asOfLabel(r.asOf)} 기준)`, "title");
@@ -100,7 +103,7 @@ export function appendAgingBlock(
 /** "거래처별 미수금" 블록 + H·I 90일 초과·수금 예정일 지남 */
 export function appendCustomerBlock(
   b: SheetBuilder<StackedRole, number>,
-  r: ReceivableResult,
+  r: ItemReceivableResult,
   over90Row: number,
 ): Omit<ReceivablesSheet, "layout"> {
   // ── 거래처별 미수금 ──
@@ -164,7 +167,7 @@ export function appendCustomerBlock(
 }
 
 /** "미수금 상세" 목록형 시트 — 건별 전체 (경과일 큰 순), 숨긴 건 제외 */
-export function receivablesListSheet(r: ReceivableResult): ListSheet {
+export function receivablesListSheet(r: ItemReceivableResult): ListSheet {
   const label = new Map(AGING_ORDER.map((a) => [a.bucket, a.label]));
   return {
     name: "미수금 상세",

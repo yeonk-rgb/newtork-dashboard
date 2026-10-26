@@ -1,10 +1,15 @@
-// 미수금: 기준일(asOf) 시점의 잔액
+// 미수금 관리(건별) — 기준일(asOf) 시점의 잔액 (2026-10-26부터 건별 참고용: 미수금 관리 화면·건별 엑셀.
+// 대시보드·리포트 미수금은 채권·채무 외상매출금 기준 → ar-receivables.ts)
 // - 기준일에 미수 = 발생일 ≤ 기준일 그리고 (아직 미수 또는 수금일 > 기준일)
 // - 경과일은 발생일부터 (docs/05-open-questions.md 17번)
 import { addMonths, monthIndex } from "@/shared/period/period";
 
 import { sum } from "./math";
-import type { AgingBucket, ReceivableInput, ReceivableResult } from "./types";
+import type {
+  AgingBucket,
+  ItemReceivableResult,
+  ReceivableInput,
+} from "./types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -31,11 +36,11 @@ const total = (list: ReceivableInput[]) => ({
   count: list.length,
 });
 
-export function computeReceivables(
+export function computeItemReceivables(
   receivables: ReceivableInput[],
   asOf: Date,
   horizonMonths: number,
-): ReceivableResult {
+): ItemReceivableResult {
   const open = receivables.filter((r) => isOutstandingAt(r, asOf));
 
   // 거래처별 (금액 큰 순, 같으면 이름순)

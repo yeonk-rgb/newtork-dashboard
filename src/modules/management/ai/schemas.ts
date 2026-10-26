@@ -26,13 +26,14 @@ const sentence = z.string().min(1).max(SENTENCE_MAX);
 const annotationFields = {
   /** 연간 목표 달성 한 줄 */
   headline: z.string().min(1).max(200).optional(),
-  /** 90일 초과 미수 거래처 (금액 큰 순, 최대 3곳) */
+  /** 장기미수 거래처 (금액 큰 순, 최대 3곳) — 2026-10-26부터 외상매출금 장기미수, 그 전 기록은 90일 초과 + 경과일 */
   longOverdue: z
     .array(
       z.object({
         name: z.string().min(1).max(100),
         amount: z.string().min(1).max(30),
-        ageDays: z.number().int().min(0),
+        /** 옛 기록(90일 초과 건별)만 — 외상매출금에는 발생일이 없어 새 기록에는 없음 */
+        ageDays: z.number().int().min(0).optional(),
       }),
     )
     .max(3)

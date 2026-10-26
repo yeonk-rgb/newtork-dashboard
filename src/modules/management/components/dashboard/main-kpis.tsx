@@ -66,7 +66,9 @@ function AmountDeltas({ rows }: { rows: DeltaRow<bigint>[] }) {
 }
 
 function KpiCard({ kpi, hasData }: { kpi: KpiModel; hasData: boolean }) {
-  const showValue = hasData || kpi.key === "receivables";
+  const showValue = kpi.emptyText
+    ? false
+    : hasData || kpi.key === "receivables";
   return (
     <section className="flex flex-col rounded-card border bg-card p-6">
       <div className="flex items-start justify-between gap-2">
@@ -101,7 +103,7 @@ function KpiCard({ kpi, hasData }: { kpi: KpiModel; hasData: boolean }) {
               : "text-muted-foreground",
           )}
         >
-          {showValue ? kpi.sub : "확정된 데이터 없음"}
+          {showValue ? kpi.sub : (kpi.emptyText ?? "확정된 데이터 없음")}
         </p>
       )}
       {kpi.note && (

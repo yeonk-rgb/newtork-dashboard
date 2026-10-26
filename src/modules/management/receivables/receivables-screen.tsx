@@ -8,6 +8,10 @@ import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 
 import { getTodayKst } from "../data/load-summary-input";
+import { loadArEntries, loadReceivables } from "../data/queries";
+import { computeArReceivables } from "../metrics/ar-receivables";
+import { computeItemReceivables } from "../metrics/receivables";
+import { formatAmount } from "@/shared/format/money";
 import { loadReceivablesData } from "./load-receivables";
 import { ReceivablesManager } from "./receivables-manager";
 import { canManageHidden, parseReceivableTab, toDateOnly } from "./rules";
@@ -31,17 +35,27 @@ export async function ReceivablesScreen({
   // getTodayKst()(connection)를 DB 조회보다 먼저 — 요청 시점 렌더링 표시가 앞서야 prerender 에러가 나지 않는다
   const today = await getTodayKst();
   // 숨긴 건은 팀장(confirm)에게만 내려보낸다
-  const data = await loadReceivablesData(canManageHidden(user));
+  const [data, arEntries, items] = await Promise.all([
+    loadReceivablesData(canManageHidden(user)),
+    loadArEntries(today.getUTCFullYear()),
+    loadReceivables(),
+  ]);
+  // 대시보드 미수금 = 채권·채무 외상매출금 (2026-10-26) — 올해 입력이 있는 마지막 달과 이 화면 합계를 같은 기준일로 비교
+  const ar = computeArReceivables(
+    arEntries,
+    { unit: "year", year: today.getUTCFullYear() },
+    today,
+    1,
+  );
+  const itemTotal = computeItemReceivables(items, ar.asOf, 1).total;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className={pageTitleClass}>미수금 관리</h1>
+          <h1 className={pageTitleClass}>미수금 관리 (건별 참고)</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            경과일은 발생일부터 셉니다. 대시보드 미수금은 선택한 기간의 마지막
-            날(진행 중인 기간은 오늘) 기준 잔액이라, 오늘 등록·수금한 건은 진행
-            중인 기간(이번 달·이번 분기) 화면에 반영됩니다.
+            건별 메모·수금 기록용 화면입니다. 경과일은 발생일부터 셉니다.
           </p>
           <AuditNotice />
         </div>
@@ -50,17 +64,23 @@ export async function ReceivablesScreen({
             href="/management#receivables"
             className="text-xs text-primary hover:underline"
           >
-            미수금 통계 보기 →
+            대시보드 미수금 보기 →
           </Link>
-          {/* 미수금 엑셀 — 기준일 = 기간 말일(진행 중이면 오늘), 대시보드 KPI 와 같음 */}
+          {/* 미수금 관리(건별 참고) 엑셀 — 기준일 = 기간 말일(진행 중이면 오늘). 대시보드 미수금(외상매출금)과 기준이 다름 */}
           <ManagementExportMenu
             kind="receivables"
             file={{ ko: "미수금", ascii: "receivables" }}
             options={receivablesExportOptions(today)}
-            note="기준일 = 기간 말일 (진행 중인 기간은 오늘). 숨긴 건은 빠집니다."
+            note="이 화면의 건별 목록 (기준일 = 기간 말일, 진행 중인 기간은 오늘). 숨긴 건은 빠집니다. 대시보드 미수금은 채권·채무 외상매출금 기준입니다."
           />
         </div>
       </div>
+      <BasisNotice
+        arMonth={ar.month}
+        arTotal={ar.total}
+        itemTotal={itemTotal}
+        asOf={ar.asOf}
+      />
       <ReceivablesManager
         user={user}
         rows={data.rows}
@@ -100,4 +120,61 @@ function receivablesExportOptions(today: Date) {
       period: { unit: "quarter" as const, ...lastQuarter },
     },
   ];
+}
+
+/**
+ * 화면 맨 위 안내 (2026-10-26, 05-22): 대시보드·리포트·자금수지 예측은 채권·채무 외상매출금 기준
+ * 같은 기준일의 두 합계를 나란히 보여 줘서 어긋나면 바로 보이게 한다 (막지는 않음 — 건별 메모용으로 쓰는 화면)
+ */
+function BasisNotice({
+  arMonth,
+  arTotal,
+  itemTotal,
+  asOf,
+}: {
+  arMonth: { year: number; month: number } | null;
+  arTotal: bigint;
+  itemTotal: bigint;
+  asOf: Date;
+}) {
+  const diff = itemTotal - arTotal;
+  const date = asOf.toISOString().slice(0, 10);
+  return (
+    <div
+      role="note"
+      className="space-y-1 rounded-card border bg-warning-soft px-5 py-4 text-sm"
+    >
+      <p className="font-medium">
+        대시보드·리포트·자금수지 예측의 미수금은{" "}
+        <Link
+          href={
+            arMonth
+              ? `/management/ledger?month=${arMonth.year}-${String(arMonth.month).padStart(2, "0")}`
+              : "/management/ledger"
+          }
+          className="text-primary underline"
+        >
+          채권·채무 관리
+        </Link>
+        의 외상매출금 기준입니다.
+      </p>
+      {arMonth ? (
+        <p className="tabular-nums">
+          {arMonth.year}년 {arMonth.month}월 외상매출금 미수{" "}
+          {formatAmount(arTotal)}원 ↔ 이 화면 미수 합계({date} 기준){" "}
+          {formatAmount(itemTotal)}원 —{" "}
+          {diff === 0n ? (
+            "같음"
+          ) : (
+            <span className="font-semibold text-warning-strong">
+              차이 {formatAmount(diff < 0n ? -diff : diff)}원
+              {diff > 0n ? " (이 화면이 많음)" : " (이 화면이 적음)"}
+            </span>
+          )}
+        </p>
+      ) : (
+        <p>올해 채권·채무 외상매출금 입력이 아직 없습니다.</p>
+      )}
+    </div>
+  );
 }

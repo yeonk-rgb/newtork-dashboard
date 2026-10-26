@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SAMPLE_CATEGORIES, SAMPLE_MONTHS } from "../entry/export/test-data";
 import { SAMPLE_ROWS } from "../ledger/export/test-rows";
-import { fixtureInput, fixtureMonths } from "./testing/summary-fixture";
+import {
+  fixtureInput,
+  fixtureItemReceivables,
+  fixtureMonths,
+} from "./testing/summary-fixture";
 
 vi.mock("server-only", () => ({}));
 const loadSummary = vi.fn(async (period: Parameters<typeof fixtureInput>[0]) =>
@@ -23,6 +27,8 @@ vi.mock("../entry/export/load-entry-export", () => ({
 }));
 vi.mock("../data/queries", () => ({
   loadFinanceMonths: async () => fixtureMonths(),
+  // 미수금 관리(건별 참고) 엑셀 입력
+  loadReceivables: async () => fixtureItemReceivables(),
 }));
 vi.mock("../ledger/load-ledger", () => ({
   loadLedgerRowsByMonth: async () => new Map([["2026-10", SAMPLE_ROWS]]),
@@ -158,7 +164,7 @@ describe("목표 대비 실적·미수금 엑셀 다운로드", () => {
 });
 
 describe("월별 리포트 엑셀 다운로드", () => {
-  it("당월: 리포트 시트 + 채권·채무 시트 + 상세 2장, 작성자 이름, 기록", async () => {
+  it("당월: 리포트 시트 + 채권·채무 시트 + 채권·채무 상세, 작성자 이름, 기록", async () => {
     const file = await exportManagementFile("report", "2026-10", {
       ...ACTOR,
       name: "윤경영",
@@ -167,19 +173,15 @@ describe("월별 리포트 엑셀 다운로드", () => {
       kind: "report",
       fileName: "경영지원_리포트_2026-10.xlsx",
       asciiName: "report-2026-10.xlsx",
-      sheetNames: [
-        "2026-10",
-        "채권·채무 2026-10",
-        "채권·채무 상세",
-        "미수금 상세",
-      ],
+      // "미수금 상세"(건별) 시트는 넣지 않음 — 미수금은 채권·채무 외상매출금 기준 (2026-10-26)
+      sheetNames: ["2026-10", "채권·채무 2026-10", "채권·채무 상세"],
     });
     expect(create.mock.calls[0][0].data).toMatchObject({
       screen: "report-export",
       targetType: "ReportExport",
       targetLabel: "월별 리포트 엑셀 다운로드 · 2026-10",
       actorLoginId: "mgmt_member",
-      meta: { period: "2026-10", sheetCount: 4 },
+      meta: { period: "2026-10", sheetCount: 3 },
     });
   });
 
@@ -190,7 +192,6 @@ describe("월별 리포트 엑셀 다운로드", () => {
       "2026-01~10",
       "채권·채무 2026-10",
       "채권·채무 상세",
-      "미수금 상세",
     ]);
   });
 });

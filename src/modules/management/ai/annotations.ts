@@ -1,6 +1,6 @@
 // AI 카드에 서버가 직접 붙이는 내용 (순수 함수, AI 에 보내지 않음)
 // - headline: 연간 목표 달성 한 줄 — 숫자가 틀릴 수 없게 AI 대신 서버가 만든다
-// - longOverdue: 90일 초과 미수 거래처명 — 거래처 실명은 외부 AI 로 보내지 않는다 (05-19 확인 전)
+// - longOverdue: 장기미수 거래처명 (채권·채무 외상매출금 "장기미수", 2026-10-26) — 거래처 실명은 외부 AI 로 보내지 않는다 (05-19)
 // 분석을 생성할 때 함께 저장해, 나중에 데이터가 바뀌어도 그때의 결과와 짝이 맞게 한다
 import { formatWonShort } from "@/shared/format/money";
 
@@ -12,8 +12,8 @@ export type LongOverdueCustomer = {
   name: string;
   /** "1.20억원" */
   amount: string;
-  /** 가장 오래된 건의 경과일 (분기 말 기준) */
-  ageDays: number;
+  /** 옛 기록(90일 초과 건별)만 — 가장 오래된 건의 경과일. 외상매출금 기준 기록에는 없음 */
+  ageDays?: number;
 };
 
 export type AiCommentAnnotations = {
@@ -30,29 +30,20 @@ export function buildAnnotations(
       ? `연간 목표 ${formatWonShort(annual.target)} 중 ${formatWonShort(annual.actual)}(${(annual.rate * 100).toFixed(1)}%)를 달성했습니다.`
       : `${summary.label} 확정 매출은 ${formatWonShort(summary.revenue.total)}입니다. (연간 목표 미설정)`;
 
-  // 90일 초과 건을 거래처별로 묶어 금액 큰 순
-  const byCustomer = new Map<string, { amount: bigint; ageDays: number }>();
-  for (const item of summary.receivables.items) {
-    if (item.bucket !== "90+") continue;
-    const prev = byCustomer.get(item.customerName);
-    byCustomer.set(item.customerName, {
-      amount: (prev?.amount ?? 0n) + item.amount,
-      ageDays: Math.max(prev?.ageDays ?? 0, item.ageDays),
-    });
-  }
-  const longOverdue = [...byCustomer.entries()]
-    .sort(([an, a], [bn, b]) =>
-      a.amount === b.amount
-        ? an.localeCompare(bn, "ko")
-        : a.amount > b.amount
+  // 장기미수가 있는 거래처, 장기미수 금액 큰 순 (같으면 이름순)
+  const longOverdue = summary.receivables.byCustomer
+    .filter((c) => c.longOverdue > 0n)
+    .sort((a, b) =>
+      a.longOverdue === b.longOverdue
+        ? a.customerName.localeCompare(b.customerName, "ko")
+        : a.longOverdue > b.longOverdue
           ? -1
           : 1,
     )
     .slice(0, LONG_OVERDUE_MAX)
-    .map(([name, v]) => ({
-      name,
-      amount: formatWonShort(v.amount),
-      ageDays: v.ageDays,
+    .map((c) => ({
+      name: c.customerName,
+      amount: formatWonShort(c.longOverdue),
     }));
 
   return { headline, longOverdue };
