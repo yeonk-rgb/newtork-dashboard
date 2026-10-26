@@ -1,5 +1,6 @@
 // 관리자 설정 화면 (서버 컴포넌트) — 관리자만, 그 외 403
 import { canManageUsers, getCurrentUser } from "@/shared/auth";
+import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 
 import { loadAdminUsers } from "./load-users";
@@ -13,7 +14,10 @@ export async function AdminScreen() {
 
   return (
     <div className="space-y-6">
-      <h1 className={pageTitleClass}>관리자 설정</h1>
+      <div>
+        <h1 className={pageTitleClass}>관리자 설정</h1>
+        <AuditNotice />
+      </div>
       <UserTable actorId={user.id} users={users} />
     </div>
   );

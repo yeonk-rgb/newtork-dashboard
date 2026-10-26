@@ -1,7 +1,7 @@
 // 월별 종합 리포트 — 리포트 시트 한 장의 행 배치 (순수 함수, exceljs 모름, 2026-10-26)
 // 담당자님이 대표님께 매달 드리는 리포트. 블록 순서 = 새 경영 대시보드 순서:
 //   머리말(견적서 제목·정보 칸 배치) → 요약(KPI 4개) → 분기별 목표 달성 현황(목표 엑셀과 같은 블록) → 매출 → 지출
-//   → 매출·지출 추이(월별 표, 그래프 없음) → 참고: 이익 구조 / 손익분기점(BEP, 임시 기준) / 미수금 통계(경과일 그룹)
+//   → 매출·지출 추이(월별 표, 그래프 없음) → 참고: 이익 구조 / 손익분기점(BEP, 적용 기준) / 미수금 통계(경과일 그룹)
 // 넣지 않는 것: 산업 분야별·제품별 매출(샘플 데이터), AI 분석
 // 숫자는 모두 대시보드와 같은 계산(summary·표시 모델·추이)에서 — 이 파일은 배치만 한다
 import { formatWonShort } from "@/shared/format/money";
@@ -38,7 +38,7 @@ export const REPORT_LABELS = {
   company: "뉴토크코리아㈜",
   basis: "확정된 달만 (대시보드와 같음)",
   cost: {
-    purchases: "매입 포함 (임시 기준)",
+    purchases: "매입 포함 (매입액 = 원가)",
     excludePurchases: "매입 제외 (참고 기준)",
   },
   otherExpense: "기타 (그 외 지출액)",
@@ -222,7 +222,7 @@ function summaryBlock(b: Builder, summary: ManagementSummary) {
     profit,
     // E열 너비 안에 들어가게 한 줄만 (이익률은 아래 "이익 구조" 블록 메모에)
     summary.profit.costMode === "purchases"
-      ? "매입액을 원가로 본 임시 기준"
+      ? "적용 기준: 매입액 = 원가"
       : "매입을 뺀 참고 기준",
     {
       warn: profit.warn,
@@ -400,7 +400,7 @@ function profitBlock(
         ? -(amount("goodsPurchase") + amount("materialPurchase"))
         : null,
       note: purchases
-        ? "비용 — 매입액을 원가로 본 임시 기준"
+        ? "비용 — 매입액 = 원가 (적용 기준)"
         : "비용 제외 (참고 기준)",
     },
     { name: "경비", amount: -amount("operatingExpense"), note: "비용" },
@@ -432,16 +432,16 @@ function profitBlock(
 }
 
 const BASIS_LABEL = {
-  provisional: "임시 기준",
+  settings: "적용 기준",
   category: "항목 설정",
-  unclassified: "임시 기준 (미분류)",
+  unclassified: "미분류 → 고정비",
 } as const;
 
-/** 참고 — 손익분기점(BEP): 변동비·고정비 그룹 + H·I 공헌이익·BEP 매출·달성률, 아래 한 줄 임시 기준 */
+/** 참고 — 손익분기점(BEP): 변동비·고정비 그룹 + H·I 공헌이익·BEP 매출·달성률, 아래 적용 기준 한 줄씩 */
 function breakEvenBlock(b: Builder, summary: ManagementSummary) {
   const be = summary.breakEven;
   b.title(
-    `손익분기점(BEP)${be.provisionalNotes.length > 0 ? " — 임시 기준" : ""} (참고)`,
+    `손익분기점(BEP)${be.appliedBasis.length > 0 ? " — 적용 기준" : ""} (참고)`,
     "title",
   );
   headerRow(b, ["구분", "금액", "적요", "총액"]);
@@ -498,13 +498,13 @@ function breakEvenBlock(b: Builder, summary: ManagementSummary) {
     });
     b.cell(row, { ...cell, ...(warn ? { warn: true } : {}) });
   });
-  // 임시 기준 — 기준 하나에 한 줄씩 (한 줄로 이으면 인쇄 폭을 넘어 잘린다)
-  be.provisionalNotes.forEach((note, i) => {
+  // 적용 기준 — 기준 하나에 한 줄씩 (한 줄로 이으면 인쇄 폭을 넘어 잘린다)
+  be.appliedBasis.forEach((note, i) => {
     b.push("data", [
       {
         col: COL.C,
         role: "footnote",
-        value: `${i === 0 ? "임시 기준 — " : "　　　　　 "}${note}`,
+        value: `${i === 0 ? "적용 기준 — " : "　　　　　 "}${note}`,
       },
     ]);
   });

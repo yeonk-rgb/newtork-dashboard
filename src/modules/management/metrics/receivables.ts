@@ -1,6 +1,6 @@
 // 미수금: 기준일(asOf) 시점의 잔액
 // - 기준일에 미수 = 발생일 ≤ 기준일 그리고 (아직 미수 또는 수금일 > 기준일)
-// - 경과일은 발생일부터 (docs/05-open-questions.md 17번 확인 전)
+// - 경과일은 발생일부터 (docs/05-open-questions.md 17번)
 import { addMonths, monthIndex } from "@/shared/period/period";
 
 import { sum } from "./math";

@@ -171,7 +171,8 @@ export function ProfitTable({ summary }: { summary: ManagementSummary }) {
         </tbody>
       </table>
       <p className="mt-2 text-xs text-muted-foreground">
-        원가 처리 방식은 고객사 확인 중 (docs/05-open-questions.md 3번)
+        적용 기준: 상품·원재료 매입액을 그달의 원가로 봅니다 · 공급가액(부가세
+        제외)
       </p>
     </Section>
   );

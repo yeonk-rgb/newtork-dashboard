@@ -42,7 +42,7 @@
   - 현재 사용자: `getCurrentUser()` (cookies를 읽으므로 **`<Suspense>` 안 컴포넌트에서** 호출 — cacheComponents). 로그인 안 함·만료·비활성이면 `null`
   - 동작: `view` / `edit`(입력·임시저장) / `confirm`(확정·설정 변경). 저장 시 `createdById`/`updatedById` = `getCurrentUser().id` (외래키 없는 문자열, 시드 데이터는 `"seed"`) — 화면 표시 이름은 `loadUserNames(ids)`
   - `src/proxy.ts`: 미로그인 → `/login?next=…`, 초기 비밀번호 사용 중 → `/account/password?next=…`, 경로 권한(`route-access.ts`): 팀 경로·`/admin`은 권한 없으면 403 화면, 메인은 자기 팀으로 이동. 쓰기는 각 Server Action에서 `can()`으로 다시 확인
-  - 권한 규칙(`can.ts`, 내부 결정·고객사 확인 대기 05-14·15): 관리자·경영지원팀 = 모든 팀 view·edit·confirm, 팀장 = 열람 범위 view + 수정 권한 edit·confirm, 팀원 = 열람 범위 view. 비활성·초기 비밀번호 계정은 전부 false. 관리자 설정은 `canManageUsers()`
+  - 권한 규칙(`can.ts`, 2026-10-26 자료 기반 확정 05-14·15): 관리자·경영지원팀 = 모든 팀 view·edit·confirm, 팀장 = 열람 범위 view + 수정 권한 edit·confirm, 팀원 = 열람 범위 view. 비활성·초기 비밀번호 계정은 전부 false. 관리자 설정은 `canManageUsers()`
   - 세션 12시간, 로그인 5회 실패 시 10분 잠금, 새 비밀번호 8자 이상·영문+숫자·아이디/현재 비밀번호와 다르게 (`login-rules.ts`)
   - 테스트용 가짜 사용자: `shared/auth/testing/fake-users.ts` (`*.test.ts`에서만 import)
   - **관리자 설정** `/admin`(`modules/admin`): 규칙은 `rules.ts`(`normalizeScope`·`scopeError`·`keepsAnAdmin`·`rowAbilities` — 화면·Server Action 공용), Action은 모두 `canManageUsers()` 확인. 역할·범위는 모아서 [변경]으로 일괄 저장(`updatedAt` 동시 수정 확인, Serializable 트랜잭션), 임시 비밀번호는 응답으로 한 번만 돌려주고 DB에는 해시만. 비활성화·초기화는 그 사람 세션 삭제
@@ -86,7 +86,7 @@
 - 분기 목표가 비어 있으면: (연간 − 입력한 분기 합) ÷ 빈 분기 수, 나머지 원 단위는 마지막 빈 분기에 더함. 4개 모두 입력했는데 합계 ≠ 연간이면 저장 시 경고
 - 대시보드 집계는 `status = CONFIRMED`인 달만 사용
 - **AI 분석 코멘트(8단계)**: `modules/management/ai/` + `shared/ai/`(server-only 클라이언트, `generateJson()`), 테이블 `mgmt_ai_comment`(다시 분석하면 행 추가, 화면은 최신 1건)
-  - ⚠️ **고객사 답변(05-19번) 전까지 샘플 시드 데이터로만 사용** — 실제 재무 데이터를 넣은 DB에서 [분석하기]를 누르지 않는다
+  - ⚠️ **실제 숫자는 꺼둔 상태 유지(05-19 결정 — 대표님 허락 없이 정할 수 없음), 샘플 시드 데이터로만 사용** — 실제 재무 데이터를 넣은 DB에서 [분석하기]를 누르지 않는다. 허락하시면 `AI_ALLOW_REAL_DATA=true` 하나로 켠다
   - 입력은 `buildAiInput(summary)` 집계값만 (거래처명·건별 내역·비고·생산팀 목업 제외), 해시가 달라지면 "최신이 아님" 안내. 화면을 열 때는 AI를 호출하지 않는다
   - 카드 위치: 메인(`/`) **맨 아래 "AI 분석" 영역**(2026-10-25 재구성), 경영지원 상세(`/management`) KPI 위 — 같은 `AiCommentSection` 재사용, 기록은 (연도, 분기)로만 찾으므로 두 화면이 같은 기록을 공유
   - 끝난 분기만, confirm 권한만 생성 (`ai/rules.ts`의 `aiAbilities()` — 화면·Server Action 공용). 월 보기 = 그 달의 분기, 연간·누적 = 확정 월이 있는 마지막 분기
@@ -98,23 +98,28 @@
   - 모델 `claude-opus-5-5`(`shared/ai/client.ts`), SDK `@anthropic-ai/sdk` 버전 정확히 고정, 구조화 출력 + 거절 시 서버 fallback + Zod 재검증. 프롬프트를 바꾸면 `ai/prompt.ts`의 `PROMPT_VERSION`을 올린다
   - 테스트는 가짜 `create`를 주입 (Vitest에서 `getAnthropicClient()`는 항상 에러 → CI 실제 호출 불가). 로컬 화면은 `.env`의 `AI_MOCK=true`(실패 연습 `fail`) — `next dev`에서만 동작
   - 키 입력: `npm run env:set-key` (값 출력 금지, 길이만)
-  - 배포 서버(`next start`)는 `AI_ALLOW_REAL_DATA=true`일 때만 [분석하기] 가능 (`ai/real-data-policy.ts` → `aiAbilities()`의 `realDataBlocked`, 05-19 답변 전 기본 `false`). `next dev`·테스트는 영향 없음
+  - 배포 서버(`next start`)는 `AI_ALLOW_REAL_DATA=true`일 때만 [분석하기] 가능 (`ai/real-data-policy.ts` → `aiAbilities()`의 `realDataBlocked`, 05-19 결정: 기본 `false` 유지). `next dev`·테스트는 영향 없음
   - 예시 분석: `npm run seed:ai-examples` (`ai/examples.ts` 문장 틀 + 서버 계산 숫자, `model = "example"`, 카드에 "예시" 표시) / `-- --remove`. **실제 데이터 사용 전 삭제**
 - **지표 계산**: `modules/management/metrics/`(순수 함수, DB·화면 모름) + `data/`(DB 조회, server-only). 공개 함수는 `getManagementSummary(period)` (권한: 경영지원 view)
   - 금액은 BigInt, 비율만 number(0~1). 0으로 나누기·데이터 없음은 `null` + `reason`
-  - 이익 비용 범위는 `metrics/settings.ts`의 `costMode` (05-3번 답변 전 임시: 매입 포함)
+  - 이익 비용 범위는 `metrics/settings.ts`의 `costMode` (05-3 결정: 매입 포함 = 매입액은 원가)
   - 미수금은 기준일 = min(기간 마지막 날, 오늘) 시점 잔액, 경과일은 발생일 기준 (05-17번)
   - **증감 비교는 같은 월끼리**: 현재 기간에 확정 안 된 달(미확정·마감 전)이 있으면 비교 기간도 같은 순서의 달만 집계 (예: 2026 1~8월 ↔ 2025 1~8월, 3분기 7~8월 ↔ 2분기 4~5월). 모든 월이 확정이면 기간 전체 비교. 화면에 "같은 기간 비교 · …" 표시
   - 검산: `npm run metrics:report -- 2026 Q3` (로컬 DB로 계산 결과를 마크다운 표로 출력)
 - **손익분기점(BEP) 달성률(2026-10-25)**: 계산 `metrics/break-even.ts`(순수 함수, `PeriodCore.breakEven`), 카드 `bepDonut()`(`components/donuts/donut-cards.ts`) — 메인 2줄(연간 목표 옆, 2×2), 상세 `/management#break-even` 계산 내역 표(`components/detail/break-even-table.tsx`)
   - 확정된 달 합계로 한 번 계산(월별 평균 아님): 공헌이익 = 매출 − 변동비, **달성률 = 공헌이익 ÷ 고정비**, BEP 매출 = 고정비 × 매출 ÷ 공헌이익(BigInt, 원 단위 올림). 비용 범위는 `costMode`와 같음 → 변동비 + 고정비 = 이익 계산 비용이라 **달성률 ≥ 100% ⇔ 흑자** (테스트로 고정)
-  - 분류·임시 기준은 **`metrics/settings.ts`의 `breakEven` 한 곳**: 매입 = 변동비(④-3), 경비 지출 = 고정비(①-2·05-36), 미분류 그 외 지출 = 고정비(05-35), `provisionalNotes`(화면 "임시 기준" 배지 + [계산 기준] 4줄 — 비우면 배지 사라짐). 그 외 지출 항목은 목표·항목 설정의 고정비/변동비
+  - 분류는 **`metrics/settings.ts`의 `breakEven` 한 곳** (2026-10-26 결정, 회계 관행): 매입 = 변동비(05-3), 경비 지출 = 고정비(05-36), 그 외 지출 항목 = 고정비(05-35 — 시드 광고선전비·접대비·차량유지비도 고정비, 미분류도 고정비). 그 외 지출 항목은 목표·항목 설정의 고정비/변동비로 바꿀 수 있음. 화면 "적용 기준" 배지 + [계산 기준] = `appliedBasis`(= `APPLIED_BASIS`)
   - 예외(`reason`): no-data / no-revenue / no-fixed-cost / not-reachable(공헌이익 ≤ 0 → 가운데 "도달 불가", 변동비 한 조각 매출 대비)
   - 이전 기간 대비 변화(%p)·AI 연결은 후속 (06)
 - **경영 대시보드 재구성(2026-10-25 담당자 요청, PR 1 = 계산·표시 모델, PR 2 = 화면)**: 메인 순서 KPI 4개(매출·지출·추정 이익·미수금) → 분기별 목표 달성 현황(목표매출 달성률·매출 구성·지출 구성 도넛) → 추이 및 분석(매출·지출 추이 막대+선, 산업 분야별·제품별 매출 도넛) → AI 분석(맨 아래). 빠진 카드는 상세 `/management` 관련 표 옆으로 옮김(삭제 없음, `components/detail/detail-cards.tsx`): 이익 구조 → 이익 계산 옆, 연간 목표 달성률 → 분기별 목표 옆, BEP → `#break-even` 계산 내역 표 위(`#break-even`은 카드+표를 감싼 곳), 미수금 원형 → 미수금 영역 첫 줄. 메인 화면 조립은 `components/dashboard/main-dashboard.tsx`·`main-kpis.tsx`(숫자는 표시 모델에서만), 강조 카드는 목표매출 달성률(안에서는 빨간 글씨 대신 "▼ 미달" 배지). `DonutCard`에 `legend="amount-first"`·`layout="stacked"`·조각 `hint` 추가(기본값은 예전과 같음). 미수금 상위 거래처 5는 메인에서 빠짐(상세에 전체 표)
   - 표시 모델 `components/dashboard/model.ts`(순수 함수, summary 값 그대로 — `model.test.ts`가 같은 값인지 고정), **이름은 `labels.ts` 한 곳**·화면 표시 층에서만(metrics 이름표 그대로 → AI 입력 해시 유지)
-  - 월 목표 = 분기 목표 ÷ 3 자동(`allocateMonthTargets`, 나머지 원은 분기 마지막 달 — 분기 배분과 같은 `splitEvenly`), `TargetResult.monthTargets`·`month`(월 보기만). 05-16(정리본 ④-5) 답이 오면 직접 입력 칸 검토
+  - 월 목표 = 분기 목표 ÷ 3 자동(`allocateMonthTargets`, 나머지 원은 분기 마지막 달 — 분기 배분과 같은 `splitEvenly`), `TargetResult.monthTargets`·`month`(월 보기만). 직접 입력 칸은 만들지 않음 (05-16 결정)
   - 추정 이익 = `profit.profit`(지금 비용 기준에서 매출 − 지출과 정확히 같음, 테스트 고정), 비교는 금액 차이 `Comparison.profitDiff`. 목표 분기 목록은 끝났고 3개월 모두 확정인데 미달일 때만 빨강(미확정 달이 있으면 안내만)
+- **자료 기반 결정(2026-10-26)**: 고객사 추가 답변은 받지 않고 05의 열린 질문을 결정으로 닫음. 결정 반영 PR ①~⑥ (06 "결정 반영 PR 순서")
+  - **적용 기준**: 화면에 "임시 기준·고객사 확인 중"은 쓰지 않고, 정한 기준을 "적용 기준"으로 남긴다 — 문구는 `metrics/settings.ts`의 `APPLIED_BASIS` 한 곳(BEP 카드·계산 내역 표·리포트 각주). 담당자가 다르게 원하면 설정값과 이 문구를 함께 바꾼다. 금액 기준: 월간 입력(매출·매입·경비) = 공급가액(부가세 제외), 미수금·채권·채무·자금수지 예측 = 실제 주고받는 금액(부가세 포함)
+  - 입력·수정 화면 제목 아래 "작업 내용은 변경 이력에 기록됩니다" = `shared/ui/audit-notice.tsx`의 `<AuditNotice />` (월간 입력·목표·채권·채무·이관·업로드·미수금·관리자 설정)
+  - **인당 생산성**: 목표·항목 설정 "직원 수"(`AnnualTarget.headcount Int?`, 연도별 선택, 목표와 함께 저장·변경 이력 "직원 수") → `metrics/productivity.ts`(확정된 달 합계 ÷ 직원 수, 원 단위 반올림, `reason` no-headcount/no-data) → `ManagementSummary.productivity` → 상세 BEP 카드 옆 `ProductivityCard`. 시드 12명
+  - 프로젝트별 원가·이익률, 수주 잔고 & 영업 파이프라인 = 자료 부족으로 보류, 생산량·가동률 = 생산팀, 그룹웨어 연동 = 통합 단계 (06)
 - 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
@@ -129,7 +134,7 @@
 - **채권·채무 관리(2026-10-24 1단계)**: `modules/management/ledger/`, `/management/ledger`, 테이블 `mgmt_ledger_entry`(모델 `LedgerEntry`) — 고객사 엑셀 `경영지원_관리.xlsx`를 옮긴 화면이라 **항목명·구분·열 순서는 엑셀과 같게** 둔다 (`labels.ts`)
   - 기준년월(`year`·`month`)별 거래처 잔액. 구분 4개(외상매출금 / 외상매입금 / 미지급비용-직원 / 미지급비용-업체)를 한 테이블에 두고, 구분마다 쓰는 칸(`arStatus`·`partnerCode` / `purchaseType` / `expenseType`·`autoTransfer`)은 `schemas.ts`의 discriminated union + `toLedgerData()`로 나머지를 null 처리
   - 거래처코드는 외상매출금만, 선택, 입력하면 숫자 10자리 **문자열**(앞자리 0 유지). 당월수금완료는 완료일 필수(오늘 이후 불가), 다른 외상매출금 상태엔 완료일 불가 (`ledgerDateErrors()`)
-  - 권한 `ledgerAbilities()`(화면·Server Action 공용): 열람 = 경영지원 view, 추가·수정 = edit, 숨김·복구 = confirm. 고객사 원문 "경영지원팀장만 수정"은 05-14·15에 확인 대기
+  - 권한 `ledgerAbilities()`(화면·Server Action 공용): 열람 = 경영지원 view, 추가·수정 = edit, 숨김·복구 = confirm. 고객사 원문 "경영지원팀장만 수정"은 05-14·15에서 경영지원팀 전원 + 관리자(대표)로 확정 (2026-10-26)
   - 삭제 대신 숨김(`deletedAt`) — 조회 시 `deletedAt: null`. 샘플은 `npm run seed:ledger`(작성자 `seed-ledger`, `-- --remove`로 삭제)
   - **기존 미수금 관리·대시보드와 연결하지 않는다** — 외상매출금 vs 미수금 기준은 05-22번(대시보드 연결 전 필수), 전월 이월 05-23번, 총액 ↔ 월간 입력 05-24번
   - 미지급비용-업체 합계는 3줄: 총액(자동이체 제외 = 엑셀 F열 SUM(D67:D79)과 같은 값) / 자동이체 합계 / 전체 합계 (`vendorTotals()`, 05-25)
@@ -162,7 +167,7 @@
     - 버튼: 목표·항목 설정(그 해), 미수금 관리(이번 달 오늘 기준 / 지난달 말 / 지난 분기 말) — `export/management-export-menu.tsx`. 변경 이력 `targets-export`·`receivables-export`
     - 결과물 고정: `entry/export/__snapshots__`(월간 입력) + `export/__snapshots__`(목표·미수금) + 채권·채무 스냅샷 — 공용 엔진만 손댔으면 갱신 금지
     - 확정된 달이 하나도 없는 분기는 달성률(0.0%)을 쓰지 않고 "← 4분기 진행 중 (경과 1/3개월, 확정된 달 없음)" / 끝남 "(7·8·9월 미확정, 확정된 달 없음)" (2026-10-26 — 대시보드 목표 카드도 같은 문장 `QuarterRow.noConfirmedText`, [진행 중] 배지 유지)
-  - **PR ③(2026-10-26) 월별 종합 리포트** (`report/report-layout.ts`, `?kind=report`, 파일 `경영지원_리포트_{기간}.xlsx`, 버튼 = 메인·상세 기간 선택 옆 [월별 리포트 엑셀] `export/report-download-button.tsx`): 리포트 시트(이름 = 기간) 블록 순서 = 새 대시보드 — 머리말("경 영 리 포 트" 16pt, 회사명 뉴토크코리아㈜·기간·작성일·작성자 / 집계 기준·비용 기준·확정 현황·생성, 직인·대표자·주소·연락처 없음) → 요약(대시보드 KPI 4개 `dashboardKpis`, F = 직전 기간 대비, H = 전년 동기) → 분기별 목표 달성 현황(`appendTargetBlocks` — 목표 엑셀과 같음) → 매출 → 지출(+ 기타 항목별) → 매출·지출 추이(대시보드와 같은 12개월 표, 그래프 없음) → 참고: 이익 구조(위 칸 가리키는 수식)·BEP(임시 기준, 각주 한 줄씩)·미수금 통계(`appendAgingBlock`). 산업 분야별·제품별·AI 는 넣지 않음
+  - **PR ③(2026-10-26) 월별 종합 리포트** (`report/report-layout.ts`, `?kind=report`, 파일 `경영지원_리포트_{기간}.xlsx`, 버튼 = 메인·상세 기간 선택 옆 [월별 리포트 엑셀] `export/report-download-button.tsx`): 리포트 시트(이름 = 기간) 블록 순서 = 새 대시보드 — 머리말("경 영 리 포 트" 16pt, 회사명 뉴토크코리아㈜·기간·작성일·작성자 / 집계 기준·비용 기준·확정 현황·생성, 직인·대표자·주소·연락처 없음) → 요약(대시보드 KPI 4개 `dashboardKpis`, F = 직전 기간 대비, H = 전년 동기) → 분기별 목표 달성 현황(`appendTargetBlocks` — 목표 엑셀과 같음) → 매출 → 지출(+ 기타 항목별) → 매출·지출 추이(대시보드와 같은 12개월 표, 그래프 없음) → 참고: 이익 구조(위 칸 가리키는 수식)·BEP(적용 기준, 각주 한 줄씩)·미수금 통계(`appendAgingBlock`). 산업 분야별·제품별·AI 는 넣지 않음
     - 붙는 시트: "채권·채무 2026-10"(단독 다운로드와 같은 `addLedgerSheets`, 분기·연간·누적은 데이터 있는 달) · "채권·채무 상세" · "미수금 상세". 다시 올리면 `selectLedgerSheet` 가 이름 끝 기준년월로 자동 선택
     - **인쇄: 블록 단위 쪽 나눔** — Excel 은 "페이지에 맞춤"이면 수동 쪽 나눔을 무시(2026-10-26 확인)하므로 리포트 시트만 맞춤 대신 고정 배율(`export/page-plan.ts` `planPages` — 열 너비로 계산, Mac Excel 이 약 1.1배 넓게 그려 숫자 폭 8px 기준) + 인쇄 범위 A:I(빈 열을 넣으면 빈 쪽이 생김) + 블록 앞 쪽 나눔. H열 메모가 잘리지 않게 I열을 넓힌다. 측정: 배율 85%, 리포트 시트 3쪽
     - 채권·채무 다운로드에도 연초 누적(`2026-YTD10`, 파일 `_2026-01~10`) 추가
@@ -183,7 +188,7 @@
 
 ## 공통 정책
 
-> 권한·계정은 고객사 요구사항 기록용이다. 실제 규칙은 `src/shared/auth/can.ts`와 `docs/integration-notes.md` 8번 (내부 결정, 고객사 확인 대기 — `docs/05-open-questions.md` 14·15번).
+> 권한·계정은 고객사 요구사항 기록용이다. 실제 규칙은 `src/shared/auth/can.ts`와 `docs/integration-notes.md` 8번 (2026-10-26 자료 기반 확정 — `docs/05-open-questions.md` 14·15번).
 
 ### 권한
 | 역할 | 권한 |
@@ -272,7 +277,7 @@ newtork-dashboard/ (= 이 폴더)
 └─ CLAUDE.md
 ```
 
-## 배포 (Render, PoC — 2026-10-21 내부 결정, 05-8 고객사 확인 대기)
+## 배포 (Render, PoC — 2026-10-21 내부 결정, 운영 서버 위치 05-8은 범위 밖 — IT·대표 결정)
 
 - 루트 `render.yaml`(Blueprint): 웹 서비스 + PostgreSQL 16, 무료 플랜·싱가포르. Render는 **main 브랜치**의 `render.yaml`을 읽는다
 - 빌드: `npm ci` → `prisma generate` → `prisma migrate deploy` → `npm run db:seed:if-empty`(계정이 없는 빈 DB일 때만 — 재배포 때 덮어쓰기 방지) → `next build`. 시작은 `npm start`(PORT 자동)
@@ -342,4 +347,4 @@ newtork-dashboard/ (= 이 폴더)
 
 ## 미정 사항 (확정 전까지 가정하지 말고 확인할 것)
 
-`docs/05-open-questions.md` 표 참고 — 상태가 "미확인"인 항목은 임의로 가정하지 않는다.
+`docs/05-open-questions.md` 표 참고 — **2026-10-26 고객사 추가 답변 없이 모두 "자료 기반 결정"으로 닫음**(생산·서비스·IT 질문은 범위 밖). 새 질문이 생기면 표에 추가하고, 상태가 "미확인"인 항목은 임의로 가정하지 않는다.

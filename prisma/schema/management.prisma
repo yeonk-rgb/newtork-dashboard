@@ -26,6 +26,8 @@ model AnnualTarget {
   q2Target      BigInt?
   q3Target      BigInt?
   q4Target      BigInt?
+  /// 직원 수 (명, 선택) — 인당 생산성(매출 ÷ 인원, 추정 이익 ÷ 인원). 10/14 회의 메모 기준 12명 (2026-10-26)
+  headcount     Int?
 
   /// 마지막으로 엑셀 업로드로 저장된 경우 그 업로드 id (외부 AI 분석 차단 판단용, 05-19)
   uploadId String?

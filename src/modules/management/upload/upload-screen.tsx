@@ -4,6 +4,7 @@ import "server-only";
 import { Download } from "lucide-react";
 
 import { getCurrentUser, loadUserNames } from "@/shared/auth";
+import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 
 import { getTodayKst } from "../data/load-summary-input";
@@ -40,8 +41,10 @@ export async function UploadScreen() {
           <h1 className={pageTitleClass}>엑셀 업로드 · 과거 데이터 이관</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             기존 엑셀(수금 등) 파일을 올려 한 번에 반영합니다. 저장 전
-            미리보기로 확인할 수 있습니다.
+            미리보기로 확인할 수 있습니다. 금액은 공급가액(부가세 제외) 원
+            단위로 적어 주세요.
           </p>
+          <AuditNotice />
         </div>
         <a
           href="/api/management/upload-template"

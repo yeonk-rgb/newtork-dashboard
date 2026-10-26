@@ -47,7 +47,7 @@ const bep = (months: FinanceMonth[]) =>
     BEP,
   );
 
-describe("분류 (임시 기준)", () => {
+describe("분류 (적용 기준)", () => {
   it("매입은 변동비, 경비는 고정비, 그 외 지출은 항목 설정, 미분류는 고정비", () => {
     const items = breakEvenItems(
       [
@@ -66,9 +66,9 @@ describe("분류 (임시 기준)", () => {
       BEP,
     );
     expect(items.map((i) => [i.label, i.costClass, i.basis])).toEqual([
-      ["상품 매입", "VARIABLE", "provisional"],
-      ["원재료 매입", "VARIABLE", "provisional"],
-      ["경비 지출", "FIXED", "provisional"],
+      ["상품 매입", "VARIABLE", "settings"],
+      ["원재료 매입", "VARIABLE", "settings"],
+      ["경비 지출", "FIXED", "settings"],
       ["광고선전비", "VARIABLE", "category"],
       ["복리후생비", "FIXED", "category"],
       ["지급수수료", "FIXED", "unclassified"],

@@ -88,7 +88,7 @@ export function fakeUser(
 
 /**
  * "경영지원 입력·임시저장만 가능(확정 불가)" 사용자 — 지금 권한 규칙에는 없는 조합이지만
- * 경영지원 화면 규칙(entryAbilities 등)에 그 분기가 남아 있어 계속 검사한다 (고객사 확인 대기 05-14·15).
+ * 경영지원 화면 규칙(entryAbilities 등)에 그 분기가 남아 있어 계속 검사한다 (05-14·15).
  * 테스트에서 vi.mock("@/shared/auth/can", …)과 withEditOnlyUser()로 함께 쓴다.
  */
 export const EDIT_ONLY_MGMT: AppUser = fakeUser("mgmt", {

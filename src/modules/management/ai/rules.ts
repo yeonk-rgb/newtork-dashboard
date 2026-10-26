@@ -60,10 +60,10 @@ export type AiAbilities = {
  * @param today UTC 자정 (한국 날짜)
  */
 export const UPLOADED_DATA_NOTICE =
-  "외부 AI 전송 동의 확인 전에는 업로드 데이터를 분석할 수 없습니다.";
+  "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락 후에 켭니다 — 지금은 업로드 데이터를 분석할 수 없습니다.";
 
 export const REAL_DATA_BLOCKED_NOTICE =
-  "외부 AI 전송 동의 확인 전이라 이 서버에서는 AI 분석을 실행하지 않습니다.";
+  "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락 후에 켭니다 — 이 서버에서는 AI 분석을 실행하지 않습니다.";
 
 /**
  * 분석 가능 여부. 서버 Server Action 과 화면이 같은 함수를 쓴다.

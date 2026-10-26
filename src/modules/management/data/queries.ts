@@ -68,6 +68,7 @@ export async function loadAnnualTarget(
     year: row.year,
     revenueTarget: row.revenueTarget,
     quarterTargets: [row.q1Target, row.q2Target, row.q3Target, row.q4Target],
+    headcount: row.headcount,
   };
 }
 

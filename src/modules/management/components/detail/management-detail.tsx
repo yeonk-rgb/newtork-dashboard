@@ -14,6 +14,7 @@ import {
   ReceivablesDonutCard,
 } from "./detail-cards";
 import { ExpenseTable } from "./expense-table";
+import { ProductivityCard } from "./productivity-card";
 import { ReceivablesSection } from "./receivables-section";
 import { RevenueMixChart } from "./revenue-mix-chart";
 import {
@@ -58,10 +59,11 @@ export function ManagementDetail({
         <AnnualTargetCard summary={summary} />
       </div>
 
-      {/* #break-even = 메인 "BEP 달성률 →" 도착 지점: BEP 카드 → 계산 내역 표 */}
+      {/* #break-even = 메인 "BEP 달성률 →" 도착 지점: BEP 카드(옆 인당 생산성) → 계산 내역 표 */}
       <div id="break-even" className="scroll-mt-4 space-y-6">
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <BreakEvenCard summary={summary} />
+          <ProductivityCard summary={summary} />
         </div>
         <BreakEvenTable summary={summary} />
       </div>

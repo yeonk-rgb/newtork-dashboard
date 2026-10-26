@@ -117,7 +117,7 @@ describe("업로드 데이터가 AI 입력에 들어가면 분석 차단 (05-19 
     expect(view.abilities).toEqual({
       canGenerate: false,
       notice:
-        "외부 AI 전송 동의 확인 전에는 업로드 데이터를 분석할 수 없습니다.",
+        "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락 후에 켭니다 — 지금은 업로드 데이터를 분석할 수 없습니다.",
     });
   });
 

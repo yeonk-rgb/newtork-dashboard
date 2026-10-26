@@ -10,8 +10,8 @@ export const DASHBOARD_LABELS = {
   },
   /** 추정 이익 카드 작은 안내 — 비용 기준(costMode)별 */
   profitNote: {
-    purchases: "매입액을 원가로 본 임시 기준 (고객사 확인 중)",
-    excludePurchases: "매입을 빼고 계산한 참고 기준 (고객사 확인 중)",
+    purchases: "적용 기준: 매입액 = 원가 · 공급가액",
+    excludePurchases: "매입을 빼고 계산한 참고 기준",
   },
   expenseNote: "상품 매입 + 원재료 매입 + 경비 + 기타",
   receivablesBasis: "미수금 관리 기준",
@@ -40,7 +40,10 @@ export const DASHBOARD_LABELS = {
   industry: "산업 분야별 매출",
   series: "제품별 매출",
   /** 제품별 매출 카드 안 작은 글씨 — 기준은 처음 요구사항대로 제품 시리즈 */
-  seriesBasis: "제품 시리즈 기준",
+  seriesBasis: "제품 시리즈 기준 · 금액 기준",
+  /** 산업 분야별 매출 카드 안 작은 글씨 — 처음 요구사항의 7개 분류, 비중은 금액 기준 (05-6·10) */
+  industryBasis:
+    "7개 분류(상하수도·발전소·가스·오일·석유·민간 플랜트·기타) · 금액 기준",
   sampleBadge: "샘플 데이터",
   sampleNote: "합계는 이 기간 확정 매출, 비중은 가상(생산팀 데이터 연동 전)",
 } as const;

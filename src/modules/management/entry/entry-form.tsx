@@ -12,6 +12,7 @@ import {
   useTransition,
 } from "react";
 
+import { AuditNotice } from "@/shared/ui/audit-notice";
 import { cn } from "@/shared/lib/utils";
 
 import {
@@ -401,7 +402,10 @@ export function EntryForm({
         className="space-y-6 pb-28"
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className={pageTitleClass}>월간 실적 입력</h1>
+          <div>
+            <h1 className={pageTitleClass}>월간 실적 입력</h1>
+            <AuditNotice />
+          </div>
           <div className="flex items-center gap-2">
             <label className="sr-only" htmlFor="entry-year">
               연도

@@ -4,6 +4,7 @@ import "server-only";
 import Link from "next/link";
 
 import { can, getCurrentUser } from "@/shared/auth";
+import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 import { pageTitleClass } from "@/shared/ui/styles";
 
@@ -43,6 +44,7 @@ export async function LedgerImportScreen({
             기준년월의 채권·채무로 한 번에 옮깁니다. 미리보기 단계에서는
             아무것도 저장하지 않습니다.
           </p>
+          <AuditNotice />
         </div>
         <Link
           href={`/management/ledger?month=${formatLedgerMonth(ym)}`}

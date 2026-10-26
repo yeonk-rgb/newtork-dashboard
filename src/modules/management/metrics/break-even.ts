@@ -26,14 +26,14 @@ export function breakEvenItems(
         label: "상품 매입",
         amount: total((m) => m.goodsPurchase),
         costClass: settings.purchases,
-        basis: "provisional",
+        basis: "settings",
       },
       {
         key: "materialPurchase",
         label: "원재료 매입",
         amount: total((m) => m.materialPurchase),
         costClass: settings.purchases,
-        basis: "provisional",
+        basis: "settings",
       },
     );
   }
@@ -42,7 +42,7 @@ export function breakEvenItems(
     label: "경비 지출",
     amount: total((m) => m.operatingExpense),
     costClass: settings.operatingExpense,
-    basis: "provisional",
+    basis: "settings",
   });
 
   const other = new Map<string, { item: BreakEvenItem; sortOrder: number }>();
@@ -93,7 +93,7 @@ export function computeBreakEven(
     unclassifiedCount: items.filter(
       (i) => i.basis === "unclassified" && i.amount !== 0n,
     ).length,
-    provisionalNotes: settings.provisionalNotes,
+    appliedBasis: settings.appliedBasis,
   };
   const none = (reason: BreakEvenResult["reason"]): BreakEvenResult => ({
     ...base,

@@ -75,7 +75,8 @@ export function CollectForm({
         />
         <FieldError id="rcv-collect-err" message={error} />
         <p className="mt-1 text-xs text-muted-foreground">
-          부분 수금은 아직 지원하지 않습니다 (고객사 확인 중 05-11번).
+          부분 수금은 지원하지 않습니다. 나눠 받으면 받은 금액만큼 수금 처리하고
+          남은 금액은 새 건으로 등록하세요.
         </p>
       </div>
       {serverError && (

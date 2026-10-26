@@ -75,13 +75,13 @@ export function AnnualTargetCard({ summary }: { summary: ManagementSummary }) {
   );
 }
 
-/** 손익분기점(BEP) 달성률 (임시 기준 배지 + [계산 기준] 펼침) */
+/** 손익분기점(BEP) 달성률 (적용 기준 배지 + [계산 기준] 펼침) */
 export function BreakEvenCard({ summary }: { summary: ManagementSummary }) {
   return (
     <DonutCard
       title={`${summary.label} 손익분기점(BEP) 달성률`}
       badge={
-        summary.breakEven.provisionalNotes.length > 0 ? "임시 기준" : undefined
+        summary.breakEven.appliedBasis.length > 0 ? "적용 기준" : undefined
       }
       {...bepDonut(summary)}
       csvName={csvOf(summary, "손익분기점")}
@@ -133,11 +133,11 @@ function BreakEvenFooter({ summary }: { summary: ManagementSummary }) {
           미분류 {b.unclassifiedCount}개 항목은 고정비로 계산
         </p>
       )}
-      {b.provisionalNotes.length > 0 && (
+      {b.appliedBasis.length > 0 && (
         <details className="mt-2">
           <summary className="cursor-pointer text-primary">계산 기준</summary>
           <ul className="mt-1 list-disc space-y-0.5 pl-4">
-            {b.provisionalNotes.map((n) => (
+            {b.appliedBasis.map((n) => (
               <li key={n}>{n}</li>
             ))}
           </ul>
