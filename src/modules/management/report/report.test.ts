@@ -1,4 +1,4 @@
-// 엑셀 PR ③ 월별 종합 리포트 — 블록 순서·대시보드와 같은 숫자·원본 비교·쪽 나눔·채권·채무 왕복
+// 엑셀 PR ③ 월별 종합 리포트 — 블록 순서·대시보드와 같은 숫자·원본 비교·쪽 나눔·경영지원 관리 왕복
 import { readFile } from "node:fs/promises";
 
 import ExcelJS from "exceljs";
@@ -77,7 +77,7 @@ const at = (cells: Cell[], row: number, col: number) =>
 const num = (c: Cell | undefined) =>
   c?.formula ? c.formula.result : (c?.value as number);
 
-async function workbook(period: Period, ledgerName = "채권·채무 2026-10") {
+async function workbook(period: Period, ledgerName = "경영지원 관리 2026-10") {
   const { summary, report } = reportFor(period);
   const buf = await buildStackedWorkbook({
     template: await readFile(TEMPLATE_PATH),
@@ -91,7 +91,7 @@ async function workbook(period: Period, ledgerName = "채권·채무 2026-10") {
     ],
     ledger: {
       sheets: [{ sheetName: ledgerName, month: "2026-10", rows: SAMPLE_ROWS }],
-      detailName: "채권·채무 상세",
+      detailName: "경영지원 관리 상세",
     },
     now: NOW,
   });
@@ -130,17 +130,20 @@ describe("리포트 블록 순서 = 새 대시보드 순서", () => {
       "매출·지출 추이 (2025.10 ~ 2026.9)",
       "이익 구조 (참고)",
       "손익분기점(BEP) — 적용 기준 (참고)",
-      "미수금 (2026년 9월 채권·채무 외상매출금 기준)",
+      "미수금 (2026년 9월 경영지원 관리 외상매출금 기준)",
     ]);
     // 넣지 않는 것: 산업 분야별·제품별 매출(샘플), AI 분석
     const all = JSON.stringify(report.layout);
     expect(all).not.toMatch(/산업 분야|제품별|시리즈|AI/);
   });
 
-  it("미수금 블록(외상매출금 9월): 장기미수 빨간 행 → 당월 수금예정, I열 미수금 합계 = 대시보드 KPI, 당월 수금완료는 따로", () => {
+  it("미수금 블록(외상매출금 9월): 장기 미수금 빨간 행 → 당월 수금예정, I열 미수금 합계 = 대시보드 KPI, 당월 수금은 따로", () => {
     const { summary, report } = reportFor(Q3);
     const cells = cellsOf(report.layout);
-    const start = rowOf(cells, "미수금 (2026년 9월 채권·채무 외상매출금 기준)");
+    const start = rowOf(
+      cells,
+      "미수금 (2026년 9월 경영지원 관리 외상매출금 기준)",
+    );
     const below = cells.filter((c) => c.row > start);
     expect(
       below.some((c) => c.value === "다라발전(가상)" && c.role === "warnName"),
@@ -156,8 +159,10 @@ describe("리포트 블록 순서 = 새 대시보드 순서", () => {
       (c) => c.col === 9 && !c.formula && c.role === "auxAmount",
     );
     expect(collected?.value).toBe(5_000_000);
-    // 요약 줄 H 메모 = 장기미수
-    expect(cells.map((c) => c.value)).toContain("← 장기미수 8,800만원 (1건)");
+    // 요약 줄 H 메모 = 장기 미수금
+    expect(cells.map((c) => c.value)).toContain(
+      "← 장기 미수금 8,800만원 (1건)",
+    );
   });
 
   it("머리말: 경 영 리 포 트 + 회사명·기간·작성일·작성자 / 집계 기준·비용 기준·확정 현황·생성 (직인·대표자·주소·연락처 없음)", () => {
@@ -347,18 +352,18 @@ describe("원본 양식과 셀 단위 비교 — 의도하지 않은 차이 0건
     expect(unintended(rows)).toEqual([]);
   });
 
-  it("시트 구성: 리포트 → 채권·채무 2026-10 → 채권·채무 상세 (건별 '미수금 상세'는 넣지 않음)", async () => {
+  it("시트 구성: 리포트 → 경영지원 관리 2026-10 → 경영지원 관리 상세 (건별 '미수금 상세'는 넣지 않음)", async () => {
     const { wb } = await workbook(Q3);
     expect(wb.worksheets.map((w) => w.name)).toEqual([
       "2026-Q3",
-      "채권·채무 2026-10",
-      "채권·채무 상세",
+      "경영지원 관리 2026-10",
+      "경영지원 관리 상세",
     ]);
   });
 });
 
-describe("리포트 안 채권·채무 시트 → 2단계 업로드 왕복", () => {
-  it("기준년월 2026-10 이면 '채권·채무 2026-10' 을 자동 선택, 같은 행·총액 전부 일치", async () => {
+describe("리포트 안 경영지원 관리 시트 → 2단계 업로드 왕복", () => {
+  it("기준년월 2026-10 이면 '경영지원 관리 2026-10' 을 자동 선택, 같은 행·총액 전부 일치", async () => {
     const { buf } = await workbook(Q3);
     const read = await readStyledXlsx(
       "경영지원_리포트_2026-10.xlsx",
@@ -371,7 +376,7 @@ describe("리포트 안 채권·채무 시트 → 2단계 업로드 왕복", () 
     });
     expect(selection).toMatchObject({ ok: true, note: null });
     if (!selection.ok) return;
-    expect(selection.sheet.name).toBe("채권·채무 2026-10");
+    expect(selection.sheet.name).toBe("경영지원 관리 2026-10");
     const parsed = parseLedgerSheet(selection.sheet, {
       year: 2026,
       month: 10,
@@ -385,7 +390,7 @@ describe("리포트 안 채권·채무 시트 → 2단계 업로드 왕복", () 
     expect(totals.every((t) => t.state === "match")).toBe(true);
   });
 
-  it("분기 리포트처럼 채권·채무 시트가 여러 장이면 이름 끝 기준년월로 고른다", () => {
+  it("분기 리포트처럼 경영지원 관리 시트가 여러 장이면 이름 끝 기준년월로 고른다", () => {
     const sheet = (name: string) => ({
       name,
       rowCount: 1,
@@ -395,10 +400,10 @@ describe("리포트 안 채권·채무 시트 → 2단계 업로드 왕복", () 
       hiddenColumns: [],
     });
     const r = selectLedgerSheet(
-      [sheet("채권·채무 2026-09"), sheet("채권·채무 2026-10")],
+      [sheet("경영지원 관리 2026-09"), sheet("경영지원 관리 2026-10")],
       { month: "2026-10", requested: null },
     );
     expect(r).toMatchObject({ ok: true, note: null });
-    expect(r.ok && r.sheet.name).toBe("채권·채무 2026-10");
+    expect(r.ok && r.sheet.name).toBe("경영지원 관리 2026-10");
   });
 });

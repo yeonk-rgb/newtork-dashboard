@@ -2,7 +2,7 @@
 // - 거래처명·건별 미수 내역·비고·원본 월별 행은 넣지 않는다 (미수금은 금액·건수·구간만)
 // - 생산팀 목업 비중(샘플 데이터)도 넣지 않는다 — AI 가 실제처럼 해석할 위험 (아래 TODO: 연동 시 추가)
 // - 금액은 "7.09억원"·"6,668만원", 비율은 "12.3%", 목표·기대치 차이는 "82.4%로 17.6%p 부족"처럼 미리 계산해 AI 가 계산하지 않게 한다
-// - 화면 headline·장기 미수 거래처명은 AI 에 보내지 않고 서버가 따로 만든다 (annotations.ts)
+// - 화면 headline·장기 미수금 거래처명은 AI 에 보내지 않고 서버가 따로 만든다 (annotations.ts)
 // - 오늘 날짜에 따라 바뀌는 값은 넣지 않는다 (끝난 분기는 같은 데이터면 같은 입력 → 같은 해시)
 import { formatWonShort } from "@/shared/format/money";
 import { periodMonths, type YearMonth } from "@/shared/period/period";
@@ -194,16 +194,16 @@ export function buildAiInput(
     // 프롬프트 7번 규칙(is_sample 이면 "샘플 데이터 기준")이 그대로 적용된다:
     //   industryShares: { is_sample: source === "mock", items: [{ item, amount: formatWonShort(..), share: pct(..) }] },
     //   seriesShares:   { is_sample: ..., items: [...] },
-    // 미수금 = 채권·채무 외상매출금 기준월 (2026-10-26, 05-22) — 거래처명은 보내지 않음 (05-19)
+    // 미수금 = 경영지원 관리 외상매출금 기준월 (2026-10-26, 05-22) — 거래처명은 보내지 않음 (05-19)
     receivables: {
-      basis: "채권·채무 관리 외상매출금 — 미수 = 장기미수 + 당월 수금예정",
+      basis: "경영지원 관리 외상매출금 — 미수 = 장기 미수금 + 당월 수금예정",
       baseMonth: receivables.month
         ? `${receivables.month.year}년 ${receivables.month.month}월`
         : "입력 없음",
       asOf: receivables.asOf.toISOString().slice(0, 10),
       total: formatWonShort(receivables.total),
       count: receivables.count,
-      /** 장기미수 (담당자가 정한 구분) */
+      /** 장기 미수금 (담당자가 정한 구분) */
       longOverdue: amountCount(receivables.longOverdue),
       scheduled: amountCount(receivables.scheduled),
       /** 기준월에 받은 돈 (미수에 넣지 않음) */

@@ -95,7 +95,7 @@ describe("원본 양식 서식과 같은지 (역할별)", () => {
     expect(ws.getRow(11).height).toBe(template.getRow(38).height);
   });
 
-  it("장기미수 빨간 글씨, 자동이체 연두(테마 9), 총액 테두리 위·가운데·아래, I열 #,##0 굵게", async () => {
+  it("장기 미수금 빨간 글씨, 자동이체 연두(테마 9), 총액 테두리 위·가운데·아래, I열 #,##0 굵게", async () => {
     const ws = (await openWorkbook(await build([october]))).getWorksheet(
       "2026-10",
     )!;
@@ -241,7 +241,7 @@ describe("왕복: 다운로드 → 2단계 업로드 해석", () => {
     );
     const totals = parsed.blocks.flatMap((b) => b.totals);
     expect(totals.map((t) => t.state)).toEqual(totals.map(() => "match"));
-    // 장기미수 F열에도 SUM 을 넣었으므로 "원본 총액 없음"이 아니라 일치
+    // 장기 미수금 F열에도 SUM 을 넣었으므로 "원본 총액 없음"이 아니라 일치
     expect(totals[0]).toMatchObject({
       range: "F3:F4",
       state: "match",
@@ -366,6 +366,17 @@ describe("selectLedgerSheet", () => {
       ok: false,
       reason: "none",
     });
+  });
+
+  it("월별 리포트 시트: 새 이름·예전 이름(2026-10-26 전 '채권·채무 …') 모두 이름 끝 기준년월로 자동 선택", () => {
+    for (const prefix of ["경영지원 관리 ", "채권·채무 "]) {
+      const r = selectLedgerSheet(
+        [sheet(`${prefix}2026-09`), sheet(`${prefix}2026-10`)],
+        { month: "2026-10", requested: null },
+      );
+      expect(r).toMatchObject({ ok: true, note: null });
+      expect(r.ok && r.sheet.name).toBe(`${prefix}2026-10`);
+    }
   });
 
   it("고른 시트 이름이 기준년월과 다르면 안내", () => {

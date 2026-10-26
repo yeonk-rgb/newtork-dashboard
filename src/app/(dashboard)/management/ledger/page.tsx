@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { LedgerScreen } from "@/modules/management";
 
-// 채권·채무 관리 (?month=2026-10&tab=ar&hidden=1) — 경영지원 열람 권한이면 볼 수 있고, 동작은 권한별
+// 경영지원 관리 (?month=2026-10&tab=ar&hidden=1) — 경영지원 열람 권한이면 볼 수 있고, 동작은 권한별
 export default function LedgerPage({
   searchParams,
 }: PageProps<"/management/ledger">) {

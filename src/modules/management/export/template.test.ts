@@ -1,4 +1,4 @@
-// 경영지원 다운로드 공용: 양식 파일·테마 색·문서 속성 고정 (채권·채무, 월간 입력 결과물 모두)
+// 경영지원 다운로드 공용: 양식 파일·테마 색·문서 속성 고정 (경영지원 관리, 월간 입력 결과물 모두)
 import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";

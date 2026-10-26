@@ -38,7 +38,7 @@ export type SummaryInput = {
   financeMonths: FinanceMonth[];
   /** 해당 연도 목표 (없으면 null) */
   annualTarget: AnnualTargetInput | null;
-  /** 채권·채무 외상매출금 행 (기간이 속한 해, 숨긴 행 제외) — 대시보드 미수금 기준 (2026-10-26, 05-22) */
+  /** 경영지원 관리 외상매출금 행 (기간이 속한 해, 숨긴 행 제외) — 대시보드 미수금 기준 (2026-10-26, 05-22) */
   receivables: ArEntryInput[];
   /** 오늘 (UTC 자정) — 마감 여부, 미수금 기준일 계산 */
   today: Date;

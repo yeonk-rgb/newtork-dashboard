@@ -121,7 +121,7 @@ export async function UploadScreen() {
   );
 }
 
-/** 채권·채무 엑셀 이관 이력이면 "채권·채무 2026-10 · 덮어쓰기" (mgmt_data_upload.detail) */
+/** 경영지원 관리 엑셀 이관 이력이면 "경영지원 관리 2026-10 · 덮어쓰기" (mgmt_data_upload.detail) */
 function ledgerUploadLabel(detail: unknown): string | null {
   if (!detail || typeof detail !== "object") return null;
   const d = detail as {
@@ -138,5 +138,5 @@ function ledgerUploadLabel(detail: unknown): string | null {
     return null;
   }
   const month = `${d.year}-${String(d.month).padStart(2, "0")}`;
-  return `채권·채무 ${month} · ${d.mode === "overwrite" ? "덮어쓰기" : "추가"}`;
+  return `경영지원 관리 ${month} · ${d.mode === "overwrite" ? "덮어쓰기" : "추가"}`;
 }

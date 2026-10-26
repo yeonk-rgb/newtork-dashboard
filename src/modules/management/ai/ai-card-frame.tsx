@@ -49,7 +49,7 @@ export function AiCardColumn({
   title: string;
   items: string[];
   empty?: string;
-  /** 목록 뒤에 덧붙일 항목 (서버가 붙이는 장기 미수 거래처 등) */
+  /** 목록 뒤에 덧붙일 항목 (서버가 붙이는 장기 미수금 거래처 등) */
   extra?: React.ReactNode;
 }) {
   return (

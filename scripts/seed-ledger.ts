@@ -1,4 +1,4 @@
-// 채권·채무 관리 샘플 6행 넣기·지우기 (가짜 거래처 — 실제 거래처명 사용 금지)
+// 경영지원 관리 샘플 6행 넣기·지우기 (가짜 거래처 — 실제 거래처명 사용 금지)
 // 실행: npm run seed:ledger              이번 달(한국 날짜)에 넣기 (다시 실행하면 지우고 새로 넣음)
 //       npm run seed:ledger -- --remove   샘플만 지우기 (직접 입력한 행은 그대로)
 // ⚠️ 고객사 실제 데이터를 넣기 전에는 --remove 로 지운다
@@ -15,7 +15,7 @@ async function main() {
     where: { createdById: SEED_BY },
   });
   if (process.argv.includes("--remove")) {
-    console.log(`채권·채무 샘플 ${removed.count}행을 지웠습니다.`);
+    console.log(`경영지원 관리 샘플 ${removed.count}행을 지웠습니다.`);
     return;
   }
 
@@ -91,7 +91,7 @@ async function main() {
     ],
   });
   console.log(
-    `${year}년 ${month}월에 채권·채무 샘플 6행을 넣었습니다. → /management/ledger`,
+    `${year}년 ${month}월에 경영지원 관리 샘플 6행을 넣었습니다. → /management/ledger`,
   );
 }
 

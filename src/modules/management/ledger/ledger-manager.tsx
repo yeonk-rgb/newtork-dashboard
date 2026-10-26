@@ -1,5 +1,5 @@
 "use client";
-// 채권·채무 표: 기준년월·구분 탭·숨긴 항목 보기, 표 안에서 바로 행 추가·수정, 숨김·복구
+// 경영지원 관리 표: 기준년월·구분 탭·숨긴 항목 보기, 표 안에서 바로 행 추가·수정, 숨김·복구
 // 열 순서는 엑셀과 같게: (코드) | 거래처명 | 잔액 | 적요 | (상태)
 import { EyeOff, Plus, Upload } from "lucide-react";
 import Link from "next/link";
@@ -86,7 +86,7 @@ function syncUrl(month: string, kind: LedgerKind, hidden: boolean) {
 
 const inputClass =
   "h-8 w-full rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
-/** 선택칸: "당월수금완료"가 잘리지 않는 폭 */
+/** 선택칸: "당월 수금"가 잘리지 않는 폭 */
 const selectClass = `${inputClass} min-w-32`;
 
 export function LedgerManager({
@@ -172,7 +172,7 @@ export function LedgerManager({
   const updateDraft = (patch: Partial<LedgerDraft>) =>
     setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
 
-  /** 당월수금완료로 바꾸면 완료일 모달, 다른 상태로 바꾸면 완료일을 지운다 */
+  /** 당월 수금으로 바꾸면 완료일 모달, 다른 상태로 바꾸면 완료일을 지운다 */
   const changeArStatus = (next: ArStatus) => {
     if (!editing) return;
     if (next === "COLLECTED" && editing.draft.arStatus !== "COLLECTED") {
@@ -298,7 +298,7 @@ export function LedgerManager({
         key={row.id}
         className={cn(
           "border-b align-top",
-          // 장기미수 = 빨간 글씨, 자동이체 = 연한 초록 바탕 (엑셀 표시 그대로, 상태 글자도 함께 표시)
+          // 장기 미수금 = 빨간 글씨, 자동이체 = 연한 초록 바탕 (엑셀 표시 그대로, 상태 글자도 함께 표시)
           row.kind === "AR" &&
             row.arStatus === "LONG_OVERDUE" &&
             "text-destructive",

@@ -1,6 +1,6 @@
 // 경영지원 엑셀 다운로드 공용 — "표를 세로로 쌓는" 시트(목표 대비 실적·미수금 통계 등)와 목록형 시트 그리기
-// 서식은 원본 양식(경영지원_관리.xlsx)에서 역할별로 복사: 일반 행 = 외상매입금 블록(C41~F41), 빨간 행 = 장기미수(C3~F3)
-// 원본에 없는 보조 칸(I열 금액·비율)은 총액(F)과 같은 굵은 글꼴에 테두리 없이 (채권·채무 다운로드의 "자동이체 합계"와 같은 규칙)
+// 서식은 원본 양식(경영지원_관리.xlsx)에서 역할별로 복사: 일반 행 = 외상매입금 블록(C41~F41), 빨간 행 = 장기 미수금(C3~F3)
+// 원본에 없는 보조 칸(I열 금액·비율)은 총액(F)과 같은 굵은 글꼴에 테두리 없이 (경영지원 관리 다운로드의 "자동이체 합계"와 같은 규칙)
 import type ExcelJS from "exceljs";
 
 import { planPages, textUnits } from "./page-plan";
@@ -94,7 +94,7 @@ export type StackedSheet = {
  */
 const PRINT_LAST_COL = "I";
 
-/** 목록형 시트 (첫 행 고정·자동 필터 — 원본에 없는 칸을 모은 표, 채권·채무 "상세" 시트와 같은 모양) */
+/** 목록형 시트 (첫 행 고정·자동 필터 — 원본에 없는 칸을 모은 표, 경영지원 관리 "상세" 시트와 같은 모양) */
 export type ListSheet = {
   name: string;
   columns: { header: string; width: number; numFmt?: string }[];
@@ -159,7 +159,7 @@ function drawList(
 export async function buildStackedWorkbook(input: {
   template: Buffer;
   sheets: StackedSheet[];
-  /** 채권·채무 월별 시트 + 상세 시트 (월별 리포트 — 단독 다운로드와 같은 그리기 함수) */
+  /** 경영지원 관리 월별 시트 + 상세 시트 (월별 리포트 — 단독 다운로드와 같은 그리기 함수) */
   ledger?: { sheets: ExportSheet[]; detailName: string };
   lists?: ListSheet[];
   now: Date;

@@ -1,4 +1,4 @@
-// 채권·채무 엑셀 이관 화면 (서버): 경영지원 edit 권한이면 올리기·추가, confirm 이면 덮어쓰기까지
+// 경영지원 관리 엑셀 이관 화면 (서버): 경영지원 edit 권한이면 올리기·추가, confirm 이면 덮어쓰기까지
 import "server-only";
 
 import Link from "next/link";
@@ -18,6 +18,7 @@ import {
 } from "../rules";
 import { ImportPanel } from "./import-panel";
 import { importAbilities } from "./rules";
+import { TERMS } from "../../terms";
 
 export async function LedgerImportScreen({
   month,
@@ -38,10 +39,10 @@ export async function LedgerImportScreen({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className={pageTitleClass}>채권·채무 엑셀 가져오기</h1>
+          <h1 className={pageTitleClass}>{TERMS.ledger} 엑셀 가져오기</h1>
           <p className="mt-1 text-xs text-muted-foreground">
             고객사 양식(경영지원_관리.xlsx)을 그대로 올리면 블록 4개를 읽어
-            기준년월의 채권·채무로 한 번에 옮깁니다. 미리보기 단계에서는
+            기준년월의 경영지원 관리로 한 번에 옮깁니다. 미리보기 단계에서는
             아무것도 저장하지 않습니다.
           </p>
           <AuditNotice />
@@ -50,7 +51,7 @@ export async function LedgerImportScreen({
           href={`/management/ledger?month=${formatLedgerMonth(ym)}`}
           className="shrink-0 text-xs text-primary hover:underline"
         >
-          ← 채권·채무 관리
+          ← {TERMS.ledger}
         </Link>
       </div>
       {abilities.canImport ? (

@@ -1,4 +1,4 @@
-// 미수금 관리 화면 데이터 (서버 전용)
+// 미수금 건별 기록 화면 데이터 (서버 전용)
 import "server-only";
 
 import { loadUserNames, type NameOf } from "@/shared/auth";

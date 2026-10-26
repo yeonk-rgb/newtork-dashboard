@@ -1,7 +1,7 @@
 // 목표 대비 실적·미수금 엑셀 테스트용 가짜 지표 입력 (*.test.ts 와 비교 스크립트에서만 — 실제 재무 데이터 아님)
 // 2025·2026년 1~9월, 2026년 9월만 임시저장. 연간 목표 28.1억(분기 자동 배분).
-// 미수금(대시보드) = 채권·채무 외상매출금 8·9월 (2026-10-26) — 건별 목록(fixtureItemReceivables)을 월말 잔액으로 옮긴 것과 같은 금액
-// 건별 목록은 미수금 관리(건별 참고) 엑셀 테스트용으로 네 경과일 구간이 모두 있게
+// 미수금(대시보드) = 경영지원 관리 외상매출금 8·9월 (2026-10-26) — 건별 목록(fixtureItemReceivables)을 월말 잔액으로 옮긴 것과 같은 금액
+// 건별 목록은 미수금 건별 기록 엑셀 테스트용으로 네 경과일 구간이 모두 있게
 import type { Period } from "@/shared/period/period";
 
 import type { SummaryInput } from "../../metrics/summary";
@@ -51,7 +51,7 @@ export function fixtureInput(period: Period): SummaryInput {
   };
 }
 
-/** 미수금 관리(건별 참고) — 9/30 기준 네 경과일 구간 (건별 엑셀 테스트) */
+/** 미수금 건별 기록 — 9/30 기준 네 경과일 구간 (건별 엑셀 테스트) */
 export function fixtureItemReceivables(): ReceivableInput[] {
   return [
     receivable("a", {
@@ -110,8 +110,8 @@ const ar = (
 });
 
 /**
- * 채권·채무 외상매출금 8·9월 — 건별 목록의 월말 잔액 (90일 넘은 건 = 장기미수, 그 달 수금 = 당월수금완료)
- * 9월 미수 = 8,800만(장기미수) + 9,800만 + 1억5,600만 + 2,130만 = 3억6,330만
+ * 경영지원 관리 외상매출금 8·9월 — 건별 목록의 월말 잔액 (90일 넘은 건 = 장기 미수금, 그 달 수금 = 당월 수금)
+ * 9월 미수 = 8,800만(장기 미수금) + 9,800만 + 1억5,600만 + 2,130만 = 3억6,330만
  */
 export function fixtureArEntries(): ArEntryInput[] {
   return [
@@ -142,6 +142,6 @@ export function fixtureArEntries(): ArEntryInput[] {
   ];
 }
 
-/** 미수금 관리(건별 참고) 엑셀 입력 — 3분기 말(9/30) 기준 건별 잔액 */
+/** 미수금 건별 기록 엑셀 입력 — 3분기 말(9/30) 기준 건별 잔액 */
 export const fixtureItemResult = () =>
   computeItemReceivables(fixtureItemReceivables(), date("2026-09-30"), 6);

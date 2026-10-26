@@ -1,6 +1,6 @@
 // AI 카드에 서버가 직접 붙이는 내용 (순수 함수, AI 에 보내지 않음)
 // - headline: 연간 목표 달성 한 줄 — 숫자가 틀릴 수 없게 AI 대신 서버가 만든다
-// - longOverdue: 장기미수 거래처명 (채권·채무 외상매출금 "장기미수", 2026-10-26) — 거래처 실명은 외부 AI 로 보내지 않는다 (05-19)
+// - longOverdue: 장기 미수금 거래처명 (경영지원 관리 외상매출금 "장기 미수금", 2026-10-26) — 거래처 실명은 외부 AI 로 보내지 않는다 (05-19)
 // 분석을 생성할 때 함께 저장해, 나중에 데이터가 바뀌어도 그때의 결과와 짝이 맞게 한다
 import { formatWonShort } from "@/shared/format/money";
 
@@ -30,7 +30,7 @@ export function buildAnnotations(
       ? `연간 목표 ${formatWonShort(annual.target)} 중 ${formatWonShort(annual.actual)}(${(annual.rate * 100).toFixed(1)}%)를 달성했습니다.`
       : `${summary.label} 확정 매출은 ${formatWonShort(summary.revenue.total)}입니다. (연간 목표 미설정)`;
 
-  // 장기미수가 있는 거래처, 장기미수 금액 큰 순 (같으면 이름순)
+  // 장기 미수금이 있는 거래처, 장기 미수금 금액 큰 순 (같으면 이름순)
   const longOverdue = summary.receivables.byCustomer
     .filter((c) => c.longOverdue > 0n)
     .sort((a, b) =>

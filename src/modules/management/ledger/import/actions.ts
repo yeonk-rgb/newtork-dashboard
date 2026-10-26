@@ -1,5 +1,5 @@
 "use server";
-// 채권·채무 엑셀 이관 Server Action — 미리보기와 가져오기 모두 서버가 파일을 다시 읽어 검증한다
+// 경영지원 관리 엑셀 이관 Server Action — 미리보기와 가져오기 모두 서버가 파일을 다시 읽어 검증한다
 // 미리보기는 DB에 아무것도 쓰지 않는다
 import { createHash } from "node:crypto";
 

@@ -560,7 +560,7 @@
     },
     {
      "address": "D2",
-     "value": "채권·채무 관리",
+     "value": "경영지원 관리",
      "style": {
       "font": {
        "size": 10,
@@ -998,7 +998,7 @@
     },
     {
      "address": "D4",
-     "value": "미수금 관리",
+     "value": "미수금 건별 기록",
      "style": {
       "font": {
        "size": 10,

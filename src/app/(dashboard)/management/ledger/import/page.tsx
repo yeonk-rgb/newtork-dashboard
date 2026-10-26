@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { LedgerImportScreen } from "@/modules/management";
 
-// 채권·채무 엑셀 가져오기 (?month=2026-10) — 올리기·추가는 경영지원 edit, 덮어쓰기는 confirm
+// 경영지원 관리 엑셀 가져오기 (?month=2026-10) — 올리기·추가는 경영지원 edit, 덮어쓰기는 confirm
 export default function LedgerImportPage({
   searchParams,
 }: PageProps<"/management/ledger/import">) {

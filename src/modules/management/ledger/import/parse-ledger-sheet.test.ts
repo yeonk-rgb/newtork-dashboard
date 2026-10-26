@@ -40,7 +40,7 @@ describe("원본 빈 양식 (ledger-template.xlsx)", () => {
     expect(block(p, "ACCRUED_VENDOR").skipped.codeOnly).toEqual([]);
   });
 
-  it("총액: 장기미수 F3:F4 는 원본 총액 없음, 나머지는 계산값 0 = 행 합계 0 → 일치", async () => {
+  it("총액: 장기 미수금 F3:F4 는 원본 총액 없음, 나머지는 계산값 0 = 행 합계 0 → 일치", async () => {
     const p = await parseFixture("ledger-template.xlsx");
     expect(
       block(p, "AR").totals.map((t) => [
@@ -88,7 +88,7 @@ describe("가짜 거래처 파일 (ledger-sample.xlsx)", () => {
     expect(rowAt(p, 28)?.partnerCode).toBeNull();
   });
 
-  it("그룹 상태: F열 병합 범위 + H열 메모, 빨간 글씨는 장기미수", async () => {
+  it("그룹 상태: F열 병합 범위 + H열 메모, 빨간 글씨는 장기 미수금", async () => {
     const p = await parseFixture("ledger-sample.xlsx");
     const ar = block(p, "AR").rows;
     expect(ar.map((r) => [r.row, r.arStatus, r.arStatusSource])).toEqual([
@@ -101,11 +101,11 @@ describe("가짜 거래처 파일 (ledger-sample.xlsx)", () => {
       [26, "SCHEDULED", "memo"],
       [28, "SCHEDULED", "memo"],
     ]);
-    // 빨간 글씨 + 장기미수 그룹이면 경고 없음
+    // 빨간 글씨 + 장기 미수금 그룹이면 경고 없음
     expect(rowAt(p, 3)?.warnings).toEqual([]);
   });
 
-  it("수금완료 완료일: 적요 날짜(E8 10/15)는 후보로, 없으면 min(기준월 말일, 오늘)", async () => {
+  it("당월 수금 완료일: 적요 날짜(E8 10/15)는 후보로, 없으면 min(기준월 말일, 오늘)", async () => {
     const p = await parseFixture("ledger-sample.xlsx");
     expect(rowAt(p, 8)).toMatchObject({
       note: "10/15",
@@ -117,7 +117,7 @@ describe("가짜 거래처 파일 (ledger-sample.xlsx)", () => {
       settledOn: "2026-10-25",
       settledSource: "monthEnd",
     });
-    // 수금예정·장기미수는 완료일 없음
+    // 수금예정·장기 미수금은 완료일 없음
     expect(rowAt(p, 25)?.settledOn).toBeNull();
     expect(rowAt(p, 3)?.settledOn).toBeNull();
   });
@@ -183,7 +183,7 @@ describe("경고 확인용 파일 (ledger-sample-issues.xlsx)", () => {
     expect(rowAt(p, 29)).toBeUndefined();
   });
 
-  it("수금완료가 아닌 그룹의 적요 날짜는 글자로만 저장 (완료일 후보 아님)", async () => {
+  it("당월 수금이 아닌 그룹의 적요 날짜는 글자로만 저장 (완료일 후보 아님)", async () => {
     const p = await parseFixture("ledger-sample-issues.xlsx");
     expect(rowAt(p, 26)).toMatchObject({ note: "10/20", settledOn: null });
   });
@@ -265,7 +265,7 @@ describe("원본 총액 계산값 0 과 '계산값 없음' 구분 (2026-10-25 �
 });
 
 describe("메모리에서 고친 파일", () => {
-  it("다른 그룹 행이 빨간 글씨면 장기미수 + 원래 그룹 경고", async () => {
+  it("다른 그룹 행이 빨간 글씨면 장기 미수금 + 원래 그룹 경고", async () => {
     const sheet = await editedSheet("ledger-sample.xlsx", (ws) => {
       ws.getCell("C5").font = { color: { argb: "FFFF0000" } };
     });
@@ -276,7 +276,7 @@ describe("메모리에서 고친 파일", () => {
       arStatus: "LONG_OVERDUE",
       arStatusSource: "red",
     });
-    expect(r?.warnings[0]).toContain("원래 그룹: 당월수금완료");
+    expect(r?.warnings[0]).toContain("원래 그룹: 당월 수금");
     expect(r?.settledOn).toBeNull();
   });
 

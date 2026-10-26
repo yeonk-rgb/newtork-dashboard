@@ -12,6 +12,7 @@ import {
 import type { DonutSlice } from "@/shared/ui/donut-data";
 
 import type { BreakEvenResult, ManagementSummary } from "../../metrics/types";
+import { TERMS } from "../../terms";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 const s = (v: bigint) => v.toString();
@@ -151,7 +152,7 @@ export function annualTargetDonut(
 }
 
 /**
- * 미수금 총액 (채권·채무 외상매출금 기준, 2026-10-26): 장기미수 / 당월 수금예정 — 가운데 미수 총액, 목록에 행 수
+ * 미수금 총액 (경영지원 관리 외상매출금 기준, 2026-10-26): 장기 미수금 / 당월 수금예정 — 가운데 미수 총액, 목록에 행 수
  * 기준월이 없으면 "입력 없음"
  */
 export function receivablesDonut(summary: ManagementSummary): DonutCardData {
@@ -160,12 +161,12 @@ export function receivablesDonut(summary: ManagementSummary): DonutCardData {
     return {
       slices: [],
       center: { value: "-", label: "" },
-      emptyText: "이 기간에 채권·채무 외상매출금 입력이 없습니다.",
+      emptyText: `이 기간에 ${TERMS.ledger} 외상매출금 입력이 없습니다.`,
     };
   }
   const slices = [
-    { key: "LONG_OVERDUE", label: "장기미수", total: r.longOverdue },
-    { key: "SCHEDULED", label: "당월 수금예정", total: r.scheduled },
+    { key: "LONG_OVERDUE", label: TERMS.longOverdue, total: r.longOverdue },
+    { key: "SCHEDULED", label: TERMS.scheduled, total: r.scheduled },
   ] as const;
   return {
     slices: slices.map(({ key, label, total }) => ({
@@ -177,10 +178,12 @@ export function receivablesDonut(summary: ManagementSummary): DonutCardData {
     })),
     center: {
       value: formatWonShort(r.total),
-      label: `미수금 총액 (${r.month.month}월 기준)`,
+      label: `미수금 총액 (${r.month.month}월 ${TERMS.arBasis})`,
     },
     emptyText:
-      r.total === 0n ? `${r.month.month}월 기준 미수금이 없습니다.` : null,
+      r.total === 0n
+        ? `${r.month.month}월 ${TERMS.arBasis} 미수금이 없습니다.`
+        : null,
   };
 }
 

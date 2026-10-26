@@ -41,7 +41,7 @@ export function receivable(
   };
 }
 
-/** 채권·채무 외상매출금 한 행 (기본: 2026년 9월 당월수금예정) — 대시보드 미수금 입력 */
+/** 경영지원 관리 외상매출금 한 행 (기본: 2026년 9월 당월 수금예정) — 대시보드 미수금 입력 */
 export function arEntry(
   id: string,
   overrides: Partial<ArEntryInput> = {},

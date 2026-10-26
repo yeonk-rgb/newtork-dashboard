@@ -1,4 +1,4 @@
-// 미수금 관리 규칙 (순수 함수): 권한별 가능한 동작, 날짜 검사, 목록 필터
+// 미수금 건별 기록 규칙 (순수 함수): 권한별 가능한 동작, 날짜 검사, 목록 필터
 // 화면(클라이언트)에서도 쓰므로 server-only 인 "@/shared/auth" 대신 순수 모듈을 직접 가져온다
 import { can } from "@/shared/auth/can";
 import type { AppUser } from "@/shared/auth/types";

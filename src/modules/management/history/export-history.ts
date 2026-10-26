@@ -1,5 +1,5 @@
 // 변경 이력 엑셀 내려받기 (server-only) — 관리자(대표)만, 지금 필터 그대로, 내려받은 것도 기록
-// 기록을 남기지 못하면 내려받기도 막는다 (채권·채무 다운로드와 같은 방식)
+// 기록을 남기지 못하면 내려받기도 막는다 (경영지원 관리 다운로드와 같은 방식)
 import "server-only";
 
 import type { AppUser } from "@/shared/auth/types";

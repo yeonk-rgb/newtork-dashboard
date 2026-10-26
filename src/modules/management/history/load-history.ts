@@ -140,7 +140,7 @@ export type RowHistory = {
   origin: RowOrigin | null;
 };
 
-/** 행 [이력] — 채권·채무·미수금 한 행의 기록 (관리자 화면 기록은 섞이지 않게 area "management" 만) */
+/** 행 [이력] — 경영지원 관리·미수금 한 행의 기록 (관리자 화면 기록은 섞이지 않게 area "management" 만) */
 export async function loadRowHistory(
   type: RowHistoryType,
   id: string,

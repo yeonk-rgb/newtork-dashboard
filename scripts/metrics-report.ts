@@ -334,11 +334,11 @@ async function main() {
     )}`,
   );
 
-  // 미수금 = 채권·채무 외상매출금 기준월 (2026-10-26, 05-22)
+  // 미수금 = 경영지원 관리 외상매출금 기준월 (2026-10-26, 05-22)
   const r = s.receivables;
   out.push(
-    `\n## 미수금 (채권·채무 외상매출금 ${r.month ? yearMonthLabel(r.month) : "입력 없음"}, 기준일 ${r.asOf.toISOString().slice(0, 10)})\n\n미수 ${won(r.total)}원 = 장기미수 ${won(r.longOverdue.amount)}원(${r.longOverdue.count}건) + 당월 수금예정 ${won(r.scheduled.amount)}원(${r.scheduled.count}건) · 당월 수금완료 ${won(r.collected.amount)}원(${r.collected.count}건, 미수 아님)\n\n${table(
-      ["순위", "거래처", "금액", "건수", "그중 장기미수"],
+    `\n## 미수금 (경영지원 관리 외상매출금 ${r.month ? yearMonthLabel(r.month) : "입력 없음"}, 기준일 ${r.asOf.toISOString().slice(0, 10)})\n\n미수 ${won(r.total)}원 = 장기 미수금 ${won(r.longOverdue.amount)}원(${r.longOverdue.count}건) + 당월 수금예정 ${won(r.scheduled.amount)}원(${r.scheduled.count}건) · 당월 수금 ${won(r.collected.amount)}원(${r.collected.count}건, 미수금 아님)\n\n${table(
+      ["순위", "거래처", "금액", "건수", "그중 장기 미수금"],
       r.byCustomer.map((x, i) => [
         i + 1,
         x.customerName,

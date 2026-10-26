@@ -32,7 +32,7 @@ describe("기간 표기", () => {
     expect(parseExportPeriod(null)).toBeNull();
   });
 
-  it("파일 이름은 채권·채무와 같은 규칙 (경영지원_{화면}_{기간}.xlsx) + 영문 대체 이름", () => {
+  it("파일 이름은 경영지원 관리와 같은 규칙 (경영지원_{화면}_{기간}.xlsx) + 영문 대체 이름", () => {
     expect(exportFileName(ENTRY, parseExportPeriod("2026-Q3")!)).toEqual({
       fileName: "경영지원_월간입력_2026-Q3.xlsx",
       asciiName: "entry-2026-Q3.xlsx",

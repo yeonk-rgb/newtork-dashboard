@@ -1,4 +1,4 @@
-// 채권·채무 엑셀 다운로드 (서버 전용) — 권한 확인은 부르는 쪽(Route Handler)에서 can() 으로
+// 경영지원 관리 엑셀 다운로드 (서버 전용) — 권한 확인은 부르는 쪽(Route Handler)에서 can() 으로
 // 누가 언제 어느 기간을 받았는지 변경 기록(audit_log)에 남기고, 기록이 실패하면 다운로드도 막는다 (2026-10-25 결정)
 import "server-only";
 
@@ -76,7 +76,7 @@ export async function exportLedger(
       target: {
         type: "LedgerExport",
         id: periodParam ?? "",
-        label: `채권·채무 엑셀 다운로드 · ${periodParam}`,
+        label: `경영지원 관리 엑셀 다운로드 · ${periodParam}`,
       },
       meta: {
         period: periodParam,

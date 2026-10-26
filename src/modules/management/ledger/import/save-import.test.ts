@@ -1,4 +1,4 @@
-// 채권·채무 엑셀 이관 저장 — 요약 변경 기록 1건(업로드 id 연결), 기록 실패 시 이관 전체 취소
+// 경영지원 관리 엑셀 이관 저장 — 요약 변경 기록 1건(업로드 id 연결), 기록 실패 시 이관 전체 취소
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { transactionalFake } from "../../audit-testing";
@@ -61,7 +61,7 @@ beforeEach(() => {
   fake = makeFake();
 });
 
-describe("채권·채무 엑셀 이관 변경 기록", () => {
+describe("경영지원 관리 엑셀 이관 변경 기록", () => {
   it("요약 1건 — 업로드 id·파일명·기준년월·방식·건수·숨긴 행 수", async () => {
     await saveLedgerImport(await input());
     expect(fake.audits).toEqual([
@@ -71,7 +71,7 @@ describe("채권·채무 엑셀 이관 변경 기록", () => {
         action: "IMPORT",
         targetType: "DataUpload",
         targetId: "up-1",
-        targetLabel: "채권·채무 엑셀 이관 · 2026-10 · 경영지원 관리.xlsx",
+        targetLabel: "경영지원 관리 엑셀 이관 · 2026-10 · 경영지원 관리.xlsx",
         actorLoginId: "mgmt_member",
         changes: [],
         meta: expect.objectContaining({

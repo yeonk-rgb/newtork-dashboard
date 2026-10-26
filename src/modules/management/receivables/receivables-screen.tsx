@@ -1,4 +1,4 @@
-// 미수금 관리 화면 (서버): 경영지원 view 권한이면 열람, 등록·수정·수금은 edit, 숨김·복구·수금 완료 건 수정은 confirm
+// 미수금 건별 기록 화면 (서버): 경영지원 view 권한이면 열람, 등록·수정·수금은 edit, 숨김·복구·수금 완료 건 수정은 confirm
 import "server-only";
 
 import Link from "next/link";
@@ -18,6 +18,7 @@ import { canManageHidden, parseReceivableTab, toDateOnly } from "./rules";
 import { pageTitleClass } from "@/shared/ui/styles";
 
 import { ManagementExportMenu } from "../export/management-export-menu";
+import { TERMS } from "../terms";
 
 export async function ReceivablesScreen({
   tab,
@@ -40,7 +41,7 @@ export async function ReceivablesScreen({
     loadArEntries(today.getUTCFullYear()),
     loadReceivables(),
   ]);
-  // 대시보드 미수금 = 채권·채무 외상매출금 (2026-10-26) — 올해 입력이 있는 마지막 달과 이 화면 합계를 같은 기준일로 비교
+  // 대시보드 미수금 = 경영지원 관리 외상매출금 (2026-10-26) — 올해 입력이 있는 마지막 달과 이 화면 합계를 같은 기준일로 비교
   const ar = computeArReceivables(
     arEntries,
     { unit: "year", year: today.getUTCFullYear() },
@@ -53,7 +54,7 @@ export async function ReceivablesScreen({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className={pageTitleClass}>미수금 관리 (건별 참고)</h1>
+          <h1 className={pageTitleClass}>{TERMS.itemReceivables}</h1>
           <p className="mt-1 text-xs text-muted-foreground">
             건별 메모·수금 기록용 화면입니다. 경과일은 발생일부터 셉니다.
           </p>
@@ -66,12 +67,12 @@ export async function ReceivablesScreen({
           >
             대시보드 미수금 보기 →
           </Link>
-          {/* 미수금 관리(건별 참고) 엑셀 — 기준일 = 기간 말일(진행 중이면 오늘). 대시보드 미수금(외상매출금)과 기준이 다름 */}
+          {/* 미수금 건별 기록 엑셀 — 기준일 = 기간 말일(진행 중이면 오늘). 대시보드 미수금(외상매출금)과 기준이 다름 */}
           <ManagementExportMenu
             kind="receivables"
             file={{ ko: "미수금", ascii: "receivables" }}
             options={receivablesExportOptions(today)}
-            note="이 화면의 건별 목록 (기준일 = 기간 말일, 진행 중인 기간은 오늘). 숨긴 건은 빠집니다. 대시보드 미수금은 채권·채무 외상매출금 기준입니다."
+            note="이 화면의 건별 목록 (기준일 = 기간 말일, 진행 중인 기간은 오늘). 숨긴 건은 빠집니다. 대시보드 미수금은 경영지원 관리 외상매출금 기준입니다."
           />
         </div>
       </div>
@@ -123,7 +124,7 @@ function receivablesExportOptions(today: Date) {
 }
 
 /**
- * 화면 맨 위 안내 (2026-10-26, 05-22): 대시보드·리포트·자금수지 예측은 채권·채무 외상매출금 기준
+ * 화면 맨 위 안내 (2026-10-26, 05-22): 대시보드·리포트·자금 수지 예측은 경영지원 관리 외상매출금 기준
  * 같은 기준일의 두 합계를 나란히 보여 줘서 어긋나면 바로 보이게 한다 (막지는 않음 — 건별 메모용으로 쓰는 화면)
  */
 function BasisNotice({
@@ -145,7 +146,7 @@ function BasisNotice({
       className="space-y-1 rounded-card border bg-warning-soft px-5 py-4 text-sm"
     >
       <p className="font-medium">
-        대시보드·리포트·자금수지 예측의 미수금은{" "}
+        대시보드·리포트·{TERMS.cashflowForecast}의 미수금은{" "}
         <Link
           href={
             arMonth
@@ -154,7 +155,7 @@ function BasisNotice({
           }
           className="text-primary underline"
         >
-          채권·채무 관리
+          {TERMS.ledger}
         </Link>
         의 외상매출금 기준입니다.
       </p>
@@ -173,7 +174,7 @@ function BasisNotice({
           )}
         </p>
       ) : (
-        <p>올해 채권·채무 외상매출금 입력이 아직 없습니다.</p>
+        <p>올해 {TERMS.ledger} 외상매출금 입력이 아직 없습니다.</p>
       )}
     </div>
   );

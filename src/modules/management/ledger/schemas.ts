@@ -1,4 +1,4 @@
-// 채권·채무 저장 요청 검증 (Zod) — 클라이언트 값은 믿지 않고 서버에서 다시 검증한다
+// 경영지원 관리 저장 요청 검증 (Zod) — 클라이언트 값은 믿지 않고 서버에서 다시 검증한다
 // 구분(kind)마다 쓰는 칸이 달라 discriminated union 으로 나눈다. 오늘 날짜 규칙은 rules.ts 의 ledgerDateErrors
 import { z } from "zod";
 

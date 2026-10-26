@@ -27,7 +27,7 @@ vi.mock("../entry/export/load-entry-export", () => ({
 }));
 vi.mock("../data/queries", () => ({
   loadFinanceMonths: async () => fixtureMonths(),
-  // 미수금 관리(건별 참고) 엑셀 입력
+  // 미수금 건별 기록 엑셀 입력
   loadReceivables: async () => fixtureItemReceivables(),
 }));
 vi.mock("../ledger/load-ledger", () => ({
@@ -164,7 +164,7 @@ describe("목표 대비 실적·미수금 엑셀 다운로드", () => {
 });
 
 describe("월별 리포트 엑셀 다운로드", () => {
-  it("당월: 리포트 시트 + 채권·채무 시트 + 채권·채무 상세, 작성자 이름, 기록", async () => {
+  it("당월: 리포트 시트 + 경영지원 관리 시트 + 경영지원 관리 상세, 작성자 이름, 기록", async () => {
     const file = await exportManagementFile("report", "2026-10", {
       ...ACTOR,
       name: "윤경영",
@@ -173,8 +173,8 @@ describe("월별 리포트 엑셀 다운로드", () => {
       kind: "report",
       fileName: "경영지원_리포트_2026-10.xlsx",
       asciiName: "report-2026-10.xlsx",
-      // "미수금 상세"(건별) 시트는 넣지 않음 — 미수금은 채권·채무 외상매출금 기준 (2026-10-26)
-      sheetNames: ["2026-10", "채권·채무 2026-10", "채권·채무 상세"],
+      // "미수금 상세"(건별) 시트는 넣지 않음 — 미수금은 경영지원 관리 외상매출금 기준 (2026-10-26)
+      sheetNames: ["2026-10", "경영지원 관리 2026-10", "경영지원 관리 상세"],
     });
     expect(create.mock.calls[0][0].data).toMatchObject({
       screen: "report-export",
@@ -185,13 +185,13 @@ describe("월별 리포트 엑셀 다운로드", () => {
     });
   });
 
-  it("연초 누적: 파일 _2026-01~10, 합계 리포트 1장 + 데이터 있는 달의 채권·채무 시트", async () => {
+  it("연초 누적: 파일 _2026-01~10, 합계 리포트 1장 + 데이터 있는 달의 경영지원 관리 시트", async () => {
     const file = await exportManagementFile("report", "2026-YTD10", ACTOR);
     expect(file.fileName).toBe("경영지원_리포트_2026-01~10.xlsx");
     expect(file.sheetNames).toEqual([
       "2026-01~10",
-      "채권·채무 2026-10",
-      "채권·채무 상세",
+      "경영지원 관리 2026-10",
+      "경영지원 관리 상세",
     ]);
   });
 });

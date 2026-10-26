@@ -217,7 +217,7 @@ async function stackedReport(
   const input = await loadSummaryInput(sheetPeriod, today);
   const summary = computeManagementSummary(input);
   const name = periodSheetName(sheetPeriod);
-  // 미수금 엑셀 = 미수금 관리(건별 참고) — 대시보드 미수금(외상매출금)과 기준이 다르다 (2026-10-26)
+  // 미수금 엑셀 = 미수금 건별 기록 — 대시보드 미수금(외상매출금)과 기준이 다르다 (2026-10-26)
   const end = periodEndDate(sheetPeriod);
   const items = computeItemReceivables(
     await loadReceivables(),
@@ -257,7 +257,7 @@ async function stackedReport(
   ];
   const count = (r: string) => rows.filter((x) => x.result === r).length;
   console.log(
-    `# ${kind === "targets" ? "목표 대비 실적" : "미수금 관리(건별 참고)"} 엑셀 검산 — ${toPeriodParam(period)}\n\n파일: ${filePath}\n시트: ${wb.worksheets.map((w) => w.name).join(", ")}\n`,
+    `# ${kind === "targets" ? "목표 대비 실적" : "미수금 건별 기록"} 엑셀 검산 — ${toPeriodParam(period)}\n\n파일: ${filePath}\n시트: ${wb.worksheets.map((w) => w.name).join(", ")}\n`,
   );
   console.log(
     `## ① 원본 ↔ 새 파일 셀 단위 비교\n\n같음 ${count("같음")} · 의도한 차이 ${count("의도한 차이")} · **의도하지 않은 차이 ${unintended(rows).length}**\n`,
@@ -273,7 +273,7 @@ async function stackedReport(
     return -1;
   };
   console.log(
-    `\n## ② 엑셀 숫자 = ${kind === "targets" ? "대시보드" : "미수금 관리(건별)"} 화면 숫자\n`,
+    `\n## ② 엑셀 숫자 = ${kind === "targets" ? "대시보드" : "미수금 건별 기록"} 화면 숫자\n`,
   );
   console.log("| 항목 | 엑셀 | 대시보드 | 결과 |\n|---|---:|---:|---|");
   const line = (label: string, excel: string, screen: string) =>

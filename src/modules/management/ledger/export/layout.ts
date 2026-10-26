@@ -1,4 +1,4 @@
-// 채권·채무 엑셀 다운로드 — 시트 한 장의 행 배치 (순수 함수, exceljs 모름)
+// 경영지원 관리 엑셀 다운로드 — 시트 한 장의 행 배치 (순수 함수, exceljs 모름)
 // 고객사 원본 양식(ledger-template.xlsx)과 같은 순서·열 위치로, 행 수만 실제 데이터 수만큼
 // - 블록: 제목(C:F 병합) → 머리글 → 데이터 → 빈 행. 순서 외상매출금 → 외상매입금 → 미지급비용-직원 → 미지급비용-업체
 // - 그룹(외상매출금 상태별·다른 블록 전체)마다 행 수 = max(데이터 수, 1). 빈 그룹도 빈 행 1개 + 총액 0 + H열 메모
@@ -160,7 +160,7 @@ export function buildSheetLayout(rows: LedgerRow[]): SheetLayout {
   const of = (kind: LedgerKind) =>
     rows.filter((r) => r.kind === kind && !r.hidden);
 
-  // 외상매출금: 상태별 그룹 (장기미수 → 당월수금완료 → 당월수금예정)
+  // 외상매출금: 상태별 그룹 (장기 미수금 → 당월 수금 → 당월 수금예정)
   b.title(KIND_LABEL.AR, "title");
   header(b, true);
   for (const status of AR_STATUSES) {

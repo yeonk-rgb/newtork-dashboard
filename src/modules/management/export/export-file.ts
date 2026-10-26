@@ -1,7 +1,7 @@
 // 경영지원 엑셀 다운로드 (서버 전용) — GET /api/management/export?kind=…&period=… 하나로 받는다
 // 권한 확인은 부르는 쪽(Route Handler)에서 can() 으로. 누가 언제 무엇을 받았는지 변경 기록(audit_log)에 남기고,
-// 기록이 실패하면 다운로드도 막는다 (채권·채무 다운로드와 같은 정책, 2026-10-25)
-// 채권·채무 다운로드는 기존 주소(/api/management/ledger/export) 그대로
+// 기록이 실패하면 다운로드도 막는다 (경영지원 관리 다운로드와 같은 정책, 2026-10-25)
+// 경영지원 관리 다운로드는 기존 주소(/api/management/ledger/export) 그대로
 import "server-only";
 
 import { recordAudit } from "@/shared/audit/record";
@@ -40,6 +40,7 @@ import {
 import { monthIndex, periodEndDate } from "@/shared/period/period";
 import { buildStackedWorkbook } from "./stacked";
 import { readExportTemplate } from "./template";
+import { TERMS } from "../terms";
 
 export class ManagementExportError extends Error {
   constructor(
@@ -73,7 +74,7 @@ const KINDS = {
     label: "미수금 엑셀 다운로드",
     file: { ko: "미수금", ascii: "receivables" },
   },
-  /** 월별 종합 리포트 — 리포트 시트 + 채권·채무 월 시트 + 채권·채무 상세 + 미수금 상세 */
+  /** 월별 종합 리포트 — 리포트 시트 + 경영지원 관리 월 시트 + 경영지원 관리 상세 + 미수금 상세 */
   report: {
     screen: "report-export",
     targetType: "ReportExport",
@@ -82,9 +83,9 @@ const KINDS = {
   },
 } as const;
 
-/** 리포트 안 채권·채무 시트 이름 — 다시 올리면 이름 끝 기준년월로 자동 선택 (selectLedgerSheet) */
-export const REPORT_LEDGER_PREFIX = "채권·채무 ";
-export const REPORT_LEDGER_DETAIL = "채권·채무 상세";
+/** 리포트 안 경영지원 관리 시트 이름 — 다시 올리면 이름 끝 기준년월로 자동 선택 (selectLedgerSheet) */
+export const REPORT_LEDGER_PREFIX = `${TERMS.ledger} `;
+export const REPORT_LEDGER_DETAIL = `${TERMS.ledger} 상세`;
 
 /** 파일 이름·기록의 기간: 목표 대비 실적은 늘 연도 */
 const filePeriodOf = (kind: ExportKind, period: Period): Period =>
@@ -149,7 +150,7 @@ export async function buildExportFile(
         ...s,
         sheetName: `${REPORT_LEDGER_PREFIX}${s.sheetName}`,
       }));
-      // "미수금 상세"(건별) 시트는 넣지 않음 — 미수금은 채권·채무 외상매출금 기준이고 채권·채무 시트가 이미 붙음 (2026-10-26)
+      // "미수금 상세"(건별) 시트는 넣지 않음 — 미수금은 경영지원 관리 외상매출금 기준이고 경영지원 관리 시트가 이미 붙음 (2026-10-26)
       const name = periodSheetName(period);
       return {
         body: await buildStackedWorkbook({
@@ -195,7 +196,7 @@ export async function buildExportFile(
       };
     }
     case "receivables": {
-      // 미수금 관리(건별 참고) 엑셀 — 대시보드 미수금(외상매출금)이 아니라 건별 목록의 기준일 잔액 (2026-10-26)
+      // 미수금 건별 기록 엑셀 — 대시보드 미수금(외상매출금)이 아니라 건별 목록의 기준일 잔액 (2026-10-26)
       const end = periodEndDate(period);
       const [template, items] = await Promise.all([
         readExportTemplate(),

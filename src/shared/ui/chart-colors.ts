@@ -89,7 +89,7 @@ export const PROFIT_COLORS = {
  * 가장 밝은 단계는 흰 카드에서 보이도록 #DDA78B (요청값 #F3DCCB 는 대비 1.29:1 로 조각이 거의 안 보임)
  */
 export const AR_STATUS_COLORS = {
-  /** 장기미수 — 가장 진한 코퍼 (예전 90일 초과 색) */
+  /** 장기 미수금 — 가장 진한 코퍼 (예전 90일 초과 색) */
   LONG_OVERDUE: "#9a4f24",
   /** 당월 수금예정 — 가장 연한 코퍼 (예전 0~30일 색) */
   SCHEDULED: "#dda78b",

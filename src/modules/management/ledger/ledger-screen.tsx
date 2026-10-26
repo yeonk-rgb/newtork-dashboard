@@ -1,4 +1,4 @@
-// 채권·채무 관리 화면 (서버): 경영지원 view 권한이면 열람, 행 추가·수정은 edit, 숨김·복구는 confirm
+// 경영지원 관리 화면 (서버): 경영지원 view 권한이면 열람, 행 추가·수정은 edit, 숨김·복구는 confirm
 import "server-only";
 
 import { can, getCurrentUser } from "@/shared/auth";
@@ -18,6 +18,7 @@ import {
   parseLedgerMonth,
   toDateOnly,
 } from "./rules";
+import { TERMS } from "../terms";
 
 export async function LedgerScreen({
   month,
@@ -54,11 +55,12 @@ export async function LedgerScreen({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={pageTitleClass}>채권·채무 관리</h1>
+        <h1 className={pageTitleClass}>{TERMS.ledger}</h1>
+        <p className="mt-1 text-sm text-foreground">{TERMS.ledgerScope}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          경영지원_관리 엑셀 양식을 옮긴 화면입니다. 기준년월별 거래처 잔액이며,
-          잔액은 ERP 잔액 그대로(부가세 포함) 입력하세요. 외상매출금의 장기미수
-          + 당월수금예정이 대시보드·리포트의 미수금이 됩니다.
+          기준년월별 거래처 잔액이며, 잔액은 ERP 잔액 그대로(부가세 포함)
+          입력하세요. 외상매출금의 {TERMS.longOverdue} + {TERMS.scheduled}이
+          대시보드·리포트의 미수금이 됩니다.
         </p>
         <AuditNotice />
       </div>

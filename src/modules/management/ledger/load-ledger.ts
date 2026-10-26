@@ -1,4 +1,4 @@
-// 채권·채무 관리 화면 데이터 (서버 전용)
+// 경영지원 관리 화면 데이터 (서버 전용)
 import "server-only";
 
 import { loadUserNames, type NameOf } from "@/shared/auth";

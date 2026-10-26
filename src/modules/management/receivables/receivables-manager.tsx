@@ -1,5 +1,5 @@
 "use client";
-// 미수금 관리 목록: 필터 탭·거래처 검색·숨긴 항목 보기, 건별 수정·수금 처리·수금 취소·숨김·복구
+// 미수금 건별 기록 목록: 필터 탭·거래처 검색·숨긴 항목 보기, 건별 수정·수금 처리·수금 취소·숨김·복구
 import { EyeOff, Plus, Search } from "lucide-react";
 import { useState, useTransition } from "react";
 

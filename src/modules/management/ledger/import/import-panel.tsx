@@ -1,5 +1,5 @@
 "use client";
-// 채권·채무 엑셀 가져오기: ① 파일·기준년월 → ② 미리보기(블록 요약·총액 비교·행별 선택) → ③ 가져오기 → 결과
+// 경영지원 관리 엑셀 가져오기: ① 파일·기준년월 → ② 미리보기(블록 요약·총액 비교·행별 선택) → ③ 가져오기 → 결과
 // 파일은 브라우저에 들고 있다가 가져오기 때 다시 보낸다 (서버가 다시 읽어 검증)
 import { AlertTriangle, CheckCircle2, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
@@ -798,7 +798,7 @@ function ResultCard({
       </table>
       {result.hidden > 0 && (
         <p className="text-sm">
-          기존 {result.hidden}행은 숨겼습니다. 채권·채무 관리의 [숨긴 항목
+          기존 {result.hidden}행은 숨겼습니다. 경영지원 관리의 [숨긴 항목
           보기]에서 복구할 수 있습니다.
         </p>
       )}
@@ -806,7 +806,7 @@ function ResultCard({
         href={`/management/ledger?month=${month}`}
         className={buttonPrimaryClass}
       >
-        채권·채무 관리에서 보기
+        경영지원 관리에서 보기
       </Link>
     </section>
   );

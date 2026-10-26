@@ -1,5 +1,5 @@
-// 미수금 상세 (id="receivables" — 메인 "전체 보기 →" 도착 지점) — 채권·채무 관리 외상매출금 기준 (2026-10-26, 05-22)
-// 거래처별 전체 표 / 상태별(장기미수·당월 수금예정 + 당월 수금완료 따로) / 수금 예정 6개월 / 미수 행 전체
+// 미수금 상세 (id="receivables" — 메인 "전체 보기 →" 도착 지점) — 경영지원 관리 외상매출금 기준 (2026-10-26, 05-22)
+// 거래처별 전체 표 / 상태별(장기 미수금·당월 수금예정 + 당월 수금 따로) / 수금 예정 6개월 / 미수 행 전체
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 
@@ -18,12 +18,13 @@ import {
   totalRowClass,
 } from "./table-parts";
 import { cardTitleClass } from "@/shared/ui/styles";
+import { TERMS } from "../../terms";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 const STATUS_LABEL = {
-  LONG_OVERDUE: "장기미수",
-  SCHEDULED: "당월 수금예정",
+  LONG_OVERDUE: TERMS.longOverdue,
+  SCHEDULED: TERMS.scheduled,
 } as const;
 
 export function ReceivablesSection({
@@ -64,20 +65,20 @@ export function ReceivablesSection({
           <span className="text-sm font-normal text-muted-foreground">
             (
             {month
-              ? `${month.year}년 ${month.month}월 채권·채무 외상매출금 기준${receivables.isCurrentMonth ? " · 이번 달 작성 중" : ""}`
-              : "채권·채무 외상매출금 기준"}
+              ? `${month.year}년 ${month.month}월 ${TERMS.ledger} ${TERMS.arBasis}${receivables.isCurrentMonth ? " · 이번 달 작성 중" : ""}`
+              : `${TERMS.ledger} ${TERMS.arBasis}`}
             )
           </span>
         </h2>
         <div className="flex shrink-0 gap-4 text-xs">
           <Link href={ledgerHref} className="text-primary hover:underline">
-            채권·채무 관리 →
+            {TERMS.ledger} →
           </Link>
           <Link
             href="/management/receivables"
             className="text-muted-foreground hover:underline"
           >
-            미수금 관리(건별 참고) →
+            {TERMS.itemReceivables} →
           </Link>
         </div>
       </div>
@@ -89,9 +90,9 @@ export function ReceivablesSection({
       {!month ? (
         <Section title="미수금">
           <p className="text-sm text-muted-foreground">
-            이 기간에 채권·채무 관리의 외상매출금 입력이 없습니다.{" "}
+            이 기간에 {TERMS.ledger}의 외상매출금 입력이 없습니다.{" "}
             <Link href={ledgerHref} className="text-primary hover:underline">
-              채권·채무 관리에서 입력 →
+              {TERMS.ledger}에서 입력 →
             </Link>
           </p>
         </Section>
@@ -117,7 +118,7 @@ export function ReceivablesSection({
                         {c.customerName}
                         {c.longOverdue > 0n && (
                           <span className="ml-1 text-xs font-medium text-danger-strong">
-                            장기미수
+                            {TERMS.longOverdue}
                           </span>
                         )}
                       </td>
@@ -166,9 +167,9 @@ export function ReceivablesSection({
                     )}
                   >
                     <td className="py-3">
-                      <span className="inline-flex items-center gap-1 font-medium">
+                      <span className="inline-flex items-center gap-1 font-medium whitespace-nowrap">
                         <TriangleAlert className="size-4" aria-hidden />
-                        장기미수
+                        {TERMS.longOverdue}
                       </span>
                     </td>
                     <td className="py-3 text-right">
@@ -182,7 +183,7 @@ export function ReceivablesSection({
                     </td>
                   </tr>
                   <tr className={rowClass}>
-                    <td className="py-3">당월 수금예정</td>
+                    <td className="py-3">{TERMS.scheduled}</td>
                     <td className="py-3 text-right">
                       <Amount value={scheduled.amount} />
                     </td>
@@ -204,7 +205,10 @@ export function ReceivablesSection({
                     </td>
                   </tr>
                   <tr className="text-muted-foreground">
-                    <td className="py-3">당월 수금완료 (미수 아님)</td>
+                    <td className="py-3">
+                      {TERMS.collected}
+                      <span className="block text-xs">(미수금 아님)</span>
+                    </td>
                     <td className="py-3 text-right">
                       <Amount value={collected.amount} />
                     </td>
@@ -219,7 +223,7 @@ export function ReceivablesSection({
 
             <Section
               title="수금 예정 (6개월)"
-              description="당월 수금예정 행의 수금 예정일 기준"
+              description={`${TERMS.scheduled} 행의 수금 예정일 기준`}
             >
               <table className={tableClass}>
                 <caption className="sr-only">수금 예정</caption>
@@ -243,7 +247,7 @@ export function ReceivablesSection({
                     </tr>
                   ))}
                   <tr className={totalRowClass}>
-                    <td className="py-3">당월 수금예정 합계</td>
+                    <td className="py-3">{TERMS.scheduled} 합계</td>
                     <td className="py-3 text-right">
                       <Amount value={scheduled.amount} />
                     </td>

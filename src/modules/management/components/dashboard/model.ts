@@ -25,6 +25,7 @@ import {
   type DonutCardData,
 } from "../donuts/donut-cards";
 import { COMPARISON_LABELS, DASHBOARD_LABELS as L } from "./labels";
+import { TERMS } from "../../terms";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 const s = (v: bigint) => v.toString();
@@ -80,9 +81,9 @@ export type KpiModel = {
     | { kind: "rate"; rows: DeltaRow<number>[] }
     | { kind: "amount"; rows: DeltaRow<bigint>[] }
     | null;
-  /** 값 대신 "-"와 이 글을 보여 줌 (미수금: 기간 안에 채권·채무 외상매출금 입력이 없음) */
+  /** 값 대신 "-"와 이 글을 보여 줌 (미수금: 기간 안에 경영지원 관리 외상매출금 입력이 없음) */
   emptyText?: string;
-  /** 미수금 아래 목록 (장기미수 = 빨강) */
+  /** 미수금 아래 목록 (장기 미수금 = 빨강) */
   details?: { label: string; amount: bigint; count: number; warn: boolean }[];
   /** BEP 달성률 한 줄 (추정 이익 카드) — 상세로 옮긴 BEP 카드로 가는 연결 */
   link?: { label: string; href: string };
@@ -155,7 +156,7 @@ export function dashboardKpis(summary: ManagementSummary): KpiModel[] {
     {
       key: "receivables",
       title: receivables.month
-        ? `${L.kpi.receivables} (${receivables.month.month}월 기준)`
+        ? `${L.kpi.receivables} (${receivables.month.month}월 ${TERMS.arBasis})`
         : L.kpi.receivables,
       value: receivables.total,
       warn: false,

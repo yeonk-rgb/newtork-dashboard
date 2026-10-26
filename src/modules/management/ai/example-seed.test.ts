@@ -47,14 +47,14 @@ function summaryFor(
       revenueTarget: 2_400_000_000n,
       quarterTargets: [null, null, null, null],
     },
-    // 분기 마지막 달 채권·채무 외상매출금 장기미수 1건
+    // 분기 마지막 달 경영지원 관리 외상매출금 장기 미수금 1건
     receivables: options.longOverdue
       ? [
           arEntry("x1", {
             year: quarter.year,
             month: quarter.quarter * 3,
             status: "LONG_OVERDUE",
-            partnerName: "장기미수(가상)",
+            partnerName: "장기 미수금(가상)",
             amount: 36_000_000n,
           }),
         ]
@@ -70,7 +70,7 @@ const sentences = (row: ExampleRow) => [
 ];
 
 describe("buildExampleRow", () => {
-  // a) 목표 미달 + 장기미수: 매출 = 월 값 × 1.3 (제품+상품 20%+용역 10%). 1분기 5.85억, 2분기 5.2억 → 누적 11.05억 < 기대치 12억, 장기 미수 1건
+  // a) 목표 미달 + 장기 미수금: 매출 = 월 값 × 1.3 (제품+상품 20%+용역 10%). 1분기 5.85억, 2분기 5.2억 → 누적 11.05억 < 기대치 12억, 장기 미수 1건
   const rowA = buildExampleRow(
     summaryFor(
       q(2025, 2),
@@ -126,7 +126,7 @@ describe("buildExampleRow", () => {
     }
   });
 
-  it("a) 목표 미달 + 장기미수: 부족한 점과 개선 제안이 같은 순서로 짝", () => {
+  it("a) 목표 미달 + 장기 미수금: 부족한 점과 개선 제안이 같은 순서로 짝", () => {
     expect(rowA.result.shortfalls[0]).toMatch(
       /^기간 경과 기대치보다 .+ 부족합니다\(진도율 [\d.]+%\)\.$/,
     );
@@ -134,18 +134,20 @@ describe("buildExampleRow", () => {
       /^분기 초 수주 잔고를 점검해 부족분 .+을 월별로 배정합니다\.$/,
     );
     const i90 = rowA.result.shortfalls.findIndex((s) =>
-      s.startsWith("장기미수"),
+      s.startsWith("장기 미수금"),
     );
     expect(rowA.result.shortfalls[i90]).toBe(
-      "장기미수가 3,600만원(1건)입니다.",
+      "장기 미수금이 3,600만원(1건)입니다.",
     );
     expect(rowA.result.improvements[i90]).toBe(
-      "장기미수 1건의 수금 일정을 거래처별로 확정합니다.",
+      "장기 미수금 1건의 수금 일정을 거래처별로 확정합니다.",
     );
     // 거래처명은 문장에 없고, 서버가 따로 붙인다
-    expect(sentences(rowA).join(" ")).not.toContain("장기미수(가상)");
-    expect(rowA.result.longOverdue?.[0]?.name).toBe("장기미수(가상)");
-    expect(JSON.stringify(rowA.inputSummary)).not.toContain("장기미수(가상)");
+    expect(sentences(rowA).join(" ")).not.toContain("장기 미수금(가상)");
+    expect(rowA.result.longOverdue?.[0]?.name).toBe("장기 미수금(가상)");
+    expect(JSON.stringify(rowA.inputSummary)).not.toContain(
+      "장기 미수금(가상)",
+    );
   });
 
   it("b) 목표 초과: 초과 달성 문장, 부족한 점 없음, 개선 제안 1개 이상", () => {

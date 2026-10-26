@@ -1,4 +1,4 @@
-// 채권·채무 다운로드 결과물 고정 — 셀 값·수식·계산값·서식·병합·열·행·인쇄·문서 속성·테마가 그대로인지
+// 경영지원 관리 다운로드 결과물 고정 — 셀 값·수식·계산값·서식·병합·열·행·인쇄·문서 속성·테마가 그대로인지
 // 2026-10-25 공용 엔진(modules/management/export)으로 옮기기 직전 결과물로 만든 스냅샷. 바뀌면 의도한 변경인지 확인 후
 // `npx vitest run -u <이 파일>` 로 갱신한다 (리팩터링만 했다면 갱신하지 말 것)
 import { readFile } from "node:fs/promises";
@@ -18,7 +18,7 @@ async function dump(sheets: ExportSheet[]) {
   return JSON.stringify(await dumpWorkbook(buf), null, 1);
 }
 
-describe("채권·채무 다운로드 결과물 스냅샷", () => {
+describe("경영지원 관리 다운로드 결과물 스냅샷", () => {
   it("당월 (샘플 16행)", async () => {
     await expect(
       await dump([

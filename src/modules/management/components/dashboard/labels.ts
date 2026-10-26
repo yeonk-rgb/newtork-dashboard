@@ -1,6 +1,8 @@
 // 경영 대시보드(메인) 화면 이름 표 — 이 파일 한 곳에서 바꾼다 (2026-10-25 담당자 요청 반영)
 // 화면 표시 층에서만 쓰는 이름이다. metrics 의 이름표(AmountShare.label)는 그대로 둔다
 // → AI 분석 입력(buildAiInput)과 해시가 바뀌지 않아 기존 분석에 "데이터가 변경되어…" 안내가 뜨지 않는다
+import { TERMS } from "../../terms";
+
 export const DASHBOARD_LABELS = {
   kpi: {
     revenue: "매출",
@@ -14,13 +16,13 @@ export const DASHBOARD_LABELS = {
     excludePurchases: "매입을 빼고 계산한 참고 기준",
   },
   expenseNote: "상품 매입 + 원재료 매입 + 경비 + 기타",
-  /** 미수금 = 채권·채무 관리 외상매출금 (장기미수 + 당월수금예정) — 2026-10-26 결정 05-22 */
-  receivablesBasis: "채권·채무 관리 외상매출금 기준",
-  receivablesEmpty: "이 기간에 채권·채무 입력 없음",
+  /** 미수금 = 경영지원 관리 외상매출금 (장기 미수금 + 당월 수금예정) — 2026-10-26 결정 05-22 */
+  receivablesBasis: `${TERMS.ledger} ${TERMS.arBasis}`,
+  receivablesEmpty: `이 기간에 ${TERMS.ledger} 입력 없음`,
   receivablesInProgress: "이번 달 작성 중",
-  longOverdue: "장기미수",
-  scheduled: "당월 수금예정",
-  collected: "당월 수금완료",
+  longOverdue: TERMS.longOverdue,
+  scheduled: TERMS.scheduled,
+  collected: TERMS.collected,
   areas: {
     status: "분기별 목표 달성 현황",
     trend: "추이 및 분석",

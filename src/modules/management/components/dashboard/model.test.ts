@@ -76,7 +76,7 @@ function summaryOf(
         bigint | null,
       ],
     },
-    // 채권·채무 외상매출금 8·9월 (2026-10-26부터 대시보드 미수금 기준)
+    // 경영지원 관리 외상매출금 8·9월 (2026-10-26부터 대시보드 미수금 기준)
     receivables: [8, 9].flatMap((month) => [
       arEntry(`a${month}`, {
         month,
@@ -158,7 +158,7 @@ describe("상단 KPI 4개 = summary 기존 값", () => {
     ).toEqual(["전년"]);
   });
 
-  it("적자면 빨강 + '적자' 글자, 미수금 장기미수는 빨강·전체 보기 연결", () => {
+  it("적자면 빨강 + '적자' 글자, 미수금 장기 미수금은 빨강·전체 보기 연결", () => {
     const loss = computeManagementSummary({
       period: { unit: "quarter", year: 2025, quarter: 1 },
       financeMonths: months(),
@@ -171,18 +171,18 @@ describe("상단 KPI 4개 = summary 기존 값", () => {
     expect(profit.warn).toBe(true);
     expect(profit.sub).toMatch(/^적자/);
     const r = dashboardKpis(summaryOf(Q3))[3];
-    expect(r.title).toBe("미수금 (9월 기준)");
+    expect(r.title).toBe("미수금 (9월 외상매출금 기준)");
     expect(r.value).toBe(50_000_000n);
     expect(r.details).toEqual([
-      { label: "장기미수", amount: 32_000_000n, count: 1, warn: true },
+      { label: "장기 미수금", amount: 32_000_000n, count: 1, warn: true },
       { label: "당월 수금예정", amount: 18_000_000n, count: 1, warn: false },
     ]);
     expect(r.emptyText).toBeUndefined();
     expect(r.link?.href).toBe("/management?period=2026-Q3#receivables");
-    expect(r.note).toBe("채권·채무 관리 외상매출금 기준");
-    // 기간에 채권·채무 입력이 없으면 "-" + 안내 (다른 기간 값을 끌어오지 않음)
+    expect(r.note).toBe("경영지원 관리 외상매출금 기준");
+    // 기간에 경영지원 관리 입력이 없으면 "-" + 안내 (다른 기간 값을 끌어오지 않음)
     const none = dashboardKpis(loss)[3];
-    expect(none.emptyText).toBe("이 기간에 채권·채무 입력 없음");
+    expect(none.emptyText).toBe("이 기간에 경영지원 관리 입력 없음");
     expect(none.details).toBeUndefined();
   });
 

@@ -1,4 +1,4 @@
-// 채권·채무 표의 그룹·합계 (순수 함수) — 엑셀 '총액' 칸과 같은 값
+// 경영지원 관리 표의 그룹·합계 (순수 함수) — 엑셀 '총액' 칸과 같은 값
 import {
   AR_STATUSES,
   LEDGER_KINDS,
@@ -14,7 +14,7 @@ export function sumAmount(rows: { amount: string }[]): bigint {
 export type ArGroup = { status: ArStatus; rows: LedgerRow[]; total: bigint };
 
 /**
- * 외상매출금을 상태별로 묶는다. 순서 = 장기미수 → 당월수금완료 → 당월수금예정.
+ * 외상매출금을 상태별로 묶는다. 순서 = 장기 미수금 → 당월 수금 → 당월 수금예정.
  * 엑셀처럼 행이 없는 그룹도 총액 0으로 남긴다. 그룹 안 순서는 받은 순서 그대로
  */
 export function groupArRows(rows: LedgerRow[]): ArGroup[] {
