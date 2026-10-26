@@ -1,5 +1,6 @@
 // 지표 계산 설정 — 2026-10-26 자료 기반 결정 (docs/05-open-questions.md "자료 기반 결정")
 // 담당자가 다른 기준을 원하면 이 파일만 바꾼다 (값 + 화면 "적용 기준" 문구를 함께)
+import type { CashForecastSettings } from "./cash-forecast";
 import type { CostClass, CostMode } from "./types";
 
 /**
@@ -40,7 +41,19 @@ export type MetricsSettings = {
   /** 수금 예정액을 보여줄 개월 수 */
   expectedCollectionMonths: number;
   breakEven: BreakEvenSettings;
+  cashForecast: CashForecastSettings;
 };
+
+/**
+ * 자금 수지 예측 [계산 기준] — 화면에 한 줄씩 (05-41~46 자료 기반 결정). 계산을 바꾸면 이 문구도 함께
+ */
+export const CASH_FORECAST_BASIS: string[] = [
+  "금액은 실제 주고받는 금액(부가세 포함)입니다. 월간 입력 평균은 매출·매입·그 외 지출에 ×1.1, 경비는 그대로 씁니다",
+  "들어올 돈(예정) = 경영지원 관리 외상매출금 '당월 수금예정'을 예정일 달에 넣습니다. 예정일이 없거나 지났으면 첫 달로 봅니다. 장기 미수금은 넣지 않습니다",
+  "나갈 돈(예정) = 외상매입금·미지급비용(직원·업체, 자동이체 포함)을 예정일 달에 넣습니다. 예정일이 비어 있으면 기준월 다음 달에 지급합니다",
+  "추정 = 경영지원 관리 기준월 2달 뒤부터 최근 확정 3개월 평균입니다. 급여·세금 같은 정기 지출을 따로 넣지 않아 달마다 고르게 퍼집니다",
+  "예상 잔액 = 월간 입력의 가장 최근 '월말 통장 잔액' + 누적 순수지입니다. 잔액을 넣지 않으면 수입 − 지출만 보여 드립니다",
+];
 
 export const DEFAULT_METRICS_SETTINGS: MetricsSettings = {
   costMode: "purchases",
@@ -51,4 +64,5 @@ export const DEFAULT_METRICS_SETTINGS: MetricsSettings = {
     unclassifiedOther: "FIXED",
     appliedBasis: APPLIED_BASIS,
   },
+  cashForecast: { averageMonths: 3, maxMonths: 6 },
 };

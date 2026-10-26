@@ -157,6 +157,8 @@ async function seedMonthlyFinance(
       materialPurchase:
         (productSales * BigInt(35 + Math.floor(random() * 11))) / 100n,
       operatingExpense: won(25_000_000 * g, 38_000_000 * g),
+      // 월말 통장 잔액 (선택 칸 — 자금 수지 예측 예상 잔액, 2026-10-26). random() 을 쓰지 않아 다른 시드 값은 그대로
+      cashBalance: BigInt(150_000_000 + index * 4_500_000),
       status: isLast ? MgmtEntryStatus.DRAFT : MgmtEntryStatus.CONFIRMED,
       // 확정일시: 다음 달 5일
       confirmedAt: isLast ? null : new Date(Date.UTC(year, month, 5)),

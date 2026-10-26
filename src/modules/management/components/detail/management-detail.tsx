@@ -3,10 +3,13 @@ import "server-only";
 
 import { serializeBigInt } from "@/shared/format/bigint";
 
+import type { CashForecast } from "../../metrics/cash-forecast";
+import { CASH_FORECAST_BASIS } from "../../metrics/settings";
 import type { TrendPoint } from "../../metrics/trend";
 import type { ManagementSummary } from "../../metrics/types";
 import { comparisonNote } from "../confirmation-text";
 import { BreakEvenTable } from "./break-even-table";
+import { CashForecastSection } from "./cash-forecast-section";
 import {
   AnnualTargetCard,
   BreakEvenCard,
@@ -27,9 +30,12 @@ import { previousLabel, showLastYear } from "./table-parts";
 export function ManagementDetail({
   summary,
   trend,
+  forecast,
 }: {
   summary: ManagementSummary;
   trend: TrendPoint[];
+  /** 자금 수지 예측 (오늘 기준 — 위에서 고른 기간과 무관) */
+  forecast: CashForecast;
 }) {
   const { period, expenses, changes } = summary;
   const withLastYear = showLastYear(period);
@@ -84,6 +90,15 @@ export function ManagementDetail({
       <ReceivablesSection
         receivables={summary.receivables}
         lead={<ReceivablesDonutCard summary={summary} />}
+      />
+
+      {/* #cash-forecast — 외상매출금·경영지원 관리를 쓰므로 미수금 아래 (2026-10-26 PR ⑤) */}
+      <CashForecastSection
+        forecast={serializeBigInt({
+          ...forecast,
+          asOf: forecast.asOf.toISOString().slice(0, 10),
+        })}
+        basis={CASH_FORECAST_BASIS}
       />
     </div>
   );

@@ -20,7 +20,7 @@ import {
   settleWord,
   type LedgerKind,
 } from "./ledger/labels";
-import { FIELD_LABEL } from "./entry/field-help";
+import { CASH_BALANCE_LABEL, FIELD_LABEL } from "./entry/field-help";
 import type { EntryField } from "./entry/schemas";
 
 export const auditActor = (user: AppUser) => ({
@@ -143,6 +143,8 @@ export type MonthlyAuditSnapshot = {
   status: "DRAFT" | "CONFIRMED" | null;
   /** 그 외 지출: 항목 id → 금액 */
   others: Map<string, bigint>;
+  /** 월말 통장 잔액 (선택 칸, null = 비움). undefined 면 비교하지 않음 */
+  cashBalance?: bigint | null;
 };
 
 const ENTRY_STATUS_LABEL = { DRAFT: "임시저장", CONFIRMED: "확정" } as const;
@@ -174,6 +176,18 @@ export function monthlyChanges(
       changes.push({
         field: key,
         label: FIELD_LABEL[key],
+        before: b,
+        after: a,
+      });
+    }
+  }
+  if (after.cashBalance !== undefined) {
+    const b = before?.cashBalance == null ? null : won(before.cashBalance);
+    const a = after.cashBalance === null ? null : won(after.cashBalance);
+    if (b !== a) {
+      changes.push({
+        field: "cashBalance",
+        label: CASH_BALANCE_LABEL,
         before: b,
         after: a,
       });

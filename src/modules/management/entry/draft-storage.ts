@@ -7,6 +7,8 @@ export type EntryDraft = {
   v: 1;
   values: Record<EntryField, string>;
   other: Record<string, string>;
+  /** 월말 통장 잔액 (선택 칸, 2026-10-26 추가 — 예전 보관값에는 없음) */
+  cash?: string;
   /** 임시 보관할 때 화면이 불러왔던 서버 updatedAt (그 뒤 다른 저장이 있었는지 안내용) */
   baseUpdatedAt: string | null;
   /** 보관 시각 (ISO) */
@@ -36,6 +38,10 @@ export function parseDraft(raw: string | null): EntryDraft | null {
       data.v !== 1 ||
       !isDigitsRecord(data.values) ||
       !isDigitsRecord(data.other) ||
+      !(
+        data.cash === undefined ||
+        (typeof data.cash === "string" && DIGITS.test(data.cash))
+      ) ||
       typeof data.savedAt !== "string" ||
       !(data.baseUpdatedAt === null || typeof data.baseUpdatedAt === "string")
     ) {
