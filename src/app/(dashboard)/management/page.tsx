@@ -4,6 +4,7 @@ import {
   AiCommentSection,
   DashboardTop,
   DashboardTopSkeleton,
+  getCashForecast,
   getManagementSummary,
   getManagementTrend,
   ManagementDetail,
@@ -37,9 +38,10 @@ async function ManagementContent({
   const period = await resolvePeriod(
     typeof param === "string" ? param : undefined,
   );
-  const [summary, trend] = await Promise.all([
+  const [summary, trend, forecast] = await Promise.all([
     getManagementSummary(period),
     getManagementTrend(period),
+    getCashForecast(),
   ]);
 
   return (
@@ -49,7 +51,7 @@ async function ManagementContent({
         summary={summary}
         aboveKpis={<AiCommentSection summary={summary} />}
       />
-      <ManagementDetail summary={summary} trend={trend} />
+      <ManagementDetail summary={summary} trend={trend} forecast={forecast} />
     </div>
   );
 }

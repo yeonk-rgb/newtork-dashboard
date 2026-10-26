@@ -47,6 +47,7 @@ function snapshotOf(
     materialPurchase: bigint;
     operatingExpense: bigint;
     otherExpenses: { categoryId: string; amount: bigint }[];
+    cashBalance: bigint | null;
   } | null,
 ): MonthlyAuditSnapshot | null {
   if (!existing) return null;
@@ -63,6 +64,7 @@ function snapshotOf(
     others: new Map(
       existing.otherExpenses.map((e) => [e.categoryId, e.amount]),
     ),
+    cashBalance: existing.cashBalance,
   };
 }
 
@@ -160,6 +162,7 @@ export async function saveMonthlyEntry(
           where: { id: existing.id, updatedAt: existing.updatedAt },
           data: {
             ...input.values,
+            cashBalance: input.cashBalance,
             status: nextStatus,
             confirmedAt,
             updatedById: user.id,
@@ -172,6 +175,7 @@ export async function saveMonthlyEntry(
           data: {
             ...ym,
             ...input.values,
+            cashBalance: input.cashBalance,
             status: nextStatus,
             confirmedAt,
             createdById: user.id,
@@ -216,6 +220,7 @@ export async function saveMonthlyEntry(
               others: new Map(
                 input.otherExpenses.map((e) => [e.categoryId, e.amount]),
               ),
+              cashBalance: input.cashBalance,
             },
             new Map(categories.map((c) => [c.id, c.name])),
           ),

@@ -22,9 +22,12 @@ export type EntryData = {
   status: EntryStatus;
   values: Record<EntryField, string>;
   otherExpenses: Record<string, string>;
+  /** 월말 통장 잔액 (선택 칸, 빈칸 = "") */
+  cashBalance: string;
   previous: {
     values: Record<EntryField, string>;
     otherExpenses: Record<string, string>;
+    cashBalance: string;
   } | null;
   categories: EntryCategory[];
   /** 동시 수정 확인용 */
@@ -76,8 +79,13 @@ export async function loadEntry(ym: YearMonth): Promise<EntryData> {
     status: row ? row.status : "NEW",
     values: toValues(row),
     otherExpenses: toOther(row),
+    cashBalance: row?.cashBalance?.toString() ?? "",
     previous: prev
-      ? { values: toValues(prev), otherExpenses: toOther(prev) }
+      ? {
+          values: toValues(prev),
+          otherExpenses: toOther(prev),
+          cashBalance: prev.cashBalance?.toString() ?? "",
+        }
       : null,
     // 활성 항목 + (비활성이지만 이 달에 값이 있는 항목) — 과거 데이터가 사라지지 않게
     categories: categories

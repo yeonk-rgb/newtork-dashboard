@@ -31,7 +31,13 @@ import {
   subscribeStorage,
   writeDraft,
 } from "./draft-storage";
-import { FIELD_HELP, FIELD_LABEL, OTHER_EXPENSE_HELP } from "./field-help";
+import {
+  CASH_BALANCE_HELP,
+  CASH_BALANCE_LABEL,
+  FIELD_HELP,
+  FIELD_LABEL,
+  OTHER_EXPENSE_HELP,
+} from "./field-help";
 import { FromLedgerButton } from "./from-ledger-dialog";
 import type { EntryData } from "./load-entry";
 import { digitsToBigInt, formatDigits } from "./money-input";
@@ -181,8 +187,13 @@ export function EntryForm({
     );
   const [values, setValues] = useState(data.values);
   const [other, setOther] = useState<Record<string, string>>(initialOther);
+  const [cash, setCash] = useState(data.cashBalance);
   const [baseline, setBaseline] = useState(() =>
-    JSON.stringify({ values: data.values, other: initialOther() }),
+    JSON.stringify({
+      values: data.values,
+      other: initialOther(),
+      cash: data.cashBalance,
+    }),
   );
   const [loadedAt, setLoadedAt] = useState(data.updatedAt);
   const [result, setResult] = useState<EntryActionResult | null>(null);
@@ -194,9 +205,16 @@ export function EntryForm({
     setLoadedAt(data.updatedAt);
     setValues(data.values);
     setOther(nextOther);
-    setBaseline(JSON.stringify({ values: data.values, other: nextOther }));
+    setCash(data.cashBalance);
+    setBaseline(
+      JSON.stringify({
+        values: data.values,
+        other: nextOther,
+        cash: data.cashBalance,
+      }),
+    );
   }
-  const dirty = JSON.stringify({ values, other }) !== baseline;
+  const dirty = JSON.stringify({ values, other, cash }) !== baseline;
   const readOnly = abilities.readOnly;
 
   useUnsavedGuard(dirty);
@@ -212,13 +230,16 @@ export function EntryForm({
   const [draftDecided, setDraftDecided] = useState(false);
   const wroteDraft = useRef(false);
   const storedDraft = abilities.readOnly ? null : parseDraft(rawDraft);
-  const currentContent = JSON.stringify({ values, other });
+  const currentContent = JSON.stringify({ values, other, cash });
   // 복구 안내: 보관값이 있고, 지금 화면 값과 다르고, 아직 복구/버리기를 고르지 않았을 때
   const pendingDraft =
     !draftDecided &&
     storedDraft !== null &&
-    JSON.stringify({ values: storedDraft.values, other: storedDraft.other }) !==
-      currentContent
+    JSON.stringify({
+      values: storedDraft.values,
+      other: storedDraft.other,
+      cash: storedDraft.cash ?? data.cashBalance,
+    }) !== currentContent
       ? storedDraft
       : null;
 
@@ -230,6 +251,7 @@ export function EntryForm({
         v: 1,
         values,
         other,
+        cash,
         baseUpdatedAt: data.updatedAt,
         savedAt: new Date().toISOString(),
       });
@@ -243,6 +265,7 @@ export function EntryForm({
     dirty,
     values,
     other,
+    cash,
     data.updatedAt,
     draftStorageKey,
   ]);
@@ -251,6 +274,7 @@ export function EntryForm({
     if (!pendingDraft) return;
     const known = new Set(data.categories.map((c) => c.id));
     setValues(pendingDraft.values);
+    if (pendingDraft.cash !== undefined) setCash(pendingDraft.cash);
     setOther((current) => ({
       ...current,
       ...Object.fromEntries(
@@ -309,6 +333,7 @@ export function EntryForm({
       categoryId: c.id,
       amount: other[c.id] ?? "",
     })),
+    cashBalance: cash,
     expectedUpdatedAt: data.updatedAt,
   });
 
@@ -593,6 +618,32 @@ export function EntryForm({
             <span className="font-semibold tabular-nums">
               {won(otherTotal)}
             </span>
+          </p>
+        </fieldset>
+
+        <fieldset className="rounded-card border bg-card p-6">
+          <legend className={`px-1 ${cardTitleClass}`}>
+            자금{" "}
+            <span className="text-sm font-normal text-muted-foreground">
+              (선택)
+            </span>
+          </legend>
+          <AmountInput
+            id="entry-cashBalance"
+            label={CASH_BALANCE_LABEL}
+            help={CASH_BALANCE_HELP}
+            digits={cash}
+            previous={
+              data.previous && data.previous.cashBalance !== ""
+                ? data.previous.cashBalance
+                : null
+            }
+            readOnly={readOnly}
+            onChange={setCash}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            비워 두면 자금 수지 예측은 수입 − 지출만 보여 드립니다. 매출·지출
+            합계에는 들어가지 않습니다.
           </p>
         </fieldset>
       </form>

@@ -27,3 +27,7 @@ export const FIELD_HELP: Record<EntryField, string> = {
 
 export const OTHER_EXPENSE_HELP =
   "광고선전비·접대비 등 따로 관리하는 지출. 항목 추가·변경은 '목표·항목 설정'(팀장)에서 합니다.";
+
+export const CASH_BALANCE_LABEL = "월말 통장 잔액";
+export const CASH_BALANCE_HELP =
+  "그달 말일 기준 통장 잔액(쓸 수 있는 돈)을 실제 금액 그대로 넣습니다. 선택 칸이라 비워 두어도 됩니다. 넣으면 경영지원 상세의 자금 수지 예측에 예상 잔액이 나옵니다. 매출·지출 합계에는 들어가지 않습니다.";

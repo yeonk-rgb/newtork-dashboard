@@ -8,6 +8,7 @@ import {
   hasUploadedInput,
   loadLatestAiComment,
 } from "@/modules/management/ai/load-comment";
+import { loadCashForecastInput } from "@/modules/management/data/load-cash-forecast";
 import {
   loadSummaryInput,
   todayKst,
@@ -63,6 +64,10 @@ async function main() {
   const q3 = { unit: "quarter", year: 2026, quarter: 3 } as const;
   await check("대시보드 지표 조회 (loadSummaryInput)", () =>
     loadSummaryInput(q3, today),
+  );
+  await check(
+    "자금 수지 예측: 경영지원 관리·확정 월·통장 잔액 (loadCashForecastInput)",
+    () => loadCashForecastInput(today),
   );
   await check("AI 카드: 업로드 데이터 확인 (hasUploadedInput)", () =>
     hasUploadedInput(q3),

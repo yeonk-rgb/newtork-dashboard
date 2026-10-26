@@ -4,8 +4,13 @@ import "server-only";
 import { can, getCurrentUser } from "@/shared/auth";
 import { monthIndex, type Period } from "@/shared/period/period";
 
+import { loadCashForecastInput } from "./data/load-cash-forecast";
 import { getTodayKst, loadSummaryInput } from "./data/load-summary-input";
 import { loadFinanceMonths } from "./data/queries";
+import {
+  computeCashForecast,
+  type CashForecast,
+} from "./metrics/cash-forecast";
 import { DEFAULT_METRICS_SETTINGS } from "./metrics/settings";
 import { computeManagementSummary } from "./metrics/summary";
 import { computeTrend, trendRange, type TrendPoint } from "./metrics/trend";
@@ -46,6 +51,16 @@ export async function getManagementTrend(
     await getTodayKst(),
     DEFAULT_METRICS_SETTINGS.costMode,
   );
+}
+
+/**
+ * 3~6개월 자금 수지 예측 (오늘 기준, 선택한 기간과 무관). 권한: 경영지원팀 view
+ * 계산 metrics/cash-forecast.ts, 기준 문구 metrics/settings.ts CASH_FORECAST_BASIS
+ */
+export async function getCashForecast(): Promise<CashForecast> {
+  const user = await getCurrentUser();
+  if (!user || !can(user, "view", "management")) throw new ForbiddenError();
+  return computeCashForecast(await loadCashForecastInput(await getTodayKst()));
 }
 
 // 대시보드 화면 조각 (메인·경영지원 상세 공용)

@@ -60,6 +60,9 @@ model MonthlyFinance {
   /// 경비 지출액
   operatingExpense BigInt @default(0)
 
+  /// 월말 통장 잔액 (선택, 원 — 실제 잔액 그대로). 비우면 null → 자금 수지 예측은 수입−지출만 (2026-10-26 결정 05-41)
+  cashBalance      BigInt?
+
   status      MgmtEntryStatus @default(DRAFT)
   confirmedAt DateTime?
 

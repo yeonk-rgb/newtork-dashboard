@@ -12,6 +12,16 @@ const amount = z
   )
   .transform((v) => (v === "" ? 0n : BigInt(v)));
 
+/** 선택 칸: 빈칸은 null (0원과 다름) — 월말 통장 잔액 */
+const optionalAmount = z
+  .string()
+  .regex(
+    new RegExp(`^\\d{0,${MAX_DIGITS}}$`),
+    "금액은 숫자만 15자리까지 입력할 수 있습니다.",
+  )
+  .optional()
+  .transform((v) => (v ? BigInt(v) : null));
+
 export const ENTRY_FIELDS = [
   "productSales",
   "goodsSales",
@@ -45,6 +55,8 @@ export const saveEntrySchema = z.object({
   otherExpenses: z
     .array(z.object({ categoryId: z.string().min(1).max(64), amount }))
     .max(100),
+  /** 월말 통장 잔액 (선택 — 자금 수지 예측의 예상 잔액, 05-41). 합계·확정 0원 확인에 넣지 않는다 */
+  cashBalance: optionalAmount,
   expectedUpdatedAt,
 });
 export type SaveEntryInput = z.input<typeof saveEntrySchema>;
