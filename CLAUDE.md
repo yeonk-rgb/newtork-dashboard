@@ -176,7 +176,7 @@
     - 표기는 `labels.ts`만: 화면 이름 한글(`HISTORY_SCREENS` — 새 화면을 기록하면 여기에 추가), 바뀐 내용 "잔액: A → B"(빈 값 "(없음)"), 추가 정보(meta)는 `metaSummary()`가 한글 문장으로 — **JSON 을 화면·엑셀에 그대로 보여 주지 않는다** (모르는 형식은 표시 안 함)
     - 필터: 기간(기본 오늘 포함 최근 30일, 한국 날짜)·사람·화면·동작·대상 검색(대상 이름, 대소문자 무시), 최신순 50건씩, 주소(GET 폼)로
     - 행 [이력]: `RowHistoryButton`(채권·채무·미수금 모든 행, 숨긴 행 포함) → Server Action `getRowHistory()`(경영지원 view, 대상 종류 `LedgerEntry`·`Receivable`만, `area: "management"`만). 이관 행은 맨 아래 "엑셀 이관으로 생성 — 파일명, 이름(아이디), 일시" (이관 요약 기록, 없으면 `mgmt_data_upload` 값)
-    - 엑셀: `GET /api/management/history/export?…`(지금 필터 그대로, 관리자(대표)만 — 경영지원팀이 주소로 와도 403, `no-store`, 최대 10,000건), 원본 양식 스타일(맑은 고딕 10·머리글 E7E6E6 굵게·테두리·첫 행 고정·자동 필터·열 너비 자동), 일시는 엑셀 날짜(한국 시각) `yyyy-mm-dd hh:mm`. 내려받기도 기록(`area: "admin"`, `screen: "history-export"`) — 기록 실패 시 503으로 막음
+    - 엑셀: `GET /api/management/history/export?…`(지금 필터 그대로, 관리자(대표)만 — 경영지원팀이 주소로 와도 403, `no-store`, 최대 10,000건), 원본 양식 스타일(맑은 고딕 10·머리글 E7E6E6 굵게·테두리·첫 행 고정·자동 필터·열 너비 자동), 일시는 엑셀 날짜(한국 시각) `yyyy-mm-dd hh:mm`. 2026-10-26부터 다른 엑셀과 같은 공용 엔진(원본 양식 파일을 불러와 테마 유지, 문서 속성 `WORKBOOK_AUTHOR`) — 스냅샷 `history/__snapshots__/history-export.json` 내려받기도 기록(`area: "admin"`, `screen: "history-export"`) — 기록 실패 시 503으로 막음
 
 ## 공통 정책
 

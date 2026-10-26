@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
     "/api/management/export": [
       "./src/modules/management/ledger/export/ledger-template.xlsx",
     ],
+    "/api/management/history/export": [
+      "./src/modules/management/ledger/export/ledger-template.xlsx",
+    ],
   },
   experimental: {
     // 엑셀 업로드(Server Action으로 파일 전송) — 기본 1MB → 10MB

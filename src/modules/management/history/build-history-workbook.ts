@@ -1,6 +1,10 @@
-// 변경 이력 엑셀 (순수 함수) — 「경영지원 관리」 원본 양식 스타일:
+// 변경 이력 엑셀 — 「경영지원 관리」 원본 양식 스타일의 목록형 시트:
 // 맑은 고딕 10, 머리글 회색(E7E6E6)+굵게, 얇은 테두리, 첫 행 고정, 자동 필터, 열 너비는 내용에 맞게
-import ExcelJS from "exceljs";
+// 2026-10-26: 다른 엑셀 5종과 같은 공용 엔진 — 원본 양식 파일을 불러와(테마 유지) 원본 시트를 빼고 그리며,
+// 문서 속성은 "NEWTORK 경영 대시보드" (새 통합 문서로 만들던 때는 exceljs 기본 테마·작성자 "Unknown")
+import type ExcelJS from "exceljs";
+
+import { openTemplateWorkbook, writeWorkbook } from "../export/template";
 
 import type { HistoryRow } from "./labels";
 
@@ -56,8 +60,12 @@ export function columnWidths(rows: HistoryRow[]): number[] {
 export async function buildHistoryWorkbook(
   rows: HistoryRow[],
   title: string,
+  opts: { template: Buffer; now: Date },
 ): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook();
+  const { wb: workbook, dropSource } = await openTemplateWorkbook(
+    opts.template,
+  );
+  dropSource();
   const sheet = workbook.addWorksheet(title, {
     views: [{ state: "frozen", ySplit: 1 }],
     pageSetup: {
@@ -102,5 +110,5 @@ export async function buildHistoryWorkbook(
     from: { row: 1, column: 1 },
     to: { row: 1, column: COLUMNS.length },
   };
-  return Buffer.from(await workbook.xlsx.writeBuffer());
+  return writeWorkbook(workbook, opts.now);
 }
