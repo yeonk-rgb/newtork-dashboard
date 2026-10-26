@@ -32,12 +32,14 @@ import {
   writeDraft,
 } from "./draft-storage";
 import { FIELD_HELP, FIELD_LABEL, OTHER_EXPENSE_HELP } from "./field-help";
+import { FromLedgerButton } from "./from-ledger-dialog";
 import type { EntryData } from "./load-entry";
 import { digitsToBigInt, formatDigits } from "./money-input";
 import { MoneyTextInput } from "./money-text-input";
 import { isDigitAnomaly, type EntryAbilities } from "./rules";
 import type { EntryField } from "./schemas";
 import { LEAVE_MESSAGE, useUnsavedGuard } from "./use-unsaved-guard";
+import { TERMS } from "../terms";
 import {
   buttonDangerClass,
   buttonPrimaryClass,
@@ -448,6 +450,23 @@ export function EntryForm({
                 </option>
               ))}
             </select>
+            {!readOnly && (
+              <FromLedgerButton
+                year={data.year}
+                month={data.month}
+                categories={data.categories}
+                values={values}
+                other={other}
+                onApply={(fill) => {
+                  setValues((s) => ({ ...s, ...fill.values }));
+                  setOther((s) => ({ ...s, ...fill.other }));
+                  setResult({
+                    ok: true,
+                    message: `${TERMS.ledger} 값을 입력란에 채웠습니다. 아직 저장 전입니다 — 확인 후 [임시저장] 또는 [확정]을 누르세요.`,
+                  });
+                }}
+              />
+            )}
             <EntryExportMenu year={data.year} month={data.month} />
           </div>
         </div>

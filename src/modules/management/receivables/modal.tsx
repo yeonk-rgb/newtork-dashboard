@@ -12,12 +12,15 @@ export function Modal({
   onClose,
   title,
   titleId,
+  wide,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   titleId: string;
+  /** 표가 들어가는 미리보기 (기본 32rem → 48rem) */
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -34,7 +37,7 @@ export function Modal({
       ref={ref}
       onClose={onClose}
       aria-labelledby={titleId}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-card border bg-card p-6 text-card-foreground backdrop:bg-black/30"
+      className={`m-auto ${wide ? "w-[min(48rem,calc(100vw-2rem))]" : "w-[min(32rem,calc(100vw-2rem))]"} rounded-card border bg-card p-6 text-card-foreground backdrop:bg-black/30`}
     >
       {open && (
         <>

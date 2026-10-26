@@ -54,3 +54,6 @@ export const unconfirmSchema = z.object({
   expectedUpdatedAt: z.iso.datetime(),
 });
 export type UnconfirmInput = z.input<typeof unconfirmSchema>;
+
+/** [경영지원 관리에서 불러오기] 기준년월 */
+export const ledgerForEntrySchema = z.object(yearMonth);

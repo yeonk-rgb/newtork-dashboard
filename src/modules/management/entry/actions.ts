@@ -14,8 +14,14 @@ import {
   type MonthlyAuditSnapshot,
 } from "../audit-fields";
 import { getNow, getTodayKst } from "../data/load-summary-input";
+import type { ExpenseType, PurchaseType } from "../ledger/labels";
+import { FROM_LEDGER_BLOCKS, type FromLedgerBlock } from "./from-ledger";
 import { entryAbilities, monthState, type EntryStatus } from "./rules";
-import { saveEntrySchema, unconfirmSchema } from "./schemas";
+import {
+  ledgerForEntrySchema,
+  saveEntrySchema,
+  unconfirmSchema,
+} from "./schemas";
 
 export type EntryActionResult =
   | { ok: true; message: string }
@@ -307,5 +313,78 @@ export async function unconfirmMonthlyEntry(
   return {
     ok: true,
     message: `${ym.year}년 ${ym.month}월 확정을 취소했습니다. 임시저장 상태로 바뀌었고 대시보드 집계에서 빠집니다.`,
+  };
+}
+
+export type LedgerForEntryResult =
+  | {
+      ok: true;
+      /** 금액은 정수 문자열 (BigInt 직렬화) */
+      rows: {
+        kind: FromLedgerBlock;
+        amount: string;
+        purchaseType: PurchaseType | null;
+        expenseType: ExpenseType | null;
+        autoTransfer: boolean;
+      }[];
+    }
+  | { ok: false; code: "FORBIDDEN" | "INVALID"; message: string };
+
+/**
+ * [경영지원 관리에서 불러오기] — 그 달 외상매입금·미지급비용(직원·업체) 행 (숨긴 행 제외). 읽기만, 저장은 하지 않는다
+ * 입력란을 고칠 수 있는 사람만 (화면과 같은 entryAbilities)
+ */
+export async function loadLedgerForEntry(
+  raw: unknown,
+): Promise<LedgerForEntryResult> {
+  const user = await getCurrentUser();
+  if (!user)
+    return { ok: false, code: "FORBIDDEN", message: "로그인이 필요합니다." };
+  const parsed = ledgerForEntrySchema.safeParse(raw);
+  if (!parsed.success)
+    return { ok: false, code: "INVALID", message: "기준년월을 확인하세요." };
+  const ym = parsed.data;
+
+  const existing = await prisma.monthlyFinance.findUnique({
+    where: { year_month: ym },
+    select: { status: true },
+  });
+  const abilities = entryAbilities(
+    user,
+    existing ? existing.status : "NEW",
+    monthState(ym, await getTodayKst()),
+  );
+  if (abilities.readOnly) {
+    return {
+      ok: false,
+      code: "FORBIDDEN",
+      message: abilities.notice ?? "이 달을 입력할 권한이 없습니다.",
+    };
+  }
+
+  const rows = await prisma.ledgerEntry.findMany({
+    where: {
+      year: ym.year,
+      month: ym.month,
+      kind: { in: FROM_LEDGER_BLOCKS },
+      deletedAt: null,
+    },
+    select: {
+      kind: true,
+      amount: true,
+      purchaseType: true,
+      expenseType: true,
+      autoTransfer: true,
+    },
+  });
+  return {
+    ok: true,
+    rows: rows.map((r) => ({
+      kind: r.kind as FromLedgerBlock,
+      amount: r.amount.toString(),
+      purchaseType: r.purchaseType,
+      expenseType: r.expenseType,
+      autoTransfer: r.autoTransfer,
+    })),
   };
 }
