@@ -16,7 +16,9 @@
 | `docs/integration-notes.md` | 팀별 저장소를 합칠 때 맞출 규칙 (팀원 공유용) |
 | `docs/design-guide.md` | 공통 UI 디자인 가이드 — 색 토큰·타이포·카드·배지·표·도넛 규칙 (팀원 공유용) |
 | `docs/render-db-expiry.md` | Render 시험 서버 무료 DB 만료 대응 선택지 (유료·백업 이전·새로 만들기) |
-| `docs/user-guide.md` | 경영지원팀 담당자용 사용 안내서 (화면별 사용법·엑셀 받기·자주 묻는 것, 스크린샷 `docs/user-guide-images/` — 가짜 데이터) |
+| `docs/user-guide.md` | 경영지원팀 담당자용 사용 안내서 (화면별 사용법·불러오기 2종·자금 수지 예측·적용 기준 설명·AI 켜는 방법·자주 묻는 것, 스크린샷 `docs/user-guide-images/` — 가짜 데이터, Word 는 저장소 밖) |
+| `docs/requirements-traceability.md` | 요구사항 대조표 — 처음 문서 3개·기획서·담당자 추가 요청 100항목 (완료 74 / 보류 2 / 범위 밖 24) + 자료 기반 결정 표 |
+| `docs/result-report.md` | 결과 보고서 (기획서 순서 — 기대효과는 "확인한 것 / 운영 후 측정 필요" 구분, Word 는 저장소 밖) |
 | `docs/client-questions-2026-11.md` | 2차 고객사 확인 요청 정리본 (05-16·30~39, 이번에 반영한 것, 1차 미답 목록) |
 | `docs/client-questions-3rd-draft.md` | 3차 확인 요청 초안 (05-41~46 자금 수지 예측 — 아직 보내지 않음, 2차 답변 회신에 붙일 예정) |
 | `docs/design-cashflow-forecast.md` | 3~6개월 자금 수지 예측 설계안 (구현은 고객 답변 뒤) |
@@ -131,7 +133,7 @@
 - **엑셀 업로드(7단계)**: `modules/management/upload/`, `/management/upload`, 파일 읽기는 `shared/upload/read-table.ts`(xlsx·csv, .xls 미지원 안내)
   - 열 이름 자동 인식(`columns.ts`), 검증·미리보기·저장 계획(`parse-upload.ts`, 순수 함수) — 미리보기와 저장 모두 서버에서 파일을 다시 읽어 검증, 오류 1건이라도 있으면 저장 불가, 합계 행 제외
   - 저장은 한 트랜잭션(`save-upload.ts`): 월별실적은 **확정으로 덮어씀**, 그외지출액은 '기타(엑셀 이관)' 항목, 그 달 나머지 그 외 지출 항목은 0원. 이력은 `mgmt_data_upload`
-  - 업로드로 저장된 달·목표는 `uploadId`가 남고, 그 데이터가 AI 입력에 들어가는 분기는 **[분석하기] 차단**(05-19 동의 전, `hasUploadedInput()`)
+  - 업로드로 저장된 달·목표는 `uploadId`가 남고, 그 데이터가 AI 입력에 들어가는 분기는 **[분석하기] 차단**(`hasUploadedInput()` → `isUploadedDataBlocked()` — 개발 서버에서도 막음). **`AI_ALLOW_REAL_DATA=true` 하나로 이 차단과 배포 서버 차단을 함께 푼다** (2026-10-26 결정, `ai/real-data-policy.ts`, 테스트 고정)
   - 권한: 화면·미리보기 = 경영지원 view, 저장 = confirm (`upload/rules.ts`)
 - **미수금 건별 기록(6단계 ③)**: `modules/management/receivables/`, `/management/receivables` — 규칙은 `rules.ts`의 `receivableAbilities()`(화면·Server Action 공용). 등록·미수 건 수정·수금 처리 = edit, 수금 완료 건 수정·수금 취소·숨김·복구 = confirm
   - **삭제 대신 숨김**(`deletedAt`·`deletedById`): 미수금을 새로 조회할 때는 **반드시 `deletedAt: null` 조건**을 넣는다 (지표용 `loadReceivables()`는 이미 제외). 숨긴 건은 복구 외 모든 동작 불가

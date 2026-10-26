@@ -13,7 +13,10 @@ import { hashAiInput } from "./hash";
 import { EXAMPLE_MODEL } from "./examples";
 import { MOCK_MODEL } from "./mock-comment";
 import { PROMPT_VERSION } from "./prompt";
-import { isAiRealDataBlocked } from "./real-data-policy";
+import {
+  isAiRealDataBlocked,
+  isUploadedDataBlocked,
+} from "./real-data-policy";
 import {
   aiAbilities,
   aiInputMonths,
@@ -140,7 +143,7 @@ export async function loadAiCommentView(
       quarter,
       today,
       summary.confirmation.hasData,
-      uploaded,
+      isUploadedDataBlocked(uploaded),
       isAiRealDataBlocked(),
     ),
   };
