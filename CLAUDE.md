@@ -18,6 +18,9 @@
 | `docs/render-db-expiry.md` | Render 시험 서버 무료 DB 만료 대응 선택지 (유료·백업 이전·새로 만들기) |
 | `docs/user-guide.md` | 경영지원팀 담당자용 사용 안내서 (화면별 사용법·엑셀 받기·자주 묻는 것, 스크린샷 `docs/user-guide-images/` — 가짜 데이터) |
 | `docs/client-questions-2026-11.md` | 2차 고객사 확인 요청 정리본 (05-16·30~39, 이번에 반영한 것, 1차 미답 목록) |
+| `docs/client-questions-3rd-draft.md` | 3차 확인 요청 초안 (05-41~46 자금수지 예측 — 아직 보내지 않음, 2차 답변 회신에 붙일 예정) |
+| `docs/design-cashflow-forecast.md` | 3~6개월 자금수지 예측 설계안 (구현은 고객 답변 뒤) |
+| `docs/excel-default-font-review.md` | 엑셀 기본 글꼴 Calibri 후처리 검토 — 보류, 다시 할 때 방법·위험·테스트 |
 
 ## 프로젝트 개요
 
@@ -143,7 +146,7 @@
   - 서식은 **원본 양식 파일 `ledger/export/ledger-template.xlsx`를 실행 중에 읽어** 역할 → 원본 셀 표(`template.ts`의 `ROLE_CELLS`)로 복사한다. 원본 시트를 고치지 않고 새 시트를 그린다(행 삽입은 병합을 못 옮김). 병합은 `mergeCellsWithoutStyle`(그냥 `mergeCells`는 첫 칸 서식을 범위 전체에 복사해 총액 테두리가 깨짐)
   - 배포 결과물 포함: `next.config.ts`의 `outputFileTracingIncludes` + 읽는 경로를 문자열 그대로(`readTemplateFile`) — 변수 경로면 Turbopack이 프로젝트 전체를 trace. 파일이 없으면 503 "양식 파일을 찾을 수 없습니다"
   - 배치(`layout.ts`, 순수 함수): 그룹마다 max(데이터 수, 1)행, F열 그룹 병합 + `=SUM` + 계산값, H열 메모는 그룹 가운데 행, 장기미수 F열에도 SUM, 업체는 자동이체 행 위(E:F 병합, 적요 원문을 텍스트 `@`로)·총액은 자동이체 제외·H·I열에 "자동이체 합계 / 전체 합계"(I열 너비는 금액에 맞춰 넓힘). A열 숨김 + 텍스트 서식. 사용 열에 맑은 고딕 열 서식(exceljs 기본 글꼴 Calibri 대신)
-  - 인쇄: A4, 너비 1페이지에 맞춤·높이 자동 — 월별 시트 세로, 상세 시트 가로 (`printSetup()`). 통합 문서 기본 글꼴은 exceljs가 Calibri로 고정해 못 바꿈(후속 과제) — 사용 열에 맑은 고딕 열 서식으로 대신
+  - 인쇄: A4, 너비 1페이지에 맞춤·높이 자동 — 월별 시트 세로, 상세 시트 가로 (`printSetup()`). 통합 문서 기본 글꼴은 exceljs가 Calibri로 고정 — 후처리는 보류(`docs/excel-default-font-review.md`) — 사용 열에 맑은 고딕 열 서식으로 대신
   - 시트: 당월 1장 / 분기·연간은 데이터 있는 달만(없으면 빈 양식 1장, 이름 = 기간) + 맨 뒤 "상세"(원본에 없는 칸). 숨긴 행 제외. 파일명 `경영지원_관리_{기간}.xlsx`
   - 테스트: 원본 서식 대조(역할별), 왕복(다운로드 → `parseLedgerSheet` → 같은 행·상태·금액·코드, 총액 전부 match)
 - **경영지원 엑셀 내보내기(2026-10-25 PR ① 공용 엔진 + 월간 입력)**: 공용 `modules/management/export/`, `GET /api/management/export?kind=entry&period=2026-10|2026-Q3|2026|2026-YTD10` (경영지원 view, `no-store`, 서버 로그 `[mgmt-export]`, 변경 이력 `screen = entry-export` — 기록 실패 시 503)
