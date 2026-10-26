@@ -225,6 +225,15 @@ describe("화면 표기", () => {
       }),
     ).toBe("2026-08 · 추가 · 16행 저장 · 숨긴 기존 행 0 · ledger-sample.xlsx");
     expect(
+      metaSummary("ledger-copy", "CREATE", {
+        month: "2026-10",
+        from: "2026-09",
+        savedRows: 20,
+        collectedRows: 3,
+        includeCollected: "제외",
+      }),
+    ).toBe("2026-09 → 2026-10 · 20행 저장 · 당월 수금 3행 제외");
+    expect(
       metaSummary("admin-users", "PASSWORD_RESET", { result: "초기화함" }),
     ).toBe("비밀번호를 초기화함");
     expect(
