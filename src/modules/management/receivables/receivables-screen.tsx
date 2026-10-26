@@ -4,6 +4,7 @@ import "server-only";
 import Link from "next/link";
 
 import { can, getCurrentUser } from "@/shared/auth";
+import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 
 import { getTodayKst } from "../data/load-summary-input";
@@ -38,11 +39,11 @@ export async function ReceivablesScreen({
         <div>
           <h1 className={pageTitleClass}>미수금 관리</h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            경과일은 발생일부터 셉니다 (고객사 확인 중 05-17번). 대시보드
-            미수금은 선택한 기간의 마지막 날(진행 중인 기간은 오늘) 기준
-            잔액이라, 오늘 등록·수금한 건은 진행 중인 기간(이번 달·이번 분기)
-            화면에 반영됩니다.
+            경과일은 발생일부터 셉니다. 대시보드 미수금은 선택한 기간의 마지막
+            날(진행 중인 기간은 오늘) 기준 잔액이라, 오늘 등록·수금한 건은 진행
+            중인 기간(이번 달·이번 분기) 화면에 반영됩니다.
           </p>
+          <AuditNotice />
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <Link

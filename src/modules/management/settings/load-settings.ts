@@ -8,6 +8,8 @@ export type TargetData = {
   /** 콤마 없는 숫자 문자열, 미설정이면 "" */
   revenueTarget: string;
   quarters: [string, string, string, string];
+  /** 직원 수, 미입력이면 "" */
+  headcount: string;
   updatedAt: string | null;
 };
 
@@ -23,6 +25,7 @@ export async function loadTarget(year: number): Promise<TargetData> {
       s(row?.q3Target),
       s(row?.q4Target),
     ],
+    headcount: row?.headcount == null ? "" : String(row.headcount),
     updatedAt: row ? row.updatedAt.toISOString() : null,
   };
 }

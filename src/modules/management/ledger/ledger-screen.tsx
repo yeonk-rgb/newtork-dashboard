@@ -2,6 +2,7 @@
 import "server-only";
 
 import { can, getCurrentUser } from "@/shared/auth";
+import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 import { pageTitleClass } from "@/shared/ui/styles";
 
@@ -56,9 +57,9 @@ export async function LedgerScreen({
         <h1 className={pageTitleClass}>채권·채무 관리</h1>
         <p className="mt-1 text-xs text-muted-foreground">
           경영지원_관리 엑셀 양식을 옮긴 화면입니다. 기준년월별 거래처 잔액이며,
-          미수금 관리·대시보드와는 아직 연결되지 않습니다 (고객사 확인 중
-          05-22번).
+          잔액은 ERP 잔액 그대로(부가세 포함) 입력하세요.
         </p>
+        <AuditNotice />
       </div>
       <LedgerManager
         key={formatLedgerMonth(ym)}

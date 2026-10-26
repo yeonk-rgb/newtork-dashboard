@@ -177,7 +177,7 @@ describe("상단 KPI 4개 = summary 기존 값", () => {
     const link = dashboardKpis(s)[2].link!;
     expect(link.href).toBe("/management?period=2026-Q3#break-even");
     expect(link.label).toBe(
-      `BEP 달성률 ${(s.breakEven.rate! * 100).toFixed(1)}% (임시 기준)`,
+      `BEP 달성률 ${(s.breakEven.rate! * 100).toFixed(1)}%`,
     );
   });
 });
@@ -376,7 +376,8 @@ describe("산업 분야별·제품별 매출", () => {
       title: "산업 분야별 매출",
       badge: "샘플 데이터",
       legend: "amount-first",
-      basis: null,
+      basis:
+        "7개 분류(상하수도·발전소·가스·오일·석유·민간 플랜트·기타) · 금액 기준",
     });
     expect(ind.note).toMatch("가상");
     const ser = shareDonutModel(
@@ -388,7 +389,7 @@ describe("산업 분야별·제품별 매출", () => {
     );
     expect(ser).toMatchObject({
       title: "제품별 매출",
-      basis: "제품 시리즈 기준",
+      basis: "제품 시리즈 기준 · 금액 기준",
       badge: null,
       note: null,
     });

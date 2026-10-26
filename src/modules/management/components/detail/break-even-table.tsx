@@ -21,9 +21,9 @@ const CLASS_TEXT = (item: BreakEvenItem) =>
       : "변동비";
 
 const BASIS_TEXT: Record<BreakEvenItem["basis"], string> = {
-  provisional: "임시 기준",
+  settings: "적용 기준",
   category: "항목 설정",
-  unclassified: "임시 기준 (미분류)",
+  unclassified: "미분류 → 고정비",
 };
 
 const won = (v: bigint) => `${formatAmount(v)}원`;
@@ -44,8 +44,8 @@ export function BreakEvenTable({ summary }: { summary: ManagementSummary }) {
     <Section
       title="손익분기점 계산 내역"
       description={
-        b.provisionalNotes.length > 0
-          ? `임시 기준 — ${b.provisionalNotes.join(" / ")}`
+        b.appliedBasis.length > 0
+          ? `적용 기준 — ${b.appliedBasis.join(" / ")}`
           : undefined
       }
     >

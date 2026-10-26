@@ -14,6 +14,7 @@ import { computeBreakEven } from "./break-even";
 import { selectConfirmed } from "./confirmation";
 import { computeExpenses } from "./expenses";
 import { changeRate } from "./math";
+import { computeProductivity } from "./productivity";
 import { computeProfit } from "./profit";
 import { computeReceivables } from "./receivables";
 import { computeRevenue } from "./revenue";
@@ -228,5 +229,6 @@ export function computeManagementSummary(
       asOf,
       settings.expectedCollectionMonths,
     ),
+    productivity: computeProductivity(core, input.annualTarget?.headcount),
   };
 }

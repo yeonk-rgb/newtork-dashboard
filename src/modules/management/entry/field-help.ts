@@ -1,9 +1,10 @@
-// 입력 안내(ⓘ) 문구 — 고객사 미확정 사항은 "고객사 확인 중"으로 표시 (docs/05-open-questions.md)
+// 입력 안내(ⓘ) 문구 — 2026-10-26 자료 기반 결정 기준 (docs/05-open-questions.md 1·2·3·13·18번)
 import type { EntryField } from "./schemas";
 
 const SALES_BASIS =
-  "VAT 포함 여부(05-1번)와 세금계산서 발행 기준/입금 기준(05-18번)은 고객사 확인 중입니다.";
-const COST_BASIS = "매입액을 매출원가로 볼지(05-3번)는 고객사 확인 중입니다.";
+  "공급가액(부가세 제외), 세금계산서 발행 기준으로 입력합니다.";
+const COST_BASIS =
+  "공급가액(부가세 제외)으로 입력합니다. 매입액은 그달의 원가로 계산합니다.";
 
 export const FIELD_LABEL: Record<EntryField, string> = {
   productSales: "제품 매출",
@@ -21,7 +22,7 @@ export const FIELD_HELP: Record<EntryField, string> = {
   goodsPurchase: `되팔기 위해 사들인 상품의 매입 금액. ${COST_BASIS}`,
   materialPurchase: `제품 생산에 쓰는 원재료 매입 금액. ${COST_BASIS}`,
   operatingExpense:
-    "임차료·공과금 등 일반 경비. 인건비 포함 여부와 '그 외 지출' 항목과 겹치지 않는지(05-13번)는 고객사 확인 중입니다.",
+    "임차료·공과금·직원 경비 등 일반 경비. 채권·채무 관리의 미지급비용-직원 총액과 같은 숫자로 보고, '그 외 지출' 항목과 겹치지 않게 입력합니다. 공급가액(부가세 제외).",
 };
 
 export const OTHER_EXPENSE_HELP =

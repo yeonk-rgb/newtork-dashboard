@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { can, getCurrentUser } from "@/shared/auth";
 import { cn } from "@/shared/lib/utils";
+import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 
 import { getTodayKst } from "../data/load-summary-input";
@@ -45,7 +46,10 @@ export async function SettingsScreen({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className={pageTitleClass}>목표·항목 설정</h1>
+        <div>
+          <h1 className={pageTitleClass}>목표·항목 설정</h1>
+          <AuditNotice />
+        </div>
         {/* 목표 대비 실적 엑셀 — 보고 있는 연도 1장 (경영지원 열람 권한, 서버가 다시 확인) */}
         <ManagementExportMenu
           kind="targets"

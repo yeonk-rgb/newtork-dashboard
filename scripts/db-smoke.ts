@@ -22,6 +22,7 @@ import { parseHistoryFilter } from "@/modules/management/history/rules";
 import { loadLedgerData } from "@/modules/management/ledger/load-ledger";
 import { countExisting } from "@/modules/management/ledger/import/save-import";
 import { loadReceivablesData } from "@/modules/management/receivables/load-receivables";
+import { loadTarget } from "@/modules/management/settings/load-settings";
 import {
   loadExistingData,
   loadRecentUploads,
@@ -77,6 +78,9 @@ async function main() {
   );
   await check("미수금 관리 목록 (loadReceivablesData)", () =>
     loadReceivablesData(true),
+  );
+  await check("목표·항목 설정: 연간 목표·직원 수 (loadTarget)", () =>
+    loadTarget(2026),
   );
   await check("채권·채무 관리 (loadLedgerData)", () =>
     loadLedgerData({ year: 2026, month: 10 }, true),

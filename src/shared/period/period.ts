@@ -1,5 +1,5 @@
 // 조회 기간 — 팀 공통 형식 (docs/interface-production.md, docs/integration-notes.md)
-// 회계연도는 1~12월로 가정 (docs/05-open-questions.md 2번 확인 전)
+// 회계연도는 1~12월 (2026-10-26 확정, docs/05-open-questions.md 2번)
 
 export type Quarter = 1 | 2 | 3 | 4;
 

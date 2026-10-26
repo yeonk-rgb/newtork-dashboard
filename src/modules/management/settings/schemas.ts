@@ -31,6 +31,13 @@ export const saveTargetSchema = z.object({
           bigint | null,
         ],
     ),
+  /** 직원 수 (명, 빈칸 = 입력 안 함) — 인당 생산성 */
+  headcount: z
+    .string()
+    .regex(/^\d{0,4}$/, "직원 수는 숫자만 4자리까지 입력할 수 있습니다.")
+    .refine((v) => v === "" || Number(v) > 0, "직원 수는 1명 이상입니다.")
+    .optional()
+    .transform((v) => (v ? Number(v) : null)),
   expectedUpdatedAt: z.iso.datetime().nullable(),
 });
 export type SaveTargetInput = z.input<typeof saveTargetSchema>;

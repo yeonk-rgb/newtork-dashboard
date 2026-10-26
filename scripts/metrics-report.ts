@@ -168,14 +168,14 @@ async function main() {
         ? "고정비"
         : "변동비";
   out.push(
-    `\n## 손익분기점(BEP)${b.provisionalNotes.length > 0 ? " — 임시 기준" : ""}\n\n${table(
+    `\n## 손익분기점(BEP)${b.appliedBasis.length > 0 ? " — 적용 기준" : ""}\n\n${table(
       ["항목", "구분", "금액", "분류 근거"],
       [
         ...b.items.map((i) => [
           i.label,
           classText(i),
           won(i.amount),
-          i.basis === "category" ? "항목 설정" : "임시 기준",
+          i.basis === "category" ? "항목 설정" : "적용 기준",
         ]),
         ["**변동비 합계**", "", `**${won(b.variableCost)}**`, ""],
         ["**고정비 합계**", "", `**${won(b.fixedCost)}**`, ""],

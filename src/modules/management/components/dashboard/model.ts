@@ -90,9 +90,8 @@ function bepLine(summary: ManagementSummary): KpiModel["link"] {
   const b = summary.breakEven;
   if (b.rate === null && b.reason !== "not-reachable") return undefined;
   const value = b.reason === "not-reachable" ? "도달 불가" : pct(b.rate!);
-  const provisional = b.provisionalNotes.length > 0 ? " (임시 기준)" : "";
   return {
-    label: `BEP 달성률 ${value}${provisional}`,
+    label: `BEP 달성률 ${value}`,
     href: `/management?period=${toPeriodParam(summary.period)}#break-even`,
   };
 }
@@ -451,7 +450,7 @@ export type ShareDonutModel = {
   badge: string | null;
   note: string | null;
   /** 기준 안내 (제품별 매출 = "제품 시리즈 기준") */
-  basis: string | null;
+  basis: string;
   /** 범례: 금액 먼저 → 비중 % (담당자 요청) */
   legend: "amount-first";
   donut: DonutCardData;
@@ -477,7 +476,7 @@ export function shareDonutModel(
     title: kind === "industry" ? L.industry : L.series,
     badge: mock ? L.sampleBadge : null,
     note: mock ? L.sampleNote : null,
-    basis: kind === "series" ? L.seriesBasis : null,
+    basis: kind === "series" ? L.seriesBasis : L.industryBasis,
     legend: "amount-first",
     donut: {
       slices: [...share.items]

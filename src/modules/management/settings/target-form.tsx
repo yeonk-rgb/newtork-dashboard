@@ -1,5 +1,5 @@
 "use client";
-// 연간 목표 + 분기 목표(선택). 빈 분기 자동 배분 실시간 미리보기, 합계 불일치 경고
+// 연간 목표 + 분기 목표(선택) + 직원 수(선택, 인당 생산성). 빈 분기 자동 배분 실시간 미리보기, 합계 불일치 경고
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -38,8 +38,9 @@ export function TargetForm({
   const [pending, startTransition] = useTransition();
   const [annual, setAnnual] = useState(data.revenueTarget);
   const [quarters, setQuarters] = useState(data.quarters);
+  const [headcount, setHeadcount] = useState(data.headcount);
   const [baseline, setBaseline] = useState(
-    JSON.stringify([data.revenueTarget, data.quarters]),
+    JSON.stringify([data.revenueTarget, data.quarters, data.headcount]),
   );
   const [loadedAt, setLoadedAt] = useState(data.updatedAt);
   const [result, setResult] = useState<SettingsActionResult | null>(null);
@@ -50,9 +51,12 @@ export function TargetForm({
     setLoadedAt(data.updatedAt);
     setAnnual(data.revenueTarget);
     setQuarters(data.quarters);
-    setBaseline(JSON.stringify([data.revenueTarget, data.quarters]));
+    setHeadcount(data.headcount);
+    setBaseline(
+      JSON.stringify([data.revenueTarget, data.quarters, data.headcount]),
+    );
   }
-  const dirty = JSON.stringify([annual, quarters]) !== baseline;
+  const dirty = JSON.stringify([annual, quarters, headcount]) !== baseline;
   useUnsavedGuard(dirty);
 
   const annualValue = digitsToBigInt(annual);
@@ -77,6 +81,7 @@ export function TargetForm({
         year: data.year,
         revenueTarget: annual,
         quarters,
+        headcount,
         expectedUpdatedAt: data.updatedAt,
       });
       setResult(res);
@@ -135,6 +140,31 @@ export function TargetForm({
           onChange={setAnnual}
           placeholder="필수"
         />
+        <label htmlFor="target-headcount" className="text-sm font-medium">
+          직원 수
+        </label>
+        <div className="flex items-center gap-2">
+          <input
+            id="target-headcount"
+            inputMode="numeric"
+            autoComplete="off"
+            value={headcount}
+            onChange={(e) =>
+              setHeadcount(e.target.value.replace(/\D/g, "").slice(0, 4))
+            }
+            placeholder="선택"
+            aria-describedby="target-headcount-help"
+            className="h-10 w-24 rounded-lg border border-input bg-background px-3 text-right tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          />
+          <span className="text-sm">명</span>
+        </div>
+        <p
+          id="target-headcount-help"
+          className="col-span-2 -mt-1 text-xs text-muted-foreground"
+        >
+          직원 수는 경영지원 상세의 인당 생산성(매출 ÷ 인원, 추정 이익 ÷ 인원)에
+          씁니다. 비우면 표시하지 않습니다.
+        </p>
       </div>
 
       <div>

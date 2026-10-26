@@ -28,6 +28,8 @@ export type AnnualTargetInput = {
   revenueTarget: bigint;
   /** 1~4분기 목표 (null = 비어 있음) */
   quarterTargets: [bigint | null, bigint | null, bigint | null, bigint | null];
+  /** 직원 수 (명, 없으면 null) — 인당 생산성 */
+  headcount?: number | null;
 };
 
 export type ReceivableInput = {
@@ -100,13 +102,13 @@ export type ProfitResult = {
 /** 손익분기점 계산의 비용 구분 */
 export type CostClass = "FIXED" | "VARIABLE";
 
-/** 계산 내역 한 줄 — 분류 근거: 임시 기준(설정 파일) / 항목 설정 / 미분류라 고정비로 */
+/** 계산 내역 한 줄 — 분류 근거: 적용 기준(설정 파일) / 항목 설정 / 미분류라 고정비로 */
 export type BreakEvenItem = {
   key: string;
   label: string;
   amount: bigint;
   costClass: CostClass;
-  basis: "provisional" | "category" | "unclassified";
+  basis: "settings" | "category" | "unclassified";
 };
 
 /**
@@ -135,8 +137,8 @@ export type BreakEvenResult = {
   reason: BreakEvenReason | null;
   /** 금액이 있는 미분류 그 외 지출 항목 수 (고정비로 계산함) */
   unclassifiedCount: number;
-  /** 임시 기준 문구 (settings.ts) — 비어 있으면 확정 기준 */
-  provisionalNotes: string[];
+  /** 적용 기준 문구 (settings.ts APPLIED_BASIS) */
+  appliedBasis: string[];
 };
 
 export type TargetProgress = {
@@ -285,10 +287,22 @@ export type MarginChange = {
   reason?: "no-current-data" | "no-data" | "no-margin";
 };
 
+/**
+ * 인당 생산성 — 확정된 달 합계 ÷ 직원 수 (원 단위 반올림)
+ * reason: no-headcount = 그 해 직원 수 미입력 / no-data = 확정된 달 없음
+ */
+export type ProductivityResult = {
+  headcount: number | null;
+  revenuePerHead: bigint | null;
+  profitPerHead: bigint | null;
+  reason: "no-headcount" | "no-data" | null;
+};
+
 export type ManagementSummary = PeriodCore & {
   targets: TargetResult;
   /** 목표 미설정이면 null */
   annualProgress: AnnualProgress | null;
   changes: { previous: Comparison; lastYear: Comparison };
   receivables: ReceivableResult;
+  productivity: ProductivityResult;
 };

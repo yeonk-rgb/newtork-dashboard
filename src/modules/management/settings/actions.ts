@@ -65,13 +65,15 @@ export async function saveAnnualTarget(
       message: parsed.error.issues[0]?.message ?? "입력값을 확인하세요.",
     };
   }
-  const { year, revenueTarget, quarters, expectedUpdatedAt } = parsed.data;
+  const { year, revenueTarget, quarters, headcount, expectedUpdatedAt } =
+    parsed.data;
   const data = {
     revenueTarget,
     q1Target: quarters[0],
     q2Target: quarters[1],
     q3Target: quarters[2],
     q4Target: quarters[3],
+    headcount,
     updatedById: user.id,
   };
 

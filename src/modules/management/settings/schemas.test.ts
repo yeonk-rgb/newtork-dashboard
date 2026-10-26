@@ -36,6 +36,22 @@ describe("saveTargetSchema", () => {
         .success,
     ).toBe(false);
   });
+
+  it("직원 수: 빈칸·생략 = null, 숫자 = 명, 0·글자·5자리 거부", () => {
+    expect(saveTargetSchema.parse(base).headcount).toBeNull();
+    expect(
+      saveTargetSchema.parse({ ...base, headcount: "" }).headcount,
+    ).toBeNull();
+    expect(saveTargetSchema.parse({ ...base, headcount: "12" }).headcount).toBe(
+      12,
+    );
+    for (const bad of ["0", "1.5", "열둘", "12345"]) {
+      expect(
+        saveTargetSchema.safeParse({ ...base, headcount: bad }).success,
+        bad,
+      ).toBe(false);
+    }
+  });
 });
 
 describe("항목 이름", () => {

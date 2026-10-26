@@ -44,7 +44,7 @@ export type LedgerAbilities = {
   notice: string | null;
 };
 
-/** 행 추가: edit (2026-10-24 결정: 관리자·경영지원팀 전원 — 고객사 확인 대기 05-14·15) */
+/** 행 추가: edit (2026-10-24 결정: 관리자·경영지원팀 전원 — 2026-10-26 확정 05-14·15) */
 export function canCreateLedgerEntry(user: AppUser): boolean {
   return can(user, "edit", "management");
 }

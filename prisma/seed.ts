@@ -52,11 +52,12 @@ const audit = { createdById: SEED_USER_ID, updatedById: SEED_USER_ID };
 
 async function seedExpenseCategories() {
   const categories: { name: string; costType: MgmtCostType | null }[] = [
-    { name: "광고선전비", costType: MgmtCostType.VARIABLE },
-    { name: "접대비", costType: MgmtCostType.VARIABLE },
+    // 2026-10-26 결정(05-35): 그 외 지출 항목은 고정비 (회계 관행) — 목표·항목 설정에서 항목별로 바꿀 수 있음
+    { name: "광고선전비", costType: MgmtCostType.FIXED },
+    { name: "접대비", costType: MgmtCostType.FIXED },
     { name: "복리후생비", costType: MgmtCostType.FIXED },
-    { name: "차량유지비", costType: MgmtCostType.VARIABLE },
-    { name: "지급수수료", costType: null }, // 고정/변동 미분류 예시
+    { name: "차량유지비", costType: MgmtCostType.FIXED },
+    { name: "지급수수료", costType: null }, // 고정/변동 미분류 예시 (미분류도 고정비로 계산)
   ];
 
   const result = [];
@@ -103,7 +104,9 @@ async function seedAnnualTargets() {
     },
   ];
 
-  for (const { year, ...data } of targets) {
+  for (const { year, ...rest } of targets) {
+    // 직원 수: 10/14 회의 메모 기준 12명 (인당 생산성)
+    const data = { ...rest, headcount: 12 };
     await prisma.annualTarget.upsert({
       where: { year },
       update: { ...data, updatedById: SEED_USER_ID },

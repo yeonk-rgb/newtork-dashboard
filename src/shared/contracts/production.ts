@@ -17,7 +17,7 @@ export type SalesShareResult = {
 
 export type SalesShareFn = (period: Period) => Promise<SalesShareResult>;
 
-/** 산업분야 분류 (요구사항 기준, 고객사 확인 전 — 05-6번) */
+/** 산업분야 분류 — 처음 요구사항의 7개 분류 (2026-10-26 확정, 05-6번), 비중은 금액 기준(05-10) */
 export const INDUSTRIES = [
   { key: "WATER", label: "상하수도" },
   { key: "POWER", label: "발전소" },

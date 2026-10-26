@@ -210,6 +210,7 @@ export type TargetAuditRow = {
   q2Target: bigint | null;
   q3Target: bigint | null;
   q4Target: bigint | null;
+  headcount: number | null;
 };
 
 /** 분기 목표가 비어 있으면 화면처럼 "자동 배분" */
@@ -222,6 +223,11 @@ export const TARGET_AUDIT_FIELDS: AuditField<TargetAuditRow>[] = [
   { key: "q2Target", label: "2분기 목표", format: quarterTarget },
   { key: "q3Target", label: "3분기 목표", format: quarterTarget },
   { key: "q4Target", label: "4분기 목표", format: quarterTarget },
+  {
+    key: "headcount",
+    label: "직원 수",
+    format: (v) => (v === null || v === undefined ? null : `${String(v)}명`),
+  },
 ];
 
 export const targetLabel = (year: number) => `${year}년 목표`;

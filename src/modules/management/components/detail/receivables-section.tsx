@@ -52,7 +52,7 @@ export function ReceivablesSection({
         <h2 className={cardTitleClass}>
           미수금{" "}
           <span className="text-sm font-normal text-muted-foreground">
-            ({isoDate(asOf)} 기준 · 경과일은 발생일부터, 고객사 확인 중 05-17번)
+            ({isoDate(asOf)} 기준 · 경과일은 발생일부터)
           </span>
         </h2>
         <Link
