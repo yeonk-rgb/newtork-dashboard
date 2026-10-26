@@ -65,6 +65,7 @@ import {
   type LedgerRow,
 } from "./rules";
 import { ledgerFieldsSchema } from "./schemas";
+import { CopyPreviousButton } from "./copy-previous-dialog";
 import { ExportMenu } from "./export/export-menu";
 import { importAbilities } from "./import/rules";
 import { SettleDialog, type SettleRequest } from "./settle-dialog";
@@ -698,6 +699,12 @@ export function LedgerManager({
                   ({hiddenRows.length})
                 </span>
               </label>
+            )}
+            {canCreate && rows.length === 0 && (
+              <CopyPreviousButton
+                month={month}
+                onDone={(message) => setResult({ ok: true, message })}
+              />
             )}
             <ExportMenu month={month} />
             {importAbilities(user).canImport && (

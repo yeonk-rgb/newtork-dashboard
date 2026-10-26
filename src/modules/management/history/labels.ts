@@ -20,6 +20,11 @@ export const HISTORY_SCREENS: {
   { key: "receivables", label: TERMS.itemReceivables, area: "management" },
   { key: "ledger", label: TERMS.ledger, area: "management" },
   {
+    key: "ledger-copy",
+    label: `${TERMS.ledger} 지난달 불러오기`,
+    area: "management",
+  },
+  {
     key: "ledger-import",
     label: `${TERMS.ledger} 엑셀 이관`,
     area: "management",
@@ -127,6 +132,14 @@ export function metaSummary(
         `숨긴 기존 행 ${count("hiddenRows", "")}`,
       !!num(m, "excludedRows") && `제외 ${count("excludedRows", "행")}`,
       str(m, "fileName"),
+    ]);
+  }
+  if (screen === "ledger-copy") {
+    return join([
+      str(m, "from") && `${str(m, "from")} → ${str(m, "month")}`,
+      num(m, "savedRows") !== null && `${count("savedRows", "행")} 저장`,
+      !!num(m, "collectedRows") &&
+        `${TERMS.collected} ${count("collectedRows", "행")} ${str(m, "includeCollected") ?? ""}`.trim(),
     ]);
   }
   if (screen === "upload") {
