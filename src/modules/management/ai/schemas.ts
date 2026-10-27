@@ -119,5 +119,7 @@ export const generateAiCommentSchema = z.object({
   quarter: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   /** 화면을 열 때 본 최신 코멘트 id (없으면 null) — 동시 생성 확인용 */
   expectedLatestId: z.string().min(1).max(64).nullable(),
+  /** 관리자(대표)가 외부 AI 전송 확인창에서 [확인]을 눌렀는지 (aiAbilities().consentNotice 가 있을 때만 필요) */
+  consent: z.boolean().optional(),
 });
 export type GenerateAiCommentInput = z.input<typeof generateAiCommentSchema>;

@@ -6,6 +6,7 @@ import type { AppUser } from "@/shared/auth/types";
 
 import { date } from "../metrics/test-fixtures";
 import {
+  ADMIN_CONSENT_NOTICE,
   aiAbilities,
   aiCardAccess,
   aiTargetQuarter,
@@ -80,6 +81,45 @@ describe("aiAbilities", () => {
     expect(
       aiAbilities(leader, q3, date("2026-10-17"), true, false, true),
     ).toEqual({ canGenerate: false, notice: REAL_DATA_BLOCKED_NOTICE });
+  });
+
+  it("관리자(대표)는 실제 숫자 차단·업로드 차단을 넘어 실행 — 확인 문구를 함께 돌려줌", () => {
+    const admin = FAKE_USERS.admin;
+    for (const [uploaded, blocked] of [
+      [true, false],
+      [false, true],
+      [true, true],
+    ] as const) {
+      expect(
+        aiAbilities(admin, q3, date("2026-10-17"), true, uploaded, blocked),
+      ).toEqual({
+        canGenerate: true,
+        notice: null,
+        consentNotice: ADMIN_CONSENT_NOTICE,
+      });
+    }
+    // 차단이 없으면 확인창 없이 (지금처럼)
+    expect(
+      aiAbilities(admin, q3, date("2026-10-17"), true).consentNotice,
+    ).toBeUndefined();
+  });
+
+  it("관리자도 분기·확정 조건은 같음 / 비활성·초기 비밀번호 관리자는 넘지 못함", () => {
+    const admin = FAKE_USERS.admin;
+    expect(
+      aiAbilities(admin, q3, date("2026-09-30"), true, true, true).canGenerate,
+    ).toBe(false);
+    expect(
+      aiAbilities(admin, q3, date("2026-10-17"), false, true, true).canGenerate,
+    ).toBe(false);
+    for (const u of [
+      { ...admin, active: false },
+      { ...admin, mustChangePassword: true },
+    ]) {
+      expect(aiAbilities(u, q3, date("2026-10-17"), true, false, true)).toEqual(
+        { canGenerate: false, notice: REAL_DATA_BLOCKED_NOTICE },
+      );
+    }
   });
 
   it("팀원·생산 팀원은 버튼 없음 (안내 없이 결과만 열람)", () => {

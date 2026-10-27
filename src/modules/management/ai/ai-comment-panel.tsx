@@ -35,6 +35,10 @@ export function AiCommentPanel({
   const { latest, abilities, staleReason } = view;
 
   const generate = () => {
+    // 관리자(대표)가 실제 숫자를 외부 AI로 보내는 경우 — 한 번 확인
+    if (abilities.consentNotice && !window.confirm(abilities.consentNotice)) {
+      return;
+    }
     setFailure(null);
     setDone(null);
     startTransition(async () => {
@@ -42,6 +46,7 @@ export function AiCommentPanel({
         year: view.year,
         quarter: view.quarter,
         expectedLatestId: view.latestId,
+        consent: abilities.consentNotice ? true : undefined,
       });
       if (result.ok) setDone(result.message);
       else setFailure(result);

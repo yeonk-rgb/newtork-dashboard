@@ -101,6 +101,7 @@
   - 테스트는 가짜 `create`를 주입 (Vitest에서 `getAnthropicClient()`는 항상 에러 → CI 실제 호출 불가). 로컬 화면은 `.env`의 `AI_MOCK=true`(실패 연습 `fail`) — `next dev`에서만 동작
   - 키 입력: `npm run env:set-key` (값 출력 금지, 길이만)
   - 배포 서버(`next start`)는 `AI_ALLOW_REAL_DATA=true`일 때만 [분석하기] 가능 (`ai/real-data-policy.ts` → `aiAbilities()`의 `realDataBlocked`, 05-19 결정: 기본 `false` 유지). `next dev`·테스트는 영향 없음
+  - **관리자(대표) 예외(2026-10-28 사용자 지시 — 관리자 = 대표)**: `canManageUsers()`인 사용자는 배포 서버 차단·업로드 달 차단을 넘어 실행 — `aiAbilities()`가 `consentNotice`를 돌려주고 화면은 [분석하기] 전에 확인창(`window.confirm`), Server Action은 `consent: true` 없으면 거부 + 서버 로그 `[ai-comment] … 관리자(대표) 확인`. 다른 계정은 그대로 차단(안내 "관리자(대표) 계정만…")
   - 예시 분석: `npm run seed:ai-examples` (`ai/examples.ts` 문장 틀 + 서버 계산 숫자, `model = "example"`, 카드에 "예시" 표시) / `-- --remove`. **실제 데이터 사용 전 삭제**
 - **지표 계산**: `modules/management/metrics/`(순수 함수, DB·화면 모름) + `data/`(DB 조회, server-only). 공개 함수는 `getManagementSummary(period)` (권한: 경영지원 view)
   - 금액은 BigInt, 비율만 number(0~1). 0으로 나누기·데이터 없음은 `null` + `reason`

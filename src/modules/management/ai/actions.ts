@@ -108,7 +108,7 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
 
   const parsed = generateAiCommentSchema.safeParse(raw);
   if (!parsed.success) return fail("INVALID", "요청 값을 확인하세요.");
-  const { year, quarter, expectedLatestId } = parsed.data;
+  const { year, quarter, expectedLatestId, consent } = parsed.data;
   const period: QuarterPeriod = { unit: "quarter", year, quarter };
 
   const today = await getTodayKst();
@@ -128,6 +128,18 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
     return fail(
       abilities.notice ? "INVALID" : "FORBIDDEN",
       abilities.notice ?? "AI 분석은 팀장만 실행할 수 있습니다.",
+    );
+  }
+  // 관리자(대표)가 실제 숫자 차단을 넘어 실행 — 확인창 [확인] 없이는 보내지 않는다
+  if (abilities.consentNotice) {
+    if (consent !== true) {
+      return fail(
+        "INVALID",
+        "외부 AI 전송 확인이 필요합니다. 다시 눌러 주세요.",
+      );
+    }
+    console.info(
+      `[ai-comment] ${quarterKey(year, quarter)} 관리자(대표) 확인으로 실제 숫자 분석`,
     );
   }
 
