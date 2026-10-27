@@ -191,9 +191,6 @@ export function AiCommentPanel({
             ? "시드 데이터로 만든 예시 분석입니다. [다시 분석]을 누르면 새 분석으로 바뀝니다"
             : "AI가 생성한 참고용 분석입니다"}
           {latest?.result.legacy && " · 이전 형식"}
-          {latest && abilities.notice && (
-            <span className="block">{abilities.notice}</span>
-          )}
         </p>
       </div>
     </AiCardFrame>

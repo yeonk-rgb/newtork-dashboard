@@ -157,6 +157,7 @@ npm run build        # 배포 빌드 확인 (선택)
 | `SEED_INITIAL_PASSWORD` | (선택) 샘플 계정 7개 공통 초기 비밀번호 | 비우면 무작위·표시 안 함 → `/admin`에서 초기화 |
 | `ANTHROPIC_API_KEY` | (선택) `sk-ant-…` | 비우면 AI 카드에 안내 문구만 |
 | `AI_ALLOW_REAL_DATA` | `false` (자동) | 05-19번 답변 전까지 배포 서버의 [분석하기] 차단 — 관리자(대표) 계정은 확인창을 거쳐 실행 가능(2026-10-28). 모두 허용하려면 `true` |
+| `SEED_AI_EXAMPLES` | `true` (자동) | 배포 빌드 때 예시 AI 분석(AI 호출 없음, "예시" 표시)을 넣어 AI 분석 카드에 내용이 보이게 함. 실제 데이터를 넣기 전 `false` + `npm run seed:ai-examples -- --remove` |
 
 `SESSION_SECRET`·`NEXTAUTH_SECRET`은 필요 없다 — 세션은 무작위 토큰을 DB에 저장하는 방식이라 서명용 비밀키를 쓰지 않는다.
 

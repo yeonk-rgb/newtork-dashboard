@@ -24,6 +24,7 @@
     "export:report": "tsx --conditions=react-server scripts/export-report.ts",
     "env:set-key": "bash scripts/set-anthropic-key.sh",
     "seed:ai-examples": "tsx --conditions=react-server scripts/seed-ai-examples.ts",
+    "seed:ai-examples:if-enabled": "tsx --conditions=react-server scripts/seed-ai-examples.ts --if-enabled",
     "seed:ledger": "tsx --conditions=react-server scripts/seed-ledger.ts",
     "audit:recent": "tsx --conditions=react-server scripts/audit-recent.ts",
     "db:smoke": "tsx --conditions=react-server scripts/db-smoke.ts"
