@@ -29,7 +29,7 @@ vi.mock("@/shared/db/client", () => ({
 
 const { loadAiCommentView } = await import("./load-comment");
 const { PROMPT_VERSION } = await import("./prompt");
-const { aiTargetQuarter } = await import("./rules");
+const { aiTargetQuarter, UPLOADED_DATA_NOTICE } = await import("./rules");
 
 const leader = FAKE_USERS.mgmt;
 const today = date("2026-10-20");
@@ -116,8 +116,7 @@ describe("업로드 데이터가 AI 입력에 들어가면 분석 차단 (05-19 
     const view = await cardFor({ unit: "quarter", year: 2026, quarter: 3 });
     expect(view.abilities).toEqual({
       canGenerate: false,
-      notice:
-        "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락 후에 켭니다 — 지금은 업로드 데이터를 분석할 수 없습니다.",
+      notice: UPLOADED_DATA_NOTICE,
     });
   });
 

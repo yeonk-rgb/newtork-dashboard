@@ -1,6 +1,6 @@
 // AI 분석 코멘트 규칙 (순수 함수): 어느 분기를 분석할지, 지금 분석할 수 있는지
 // 화면(클라이언트)에서도 쓰므로 server-only 인 "@/shared/auth" 대신 순수 모듈을 직접 가져온다
-import { can } from "@/shared/auth/can";
+import { can, canManageUsers } from "@/shared/auth/can";
 import type { AppUser } from "@/shared/auth/types";
 import {
   periodEndDate,
@@ -50,6 +50,8 @@ export type AiAbilities = {
   canGenerate: boolean;
   /** 버튼이 없거나 막힌 이유 (없으면 null) */
   notice: string | null;
+  /** 관리자(대표)가 실제 숫자 차단을 넘어 실행할 때 [분석하기] 전에 띄울 확인 문구 — Server Action 은 consent 없이는 거부 */
+  consentNotice?: string;
 };
 
 /**
@@ -60,15 +62,19 @@ export type AiAbilities = {
  * @param today UTC 자정 (한국 날짜)
  */
 export const UPLOADED_DATA_NOTICE =
-  "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락 후에 켭니다 — 지금은 업로드 데이터를 분석할 수 없습니다.";
+  "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락이 필요합니다 — 업로드 데이터가 들어간 분기는 관리자(대표) 계정만 분석할 수 있습니다.";
 
 export const REAL_DATA_BLOCKED_NOTICE =
-  "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락 후에 켭니다 — 이 서버에서는 AI 분석을 실행하지 않습니다.";
+  "회사 재무 숫자를 외부 AI로 보내는 것은 대표님 허락이 필요합니다 — 이 서버에서는 관리자(대표) 계정만 AI 분석을 실행할 수 있습니다.";
+
+export const ADMIN_CONSENT_NOTICE =
+  "회사 재무 합계 숫자(매출·지출·이익·목표 달성률·미수금)를 외부 AI(Anthropic)로 보내 분석합니다. 거래처명·직원 이름·건별 내역은 보내지 않습니다.\n\n진행할까요?";
 
 /**
  * 분석 가능 여부. 서버 Server Action 과 화면이 같은 함수를 쓴다.
  * - uploadedData: AI 입력에 엑셀 업로드 데이터가 들어감 → 외부 AI 전송 동의(05-19) 전까지 차단
  * - realDataBlocked: 배포 서버에서 AI_ALLOW_REAL_DATA 가 true 가 아님 (ai/real-data-policy.ts) → 차단
+ * - 관리자(대표)는 두 차단을 넘어 실행 가능 — 누르는 것이 곧 허락이라 확인창(consentNotice)을 거친다 (2026-10-28)
  */
 export function aiAbilities(
   user: AppUser,
@@ -90,6 +96,13 @@ export function aiAbilities(
     return {
       canGenerate: false,
       notice: "이 분기에 확정된 달이 없어 분석할 수 없습니다.",
+    };
+  }
+  if ((uploadedData || realDataBlocked) && canManageUsers(user)) {
+    return {
+      canGenerate: true,
+      notice: null,
+      consentNotice: ADMIN_CONSENT_NOTICE,
     };
   }
   if (uploadedData) return { canGenerate: false, notice: UPLOADED_DATA_NOTICE };

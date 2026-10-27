@@ -169,6 +169,31 @@ describe("buildExampleRow", () => {
       "9월 실적을 확정한 뒤 분석을 갱신합니다.",
     );
   });
+
+  // h) 배포 서버 시드 그대로의 2026년 3분기: 직전 분기 있음 + 9월 임시저장 — 빌드 중 예시 넣기가 멈추지 않아야 함
+  it("h) 직전 분기 있음 + 9월 미확정: 같은 달끼리 비교 문장, 형식 통과", () => {
+    const rowH = buildExampleRow(
+      summaryFor(
+        q(2026, 3),
+        {
+          4: 180_000_000n,
+          5: 160_000_000n,
+          6: 150_000_000n,
+          7: 210_000_000n,
+          8: 200_000_000n,
+          9: 215_000_000n,
+        },
+        { draftMonth: 9, longOverdue: true },
+      ),
+      q(2026, 3),
+    );
+    expect(rowH.result.summary[1]).toMatch(
+      /^9월 미확정, 같은 달끼리 2026년 2분기 대비 [\d.]+% (증가|감소)했습니다\.$/,
+    );
+    for (const s of sentences(rowH)) {
+      expect([...s].length).toBeLessThanOrEqual(SENTENCE_PROMPT_MAX);
+    }
+  });
 });
 
 /** prisma.aiComment 와 같은 조건으로 동작하는 메모리 저장소 */
@@ -244,7 +269,7 @@ describe("upsertExamples / removeExamples", () => {
     expect(await removeExamples(store)).toBe(0);
   });
 
-  it("예시 분기는 서로 다르고, 시드 분기 중 2026년 3분기만 비워 둔다", () => {
+  it("예시 분기는 서로 다르고, 시드 분기 8개 모두 (2026년 3분기 포함)", () => {
     const keys = EXAMPLE_QUARTERS.map(
       ({ quarter }) => `${quarter.year}-Q${quarter.quarter}`,
     );
@@ -258,6 +283,7 @@ describe("upsertExamples / removeExamples", () => {
         "2025-Q4",
         "2026-Q1",
         "2026-Q2",
+        "2026-Q3",
       ].sort(),
     );
   });

@@ -7,6 +7,7 @@ import {
   isUploadedDataBlocked,
 } from "./real-data-policy";
 import {
+  ADMIN_CONSENT_NOTICE,
   aiAbilities,
   REAL_DATA_BLOCKED_NOTICE,
   UPLOADED_DATA_NOTICE,
@@ -70,6 +71,27 @@ describe("AI_ALLOW_REAL_DATA 하나로 두 차단", () => {
     vi.stubEnv("AI_ALLOW_REAL_DATA", "");
     expect(abilities(true).canGenerate).toBe(false);
     expect(abilities(false).canGenerate).toBe(true);
+  });
+
+  it("false 여도 관리자(대표)는 배포 서버·업로드 분기 모두 확인창을 거쳐 실행 (2026-10-28)", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("AI_ALLOW_REAL_DATA", "false");
+    for (const uploaded of [true, false]) {
+      expect(
+        aiAbilities(
+          FAKE_USERS.admin,
+          q3,
+          today,
+          true,
+          isUploadedDataBlocked(uploaded),
+          isAiRealDataBlocked(),
+        ),
+      ).toEqual({
+        canGenerate: true,
+        notice: null,
+        consentNotice: ADMIN_CONSENT_NOTICE,
+      });
+    }
   });
 
   it("true: 배포 서버에서 업로드 달이 들어간 분기도 분석 가능", () => {
