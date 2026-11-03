@@ -1,6 +1,6 @@
-# 생산팀 → 경영지원팀 데이터 인터페이스 (초안)
+# 생산팀·서비스팀 → 경영지원팀 데이터 인터페이스
 
-> 상태: **초안 — 생산팀 담당자와 합의 전**
+> 상태: **통합 1단계 구현 (2026-11-03)** — 친구 저장소(lyjradiant-max/newtalk-korea-system, Django+Vue)의 생산·서비스 집계 규칙을 이 저장소(Next.js·Prisma)로 옮겨 메인 화면에 연결. 생산·서비스 입력 화면(업로드·제조내역·출장보고서 등)은 다음 단계
 > 작성: 경영지원팀 / 관련 요구사항: `docs/02-team-requirements.md` 메인 화면 원형 그래프
 
 ## 1. 목적
@@ -50,20 +50,25 @@ export type SalesShareResult = {
 ```
 
 > 변경 이력: 2026-10-16 — 반환 타입을 `SalesShareItem[]` → `SalesShareResult`(목업 여부 표시)로, `Period`에 `ytd` 추가.
-> 경영지원팀 목업: `src/modules/management/external/production-mock.ts` (같은 이름·타입, 통합 시 생산팀 함수로 교체)
+> 2026-11-03 — 목업(`external/production-mock.ts`·`align-mock.ts`)을 지우고 `src/modules/production/index.ts` 실제 함수로 교체. 결과에 `basis`·`unconfirmedRows`·`unclassifiedQuantity`·`hasSample` 추가.
+> 호출 위치: `src/app/(dashboard)/page.tsx` 가 각 팀 `index.ts` 를 불러 `MainDashboard` 의 `teams` 로 넘긴다 (팀 모듈끼리 import 금지).
 
-## 3. 반환 규칙
+## 3. 반환 규칙 (생산팀 `backend/production/dashboard.py` 규칙 그대로 — `src/modules/production/metrics/sales-share.ts`)
 
 | 항목 | 규칙 |
 |---|---|
-| 집계 대상 | 생산팀이 **확정**한 데이터만 (임시저장 제외) |
-| 기간 기준 | 판매 기준일(출고일 또는 수주일 — 생산팀 확인 필요)이 `period` 안에 있는 건 |
-| 데이터 없음 | 빈 배열 `[]` 반환 (에러 아님) |
-| 0인 분류 | 결과에서 제외해도 됨 (그래프에서 0 조각은 표시하지 않음) |
-| 정렬 | 금액 내림차순 |
-| 금액 | `bigint`, 원 단위 정수. 소수·비율 계산은 경영지원팀이 표시 단계에서 함 |
-| 금액·수량 둘 다 | 비중을 금액으로 볼지 수량으로 볼지 고객사 미확정 (`docs/05-open-questions.md` 10번) → 둘 다 반환 |
-| 호출 위치 | 서버(서버 컴포넌트·Server Action)에서만 호출. 클라이언트로 넘길 때 직렬화는 경영지원팀이 처리 |
+| 집계 대상 | 제조내역(`prod_record`) 중 **출고일자가 있고 수량을 입력한 행** — 수량은 엑셀에 없어 사람이 확인해 입력 (생산팀 specs/07 Q1) |
+| 기간 기준 | **출고일자**가 `period` 안에 있는 행 |
+| 비중 기준 | **확정 출고 수량(대)** — 생산팀 자료에 판매 금액이 없음 (`basis: "quantity"`, `amount` 는 `0n`). 05-10 을 금액 → 수량으로 갱신 |
+| 수량 미확정 | 출고일은 있으나 수량이 빈 행 → 합계에 넣지 않고 `unconfirmedRows` (화면 "제외: 수량 미확정 N행") |
+| 산업분야 | 수주번호(J열)별 사업구분(`prod_order_category`). 지정하지 않은 수주번호 수량은 조각 대신 `unclassifiedQuantity` (화면 "사업구분 미분류 N대") |
+| 제품 | 모델명(C열) 원본 값 그대로(`01`·`02` …, 생산팀 Q7). 6개를 넘으면 상위 5개 + `OTHER_MODELS`("기타 모델 N개") |
+| 데이터 없음 | 빈 배열 `[]` (에러 아님) |
+| 0인 분류 | 결과에서 제외 |
+| 정렬 | 수량 내림차순 (그래프 조각은 분류 고정 순서) |
+| 시드 데이터 | 작성자 id 가 `seed-production` 인 행이 있으면 `hasSample: true` → "샘플 데이터" 배지 |
+| 권한 | 함수 안에서 `can(user, "view", "production")` |
+| 호출 위치 | 서버(서버 컴포넌트·Server Action)에서만 |
 
 ## 4. 분류 코드
 
@@ -79,15 +84,37 @@ export type SalesShareResult = {
 | `PRIVATE_PLANT` | 민간 플랜트 |
 | `ETC` | 기타 |
 
-### 제품 시리즈
+### 제품
 
-시리즈 목록은 생산팀 데이터(제조내역 엑셀)에서 정한다. → 생산팀이 코드·표시명 목록 작성 필요
+제조내역 엑셀 C열 모델명 원본 값. 색은 모델명 오름차순으로 범주 팔레트 순서대로(`seriesColors()` — `src/shared/ui/chart-colors.ts`), "기타 모델"은 슬레이트.
 
-## 5. 합의가 필요한 항목
+## 5. 합의 결과 (2026-11-03 — 생산팀 저장소 결정 기준)
 
-- [ ] 판매 기준일: 출고일 / 수주일 / 납기일 중 무엇으로 기간을 나눌지
-- [ ] 판매 금액 데이터가 생산팀 업로드 자료에 있는지 (없으면 수량만 반환 가능한지)
-- [ ] 제품 시리즈 코드·표시명 목록
-- [ ] 산업분야 분류 확정 후 코드 목록 갱신 (고객사 답변 대기)
-- [ ] 판매처 산업분야 데이터를 누가 입력하는지 (`05-open-questions.md` 5번)
-- [ ] 생산팀 구현 전까지 경영지원팀은 같은 형식의 **가짜 데이터**로 화면을 먼저 만든다 — 함수 이름·타입 변경 시 서로 알리기
+- [x] 판매 기준일: **출고일자**
+- [x] 판매 금액: 제조내역에 없음 → **수량만** (확정 출고 수량)
+- [x] 제품 시리즈: 모델명(C열) 원본 값 — 표시 이름 변환은 생산팀 Q7 확정 후
+- [x] 산업분야: 처음 요구사항 7개 분류, **수주번호마다 직접 지정** (생산팀 Q3)
+- [ ] 생산팀 입력 화면(엑셀 업로드·제조내역 수정·사업구분 지정·목표) 이식 — 다음 단계. 지금은 `npm run seed:teams` 가짜 데이터만
+
+## 6. 메인 "팀별 현황" 카드 (2026-11-03)
+
+```ts
+// src/modules/production/index.ts
+export async function getProductionOverview(period: Period): Promise<ProductionOverview>;
+// src/modules/service/index.ts
+export async function getServiceOverview(period: Period): Promise<ServiceOverview>;
+```
+
+타입: `src/shared/contracts/production.ts`(`ProductionOverview`), `src/shared/contracts/service.ts`(`ServiceOverview`)
+
+| 카드 | 항목 | 규칙 |
+|---|---|---|
+| 생산 | 확정 출고 수량 | 위 3번과 같음 |
+| 생산 | 목표 달성률 | 확정 출고 수량 ÷ 기간 목표. 월 = 월 목표, 분기·누적 = 월 목표 합(**모두 입력됐을 때만**, 아니면 "월 목표 2/3개월만 입력"), 연간 = 연간 목표 |
+| 생산 | 납기 일정 | **납기일자** 기준, 같은 납기일 + 같은 수주번호 = 1건 (수주번호 없으면 일련번호 단위), 출고 여부 무관. 출고일 없는 제품이 남은 일정 = "출고 대기" |
+| 서비스 | 출장 건수 | **출장 시작일** 기준, 출장보고서 1건 = 1건 (시작일 없는 보고서는 어느 기간에도 넣지 않음) |
+| 서비스 | 유상 비율 | 유상 ÷ (유상 + 무상), 비용청구 미입력 제외 (둘 다 0이면 "-") |
+| 서비스 | 수리 제품 | 제품 목록 중 수량을 입력한 것만 합계 |
+
+- 금액(부품 비용·매출)은 계산하지 않는다 (서비스팀 규칙)
+- AI 분석 입력에는 아직 넣지 않는다 (`ai/build-input.ts` TODO 위치 그대로 — 넣으면 `PROMPT_VERSION` 올리기)

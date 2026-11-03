@@ -1,12 +1,18 @@
 // 경영 대시보드(메인) 새 구성 (2026-10-25 담당자 요청 순서)
-// ① 상단 KPI 4개 → ② 분기별 목표 달성 현황 → ③ 추이 및 분석 → (④ AI 분석은 page.tsx 맨 아래)
+// ① 상단 KPI 4개 → ② 분기별 목표 달성 현황 → ③ 추이 및 분석 → ④ 팀별 현황(생산·서비스, 2026-11-03) → (⑤ AI 분석은 page.tsx 맨 아래)
 // 숫자는 표시 모델(model.ts)에서만 — 이 파일은 배치만 한다. 빠진 카드(연간 목표·BEP·이익 구조·미수금 원형)는 상세로 옮김
 import "server-only";
 
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 
-import { INDUSTRIES } from "@/shared/contracts/production";
+import {
+  INDUSTRIES,
+  OTHER_SERIES_KEY,
+  type ProductionOverview,
+  type SalesShareResult,
+} from "@/shared/contracts/production";
+import type { ServiceOverview } from "@/shared/contracts/service";
 import { serializeBigInt } from "@/shared/format/bigint";
 import { formatWonShort } from "@/shared/format/money";
 import { cn } from "@/shared/lib/utils";
@@ -15,17 +21,12 @@ import { toPeriodParam } from "@/shared/period/url";
 import {
   INDUSTRY_COLORS,
   METER_ON_ACCENT,
-  SERIES_COLORS,
+  seriesColors,
 } from "@/shared/ui/chart-colors";
 import { DonutCard } from "@/shared/ui/donut-card";
 import { pillClass, sectionTitleClass } from "@/shared/ui/styles";
 
 import { getTodayKst } from "../../data/load-summary-input";
-import { alignMockToTotal } from "../../external/align-mock";
-import {
-  getSalesShareByIndustry,
-  getSalesShareBySeries,
-} from "../../external/production-mock";
 import type { TrendPoint } from "../../metrics/trend";
 import type { ManagementSummary } from "../../metrics/types";
 import { FlowChart } from "../bottom/flow-chart";
@@ -33,11 +34,22 @@ import { DASHBOARD_LABELS as L } from "./labels";
 import { MainKpis } from "./main-kpis";
 import {
   expenseMixDonut,
+  productionCardModel,
   revenueMixDonut,
+  serviceCardModel,
   shareDonutModel,
   targetCardModel,
   type TargetCardModel,
 } from "./model";
+import { TeamCard } from "./team-card";
+
+/** 다른 팀 데이터 — page.tsx 가 각 팀 모듈 index.ts 공개 함수로 가져와 넘긴다 (모듈끼리 import 금지) */
+export type TeamData = {
+  industry: SalesShareResult;
+  series: SalesShareResult;
+  production: ProductionOverview;
+  service: ServiceOverview;
+};
 
 const pct = (v: number | null) =>
   v === null ? "-" : `${(v * 100).toFixed(1)}%`;
@@ -143,30 +155,29 @@ function Area({
 export async function MainDashboard({
   summary,
   trend,
+  teams,
 }: {
   summary: ManagementSummary;
   trend: TrendPoint[];
+  teams: TeamData;
 }) {
   const { period } = summary;
   const today = await getTodayKst();
-  const [rawIndustry, rawSeries] = await Promise.all([
-    getSalesShareByIndustry(period),
-    getSalesShareBySeries(period),
-  ]);
-  // 목업이면 합계를 이 기간 확정 총매출에 맞춘다 (비중만 가상) — 통합 후 실제 데이터면 그대로
   const industry = shareDonutModel(
     "industry",
-    alignMockToTotal(rawIndustry, summary.revenue.total),
-    summary.revenue.total,
+    teams.industry,
     INDUSTRIES.map((i) => i.key),
     INDUSTRY_COLORS,
   );
+  const seriesPalette = seriesColors(
+    teams.series.items.map((i) => i.key),
+    OTHER_SERIES_KEY,
+  );
   const series = shareDonutModel(
     "series",
-    alignMockToTotal(rawSeries, summary.revenue.total),
-    summary.revenue.total,
-    Object.keys(SERIES_COLORS),
-    SERIES_COLORS,
+    teams.series,
+    seriesPalette.order,
+    seriesPalette.colors,
   );
   const target = targetCardModel(summary, today, METER_ON_ACCENT);
   const revenue = revenueMixDonut(summary);
@@ -272,19 +283,33 @@ export async function MainDashboard({
               note={m.note ?? undefined}
               legend={m.legend}
               listOrder="value"
-              extraHeader="수량"
+              valueKind={m.valueKind}
+              extraHeader={m.valueKind === "money" ? "수량" : undefined}
               {...m.donut}
               csvName={csv(i === 0 ? "산업분야" : "제품별")}
-              footer={m.basis && <p>{m.basis}</p>}
+              footer={
+                <>
+                  <p>{m.basis}</p>
+                  {m.excluded && <p className="mt-1">{m.excluded}</p>}
+                </>
+              }
             />
           ))}
+        </div>
+      </Area>
+
+      {/* ④ 팀별 현황 (생산·서비스 — 2026-11-03 통합 1단계) */}
+      <Area id="area-teams" title={L.areas.teams}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <TeamCard card={productionCardModel(teams.production)} />
+          <TeamCard card={serviceCardModel(teams.service)} />
         </div>
       </Area>
     </>
   );
 }
 
-/** 영역 ④ AI 분석 제목 (카드는 page.tsx 에서 AiCommentSection — 실제 숫자 분석 차단은 그대로) */
+/** 영역 ⑤ AI 분석 제목 (카드는 page.tsx 에서 AiCommentSection — 실제 숫자 분석 차단은 그대로) */
 export function AiArea({ children }: { children: React.ReactNode }) {
   return (
     <Area id="area-ai" title={L.areas.ai}>

@@ -1,9 +1,13 @@
 // 경영 대시보드 새 구성 표시 모델 — 숫자는 summary 의 기존 값과 같고, 이름만 화면 이름 표
 import { describe, expect, it } from "vitest";
 
-import { INDUSTRIES } from "@/shared/contracts/production";
+import {
+  INDUSTRIES,
+  OTHER_SERIES_KEY,
+  type SalesShareResult,
+} from "@/shared/contracts/production";
 import type { Period } from "@/shared/period/period";
-import { INDUSTRY_COLORS, SERIES_COLORS } from "@/shared/ui/chart-colors";
+import { INDUSTRY_COLORS, seriesColors } from "@/shared/ui/chart-colors";
 
 import { buildAiInput } from "../../ai/build-input";
 import { hashAiInput } from "../../ai/hash";
@@ -16,7 +20,9 @@ import { DASHBOARD_LABELS } from "./labels";
 import {
   dashboardKpis,
   expenseMixDonut,
+  productionCardModel,
   revenueMixDonut,
+  serviceCardModel,
   shareDonutModel,
   targetCardModel,
 } from "./model";
@@ -369,47 +375,156 @@ describe("매출 구성·지출 구성 도넛", () => {
   });
 });
 
-describe("산업 분야별·제품별 매출", () => {
-  const share = (source: "mock" | "production") => ({
-    source,
+describe("산업 분야별·제품별 판매량 (생산팀 확정 출고 수량 기준)", () => {
+  const share = (over: Partial<SalesShareResult> = {}): SalesShareResult => ({
+    source: "production",
+    basis: "quantity",
     items: [
-      { key: "water", label: "상하수도", amount: 100n, quantity: 3 },
-      { key: "plant", label: "민간 플랜트", amount: 300n, quantity: 5 },
+      { key: "PRIVATE_PLANT", label: "민간 플랜트", amount: 0n, quantity: 5 },
+      { key: "WATER", label: "상하수도", amount: 0n, quantity: 3 },
     ],
+    unconfirmedRows: 0,
+    unclassifiedQuantity: 0,
+    hasSample: false,
+    ...over,
   });
-
-  it("샘플 데이터 표시 유지, 범례 금액 먼저, 제품별은 '제품 시리즈 기준'", () => {
-    const ind = shareDonutModel(
+  const industryOf = (r: SalesShareResult) =>
+    shareDonutModel(
       "industry",
-      share("mock"),
-      400n,
+      r,
       INDUSTRIES.map((i) => i.key),
       INDUSTRY_COLORS,
     );
-    expect(ind).toMatchObject({
-      title: "산업 분야별 매출",
-      badge: "샘플 데이터",
-      legend: "amount-first",
-      basis:
-        "7개 분류(상하수도·발전소·가스·오일·석유·민간 플랜트·기타) · 금액 기준",
-    });
-    expect(ind.note).toMatch("가상");
-    const ser = shareDonutModel(
-      "series",
-      share("production"),
-      400n,
-      Object.keys(SERIES_COLORS),
-      SERIES_COLORS,
-    );
-    expect(ser).toMatchObject({
-      title: "제품별 매출",
-      basis: "제품 시리즈 기준 · 금액 기준",
+
+  it("수량을 조각 값으로, 가운데는 확정 출고 합계, 조각은 분류 고정 순서", () => {
+    const m = industryOf(share());
+    expect(m).toMatchObject({
+      title: "산업 분야별 판매량",
+      valueKind: "count",
       badge: null,
       note: null,
+      excluded: null,
+      basis:
+        "7개 분류(상하수도·발전소·가스·오일·석유·민간 플랜트·기타) · 확정 출고 수량",
     });
-    expect(ind.donut.slices.map((x) => [x.label, x.value, x.extra])).toEqual(
-      expect.arrayContaining([["민간 플랜트", "300", "5대"]]),
+    expect(m.donut.center).toEqual({ value: "8대", label: "확정 출고" });
+    expect(m.donut.slices.map((x) => [x.key, x.value, x.color])).toEqual([
+      ["WATER", "3", INDUSTRY_COLORS.WATER],
+      ["PRIVATE_PLANT", "5", INDUSTRY_COLORS.PRIVATE_PLANT],
+    ]);
+    expect(m.donut.emptyText).toBeNull();
+  });
+
+  it("수량 미확정·미분류는 조각에 넣지 않고 '제외' 안내, 시드 데이터면 샘플 배지", () => {
+    const m = industryOf(
+      share({ unconfirmedRows: 2, unclassifiedQuantity: 4, hasSample: true }),
     );
+    expect(m.excluded).toBe("제외: 수량 미확정 2행 · 사업구분 미분류 4대");
+    expect(m.badge).toBe("샘플 데이터");
+    expect(m.note).toMatch("가짜");
+  });
+
+  it("확정 출고 수량이 없으면 빈 안내", () => {
+    expect(industryOf(share({ items: [] })).donut.emptyText).toBe(
+      DASHBOARD_LABELS.shareEmpty,
+    );
+  });
+
+  it("제품별: 모델명 오름차순으로 팔레트 순서 색, 기타 모델은 맨 뒤 슬레이트", () => {
+    const r = share({
+      items: [
+        { key: "02", label: "02", amount: 0n, quantity: 9 },
+        {
+          key: OTHER_SERIES_KEY,
+          label: "기타 모델 2개",
+          amount: 0n,
+          quantity: 2,
+        },
+        { key: "01", label: "01", amount: 0n, quantity: 4 },
+      ],
+    });
+    const palette = seriesColors(
+      r.items.map((i) => i.key),
+      OTHER_SERIES_KEY,
+    );
+    expect(palette.order).toEqual(["01", "02", OTHER_SERIES_KEY]);
+    const m = shareDonutModel("series", r, palette.order, palette.colors);
+    expect(m.title).toBe("제품별 판매량");
+    expect(m.donut.slices.map((x) => x.key)).toEqual(palette.order);
+    expect(new Set(m.donut.slices.map((x) => x.color)).size).toBe(3);
+  });
+
+  it("금액 기준(목업 형식)도 그대로 그린다 — 값은 원, 목록에 수량", () => {
+    const m = industryOf(
+      share({
+        source: "mock",
+        basis: "amount",
+        items: [{ key: "WATER", label: "상하수도", amount: 300n, quantity: 5 }],
+      }),
+    );
+    expect(m.valueKind).toBe("money");
+    expect(m.badge).toBe("샘플 데이터");
+    expect(m.donut.slices[0]).toMatchObject({ value: "300", extra: "5대" });
+  });
+});
+
+describe("팀별 현황 카드", () => {
+  it("생산: 확정 출고 수량·목표 달성률·납기 일정", () => {
+    const m = productionCardModel({
+      confirmedQuantity: 1234,
+      target: 1500,
+      targetNote: null,
+      achievement: 1234 / 1500,
+      unconfirmedRows: 3,
+      dueEvents: 12,
+      dueEventsPending: 2,
+      hasSample: false,
+    });
+    expect(m.stats).toEqual([
+      { label: "확정 출고 수량", value: "1,234대", hint: "목표 1,500대" },
+      { label: "목표 달성률", value: "82.3%", hint: undefined },
+      { label: "납기 일정", value: "12건", hint: "출고 대기 2건" },
+    ]);
+    expect(m.note).toBe("수량 미확정 3행은 실적에서 제외");
+    expect(m.badge).toBeNull();
+  });
+
+  it("생산: 목표가 없으면 '-' + 이유", () => {
+    const m = productionCardModel({
+      confirmedQuantity: 0,
+      target: null,
+      targetNote: "월 목표 2/3개월만 입력",
+      achievement: null,
+      unconfirmedRows: 0,
+      dueEvents: 0,
+      dueEventsPending: 0,
+      hasSample: true,
+    });
+    expect(m.stats[1]).toEqual({
+      label: "목표 달성률",
+      value: "-",
+      hint: "월 목표 2/3개월만 입력",
+    });
+    expect(m.note).toBeNull();
+    expect(m.badge).toBe("샘플 데이터");
+  });
+
+  it("서비스: 출장 건수·유상 비율(미입력 제외)·수리 제품", () => {
+    const m = serviceCardModel({
+      trips: 10,
+      paid: 6,
+      free: 2,
+      billingUnset: 2,
+      paidRatio: 0.75,
+      productQuantity: 14,
+      hasSample: false,
+    });
+    expect(m.stats).toEqual([
+      { label: "출장 건수", value: "10건" },
+      { label: "유상 비율", value: "75.0%", hint: "유상 6 · 무상 2" },
+      { label: "수리 제품", value: "14대" },
+    ]);
+    expect(m.note).toBe("비용청구 미입력 2건은 유상 비율에서 제외");
   });
 });
 

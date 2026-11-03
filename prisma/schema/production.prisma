@@ -1,0 +1,132 @@
+// 생산팀 스키마 — 친구 저장소(lyjradiant-max/newtalk-korea-system) backend/production/models.py 를 옮김 (2026-11-03 통합 1단계)
+// - 테이블명은 prod_ 접두사, *ById 는 외래키 없는 사용자 id 문자열 (docs/integration-notes.md 8번)
+// - 제조내역 엑셀 원본 값은 그대로 문자열로 저장 (문자 빈 값 = "", 날짜·수량 빈 값 = null)
+// - 수량은 엑셀에 없음 → 사람이 확인해 입력한 값만. 실적·비중은 이 값만 쓴다 (specs/07 Q1)
+
+/// 사업구분(산업 분야) — 처음 요구사항 7개 분류 (shared/contracts/production.ts INDUSTRIES 와 같은 코드)
+enum ProdIndustry {
+  WATER
+  POWER
+  GAS
+  OIL
+  PETROLEUM
+  PRIVATE_PLANT
+  ETC
+}
+
+/// 제조내역 엑셀 업로드 1회 이력 (원본 파일은 저장하지 않음)
+model ProdUploadBatch {
+  id               String   @id @default(cuid())
+  fileName         String
+  /// SHA-256 — 같은 파일 재업로드 차단
+  fileHash         String   @unique
+  sheetNames       Json     @default("[]")
+  createdCount     Int      @default(0)
+  overwrittenCount Int      @default(0)
+  unchangedCount   Int      @default(0)
+  keptCount        Int      @default(0)
+  skippedCount     Int      @default(0)
+  errorCount       Int      @default(0)
+  warnings         Json     @default("[]")
+  uploadedById     String
+  uploadedAt       DateTime @default(now())
+
+  records ProdRecord[]
+
+  @@map("prod_upload_batch")
+}
+
+/// 제조내역 1행 = 일련번호 1개 (엑셀 B~Y열)
+model ProdRecord {
+  id               String    @id @default(cuid())
+  sheetName        String
+  /// B 일련번호
+  serialNo         String
+  /// C 모델명 (원본 값 그대로 — "01", "02" …, specs/07 Q7)
+  modelCode        String    @default("")
+  /// D 부시 가공 (숫자 6자리 문자열)
+  bushSize         String    @default("")
+  rpm              String    @default("")
+  power            String    @default("")
+  /// G 제조년월
+  manufacturedDate DateTime? @db.Date
+  /// H 검사일자
+  inspectedDate    DateTime? @db.Date
+  inspectionNo     String    @default("")
+  /// J 수주번호(PO번호 = 뉴토크 번호) — 사업구분 연결 키
+  orderNo          String    @default("")
+  soNo             String    @default("")
+  customerOrderNo  String    @default("")
+  /// M 판매처(거래처)
+  seller           String    @default("")
+  finalClient      String    @default("")
+  projectName      String    @default("")
+  /// P 납기일자
+  dueDate          DateTime? @db.Date
+  /// Q 출고일자 — 실적 기준일. 없으면 실적에서 제외
+  shippedDate      DateTime? @db.Date
+  note             String    @default("")
+  etc              String    @default("")
+  note2            String    @default("")
+  opun             String    @default("")
+  clun             String    @default("")
+  oplo             String    @default("")
+  cllo             String    @default("")
+  /// 수량 (엑셀에 없음, 사람이 직접 입력) — null = 수량 미확정
+  quantity         Int?
+  sourceRow        Int
+  importWarnings   Json      @default("[]")
+
+  batchId String
+  batch   ProdUploadBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /// 잠정 중복 키 (specs/07 Q4)
+  @@unique([sheetName, serialNo])
+  @@index([serialNo])
+  @@index([shippedDate])
+  @@index([dueDate])
+  @@index([orderNo])
+  @@index([seller])
+  @@map("prod_record")
+}
+
+/// 수주번호별 사업구분 — 제조내역과 수주번호 문자열로 연결 (외래키 아님). 행이 없으면 "미분류"
+model ProdOrderCategory {
+  id          String       @id @default(cuid())
+  orderNo     String       @unique
+  category    ProdIndustry
+  updatedById String
+  updatedAt   DateTime     @updatedAt
+
+  @@map("prod_order_category")
+}
+
+/// 연간 목표 생산량 (대). null = 미설정
+model ProdAnnualTarget {
+  id           String   @id @default(cuid())
+  year         Int      @unique
+  annualTarget Int?
+  updatedById  String
+  updatedAt    DateTime @updatedAt
+
+  @@map("prod_annual_target")
+}
+
+/// 월별 목표 생산량 (대) — 입력하지 않은 달은 행이 없음. 분기 목표 = 3개월 합 (모두 있을 때만)
+model ProdMonthlyTarget {
+  id          String   @id @default(cuid())
+  year        Int
+  /// 1~12
+  month       Int
+  target      Int
+  updatedById String
+  updatedAt   DateTime @updatedAt
+
+  @@unique([year, month])
+  @@map("prod_monthly_target")
+}

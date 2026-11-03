@@ -1,7 +1,12 @@
 // 경영 대시보드(메인) 새 구성의 표시 모델 (순수 함수, 2026-10-25 담당자 요청)
-// 상단 KPI 4개 / 분기별 목표 달성 현황(목표매출 달성률·매출 구성·지출 구성) / 추이 및 분석(산업 분야별·제품별 매출)
+// 상단 KPI 4개 / 분기별 목표 달성 현황(목표매출 달성률·매출 구성·지출 구성) / 추이 및 분석(산업 분야별·제품별 판매량) / 팀별 현황(생산·서비스)
 // 숫자는 모두 summary 에 이미 있는 값을 그대로 옮긴다 (새 계산 없음 — model.test.ts 가 같은 값인지 고정)
 // 이름은 labels.ts 한 곳 (metrics 이름표는 그대로)
+import type {
+  ProductionOverview,
+  SalesShareResult,
+} from "@/shared/contracts/production";
+import type { ServiceOverview } from "@/shared/contracts/service";
 import { formatWonShort } from "@/shared/format/money";
 import {
   monthIndex,
@@ -29,6 +34,7 @@ import { TERMS } from "../../terms";
 
 const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 const s = (v: bigint) => v.toString();
+const count = (v: number | bigint) => v.toLocaleString("ko-KR");
 const NO_DATA = "이 기간에 확정된 데이터가 없습니다.";
 
 // ---------- 비교 줄 ----------
@@ -443,33 +449,40 @@ export function expenseMixDonut(summary: ManagementSummary): ExpenseMixModel {
   };
 }
 
-// ---------- 추이 및 분석: 산업 분야별·제품별 매출 ----------
+// ---------- 추이 및 분석: 산업 분야별·제품별 판매량 ----------
 
-export type ShareInput = {
-  source: "mock" | "production";
-  items: { key: string; label: string; amount: bigint; quantity: number }[];
-};
+export type ShareInput = Pick<
+  SalesShareResult,
+  | "source"
+  | "basis"
+  | "items"
+  | "unconfirmedRows"
+  | "unclassifiedQuantity"
+  | "hasSample"
+>;
 
 export type ShareDonutModel = {
   title: string;
-  /** "샘플 데이터" (생산팀 연동 전) */
+  /** "샘플 데이터" (목업 또는 시연용 가짜 제조내역이 섞인 기간) */
   badge: string | null;
   note: string | null;
-  /** 기준 안내 (제품별 매출 = "제품 시리즈 기준") */
+  /** 기준 안내 (예: "확정 출고 수량 기준 · 출고일자 기준") */
   basis: string;
-  /** 범례: 금액 먼저 → 비중 % (담당자 요청) */
+  /** 수량 미확정·미분류로 뺀 것 (없으면 null) */
+  excluded: string | null;
+  /** 범례: 값 먼저 → 비중 % (담당자 요청) */
   legend: "amount-first";
+  valueKind: "money" | "count";
   donut: DonutCardData;
 };
 
 /**
- * 산업 분야별·제품별 매출 도넛 (목업이면 합계는 이 기간 확정 매출로 맞춘 값 — alignMockToTotal 뒤에 넣는다)
- * 조각은 고정 순서(색 인접 검증 순서), 목록은 금액 큰 순 — 지금 대시보드와 같은 규칙
+ * 산업 분야별·제품별 판매량 도넛 — 생산팀 데이터는 금액이 없어 확정 출고 수량 기준 (2026-11-03, 05-10 갱신)
+ * 조각은 고정 순서(색 인접 검증 순서), 목록은 값 큰 순
  */
 export function shareDonutModel(
   kind: "industry" | "series",
   share: ShareInput,
-  revenueTotal: bigint,
   order: string[],
   colors: Record<string, string>,
 ): ShareDonutModel {
@@ -477,25 +490,105 @@ export function shareDonutModel(
     const i = order.indexOf(key);
     return i < 0 ? order.length : i;
   };
-  const mock = share.source === "mock";
+  const byQuantity = share.basis === "quantity";
+  const value = (i: ShareInput["items"][number]) =>
+    byQuantity ? String(i.quantity) : s(i.amount);
+  const total = share.items.reduce((n, i) => n + BigInt(value(i)), 0n);
+  const excluded = [
+    share.unconfirmedRows > 0 &&
+      `수량 미확정 ${count(share.unconfirmedRows)}행`,
+    share.unclassifiedQuantity > 0 &&
+      `사업구분 미분류 ${count(share.unclassifiedQuantity)}대`,
+  ].filter(Boolean);
   return {
     title: kind === "industry" ? L.industry : L.series,
-    badge: mock ? L.sampleBadge : null,
-    note: mock ? L.sampleNote : null,
+    badge: share.source === "mock" || share.hasSample ? L.sampleBadge : null,
+    note:
+      share.source === "mock"
+        ? L.sampleNote
+        : share.hasSample
+          ? L.sampleProductionNote
+          : null,
     basis: kind === "series" ? L.seriesBasis : L.industryBasis,
+    excluded: excluded.length > 0 ? `제외: ${excluded.join(" · ")}` : null,
     legend: "amount-first",
+    valueKind: byQuantity ? "count" : "money",
     donut: {
       slices: [...share.items]
         .sort((a, b) => rank(a.key) - rank(b.key))
         .map((i) => ({
           key: i.key,
           label: i.label,
-          value: s(i.amount),
+          value: value(i),
           color: colors[i.key] ?? PALETTE.slate,
-          extra: `${i.quantity.toLocaleString("ko-KR")}대`,
+          extra: byQuantity ? undefined : `${count(i.quantity)}대`,
         })),
-      center: { value: formatWonShort(revenueTotal), label: "합계" },
-      emptyText: revenueTotal === 0n ? NO_DATA : null,
+      center: byQuantity
+        ? { value: `${count(total)}대`, label: "확정 출고" }
+        : { value: formatWonShort(total), label: "합계" },
+      emptyText: total === 0n ? L.shareEmpty : null,
     },
+  };
+}
+
+// ---------- 팀별 현황: 생산·서비스 ----------
+
+export type TeamStat = { label: string; value: string; hint?: string };
+
+export type TeamCardModel = {
+  title: string;
+  badge: string | null;
+  stats: TeamStat[];
+  note: string | null;
+};
+
+export function productionCardModel(p: ProductionOverview): TeamCardModel {
+  return {
+    title: L.team.production,
+    badge: p.hasSample ? L.sampleBadge : null,
+    stats: [
+      {
+        label: "확정 출고 수량",
+        value: `${count(p.confirmedQuantity)}대`,
+        hint: p.target === null ? undefined : `목표 ${count(p.target)}대`,
+      },
+      {
+        label: "목표 달성률",
+        value: p.achievement === null ? "-" : pct(p.achievement),
+        hint: p.targetNote ?? undefined,
+      },
+      {
+        label: "납기 일정",
+        value: `${count(p.dueEvents)}건`,
+        hint:
+          p.dueEventsPending > 0
+            ? `출고 대기 ${count(p.dueEventsPending)}건`
+            : undefined,
+      },
+    ],
+    note:
+      p.unconfirmedRows > 0
+        ? `수량 미확정 ${count(p.unconfirmedRows)}행은 실적에서 제외`
+        : null,
+  };
+}
+
+export function serviceCardModel(v: ServiceOverview): TeamCardModel {
+  return {
+    title: L.team.service,
+    badge: v.hasSample ? L.sampleBadge : null,
+    stats: [
+      { label: "출장 건수", value: `${count(v.trips)}건` },
+      {
+        label: "유상 비율",
+        value: v.paidRatio === null ? "-" : pct(v.paidRatio),
+        hint: `유상 ${count(v.paid)} · 무상 ${count(v.free)}`,
+      },
+      { label: "수리 제품", value: `${count(v.productQuantity)}대` },
+    ],
+    note:
+      v.billingUnset > 0
+        ? `비용청구 미입력 ${count(v.billingUnset)}건은 유상 비율에서 제외`
+        : null,
   };
 }

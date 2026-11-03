@@ -28,6 +28,12 @@ import {
   loadExistingData,
   loadRecentUploads,
 } from "@/modules/management/upload/save-upload";
+import {
+  loadCategories,
+  loadRecords,
+  loadTargets,
+} from "@/modules/production/data/load-records";
+import { loadReports } from "@/modules/service/data/load-reports";
 import { recordAudit } from "@/shared/audit/record";
 import { findSessionUser } from "@/shared/auth/session";
 import { loadUserNames } from "@/shared/auth/user-names";
@@ -98,6 +104,17 @@ async function main() {
   );
   await check("엑셀 업로드: 기존 데이터·이력", () =>
     Promise.all([loadExistingData(), loadRecentUploads()]),
+  );
+  await check(
+    "메인 팀별 현황: 생산 제조내역·사업구분·목표 (loadRecords 등)",
+    async () => {
+      const rows = await loadRecords(q3);
+      await loadCategories(rows.map((r) => r.orderNo).concat("smoke"));
+      await loadTargets(2026);
+    },
+  );
+  await check("메인 팀별 현황: 서비스 출장보고서 (loadReports)", () =>
+    loadReports(q3),
   );
   {
     // 변경 이력: 검색(대소문자 무시)·사람 목록(groupBy)·행 이력(이관 줄) — 관리자(대표) / 경영지원팀 조건 둘 다
