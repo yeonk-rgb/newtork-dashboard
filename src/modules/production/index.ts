@@ -66,3 +66,6 @@ export { RecordsScreen } from "./records/records-screen";
 export { CategoriesScreen } from "./categories/categories-screen";
 // ②-b
 export { ProductionDashboardScreen } from "./dashboard/dashboard-screen";
+// ②-c
+export { SerialSearchScreen } from "./search/search-screen";
+export { DueCalendarScreen } from "./calendar/calendar-screen";

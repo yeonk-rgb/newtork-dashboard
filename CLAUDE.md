@@ -143,7 +143,11 @@
 - **생산 대시보드·목표 설정 ②-b(2026-11-03)**: `/production`(`dashboard/`), 친구 화면 순서 그대로 — KPI 5개(기간 목표·확정 출고 수량·달성률·부족 수량·납기 예정[월 선택]) → 수량 미확정 안내 → 월별·분기별 실적(막대 + 목표 선, 분기 강조) + 목표 달성률 원형 → 실적 표(월별·분기별·연간, CSV) → 분류별 판매량(산업 분야 7 + 미분류·판매처 상위 10 + 기타 N곳·제품 모델, 표로 보기)
   - 집계 `metrics/dashboard.ts`(순수 함수 — 친구 앱 가짜 데이터 548행으로 54개 값 대조 0건 차이), 상태는 주소 `dashboard/params.ts`(위쪽 분기 ↔ 아래 기간 연동, 아래 월 → 납기 예정 월, 올해면 이번 달)
   - 목표 `targets/`: 연간 1 + 월 12(비운 칸 = 미입력, 연간 ≠ 월 합계여도 저장·안내), 권한 = 생산 수정(팀원은 버튼 비활성 + "열람 전용"), 변경 이력 `production-targets`(바뀐 칸만)
-  - 납기 캘린더 링크는 ②-c 전까지 글자만 (`dashboard-screen.tsx` `CALENDAR_READY`)
+  - 납기 예정 카드 → `/production/calendar?year=&month=` (②-c)
+- **일련번호 검색·납기 캘린더 ②-c(2026-11-03)**: 친구 저장소 `SerialSearchView`·`DueCalendarView` 그대로, 숨긴 행 제외
+  - **일련번호 검색** `/production/search`(`search/`): 상태는 주소 `?serial=`(정확 일치 + 일부 일치 50건) / `?id=`(고른 1건) / `&list=1`(비슷한 목록). 같은 일련번호가 여러 건(시트 다름)이면 고르게 함. 3단 카드(제품 사양 / 제조·검사 / 판매·납품) + 원본 추가 정보(`<details>`), [수정]은 제조내역과 같은 `RecordEditDialog`(팀원 비활성), [같은 수주번호 일정 보기] → 캘린더 상세. 제조내역 표 일련번호 → `?id=`
+  - **납기 캘린더** `/production/calendar`(`calendar/`): 계산 `metrics/due-calendar.ts`(순수 함수 — 같은 납기일 + 같은 수주번호 = 1건, 출고 상태 all/partial/none = 출고일 유무만, 출고 대기 = 납기 지난 것 + 이번 달 남은 것, 친구 앱 데이터로 65개 값 대조 0건 차이). 주소 `?year=&month=&date=&order=`(그 일정 상세를 바로 엶)·`&find=`(수주번호 찾기). 칩 색 = 미출고 네이비·일부 코퍼·모두 회색, 납기 경과 = 빨간 점선. 오늘은 `getNow()` + 9시간(KST)
+  - 사이드바 하위 메뉴: 묶음과 같은 주소(`/production`·`/management`)는 정확히 일치할 때만 선택 표시 (`sidebar.tsx` `isSubActive`)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
   - **[경영지원 관리에서 불러오기](2026-10-26 결정 05-1·24·25, PR ③)**: 계산 `entry/from-ledger.ts`(순수 함수), 행 읽기 Server Action `loadLedgerForEntry`(읽기만, `entryAbilities`가 readOnly면 거부, 숨긴 행·외상매출금 제외), 미리보기 `from-ledger-dialog.tsx`. 외상매입금 → 상품·원재료 매입(매입유형, 빈 행은 고른 칸), 직원 → 경비, 업체 → 그 외 지출(같은 이름 항목, "기타"는 "기타…" 항목, 없으면 고름). **업체는 자동이체 포함 전체 합계**(F열 총액·자동이체 합계도 표시). 블록별 ÷1.1 체크(외상매입금·업체 기본 체크, 직원 해제), 칸 단위 반올림(`toSupplyAmount`). [입력란에 채우기]는 저장하지 않음 — 저장·변경 이력은 기존 [임시저장]·[확정] 그대로
@@ -273,7 +277,7 @@ newtork-dashboard/ (= 이 폴더)
 │  │  │  ├─ page.tsx          # 메인 = 전사 요약 (경영지원팀)
 │  │  │  ├─ admin/            # 관리자 설정 (관리자만)
 │  │  │  ├─ management/
-│  │  │  ├─ production/       # placeholder (화면 이식은 다음 단계)
+│  │  │  ├─ production/       # 생산 화면 (대시보드·제조내역·일련번호 검색·납기 캘린더·업로드·사업구분)
 │  │  │  └─ service/          # placeholder (화면 이식은 다음 단계)
 │  │  ├─ account/password/    # 비밀번호 변경 (초기 비밀번호면 강제)
 │  │  └─ api/                 # 꼭 필요한 Route Handler만
