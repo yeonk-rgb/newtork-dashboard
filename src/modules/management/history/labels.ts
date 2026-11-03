@@ -51,6 +51,18 @@ export const HISTORY_SCREENS: {
     area: "management",
   },
   { key: "upload", label: "엑셀 업로드", area: "management" },
+  // 생산 (2026-11-03 통합 2단계)
+  {
+    key: "production-upload",
+    label: "생산 · 제조내역 엑셀 업로드",
+    area: "production",
+  },
+  { key: "production-records", label: "생산 · 제조내역", area: "production" },
+  {
+    key: "production-categories",
+    label: "생산 · 사업구분 지정",
+    area: "production",
+  },
   { key: "admin-users", label: "관리자(대표) · 계정 관리", area: "admin" },
   {
     key: "history-export",
@@ -150,6 +162,15 @@ export function metaSummary(
       !!years?.length && `목표 ${years.map((y) => `${y}년`).join(", ")}`,
       !!months?.length && `월별 실적 ${months.join(", ")}`,
       list(m, "fileNames")?.join(", ") ?? null,
+    ]);
+  }
+  if (screen === "production-upload") {
+    return join([
+      num(m, "created") !== null && `새로 저장 ${count("created", "행")}`,
+      num(m, "overwritten") !== null && `덮어씀 ${count("overwritten", "행")}`,
+      !!num(m, "kept") && `덮어쓰지 않음 ${count("kept", "행")}`,
+      !!num(m, "hidden") && `숨긴 행과 같음 ${count("hidden", "행")}`,
+      str(m, "fileName"),
     ]);
   }
   if (screen === "history-export") {

@@ -50,7 +50,21 @@ const NAV_RULES: NavRule[] = [
       },
     ],
   },
-  { href: "/production", label: "생산", team: "production" },
+  {
+    href: "/production",
+    label: "생산",
+    team: "production",
+    // 통합 2단계(2026-11-03): 생산팀 저장소 화면을 옮기는 중 — 대시보드·검색·캘린더는 다음 PR
+    children: [
+      { href: "/production/records", label: "제조내역", action: "view" },
+      { href: "/production/upload", label: "엑셀 업로드", action: "edit" },
+      {
+        href: "/production/categories",
+        label: "사업구분 지정",
+        action: "view",
+      },
+    ],
+  },
   { href: "/service", label: "서비스", team: "service" },
   { href: "/admin", label: "관리자", adminOnly: true },
 ];

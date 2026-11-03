@@ -9,7 +9,7 @@ import {
   FieldError,
   fieldClass,
   Modal,
-} from "../receivables/modal";
+} from "@/shared/ui/modal";
 import { ledgerDateErrors } from "./rules";
 
 export type SettleRequest = {

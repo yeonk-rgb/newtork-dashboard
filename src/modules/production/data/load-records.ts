@@ -10,7 +10,10 @@ import { PRODUCTION_SAMPLE_BY } from "./sample";
 export async function loadRecords(period: Period): Promise<RecordRow[]> {
   const range = periodDateRange(period);
   const rows = await prisma.prodRecord.findMany({
-    where: { OR: [{ shippedDate: range }, { dueDate: range }] },
+    where: {
+      deletedAt: null,
+      OR: [{ shippedDate: range }, { dueDate: range }],
+    },
     select: {
       sheetName: true,
       serialNo: true,

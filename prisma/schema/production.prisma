@@ -80,6 +80,10 @@ model ProdRecord {
   batchId String
   batch   ProdUploadBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
 
+  /// 숨김(삭제 대신, 2026-11-03) — 조회할 때는 반드시 deletedAt: null. 숨긴 행과 같은 일련번호는 업로드에서 건너뜀(복구로 되살림)
+  deletedAt   DateTime?
+  deletedById String?
+
   createdById String
   updatedById String
   createdAt   DateTime @default(now())
@@ -92,6 +96,7 @@ model ProdRecord {
   @@index([dueDate])
   @@index([orderNo])
   @@index([seller])
+  @@index([deletedAt])
   @@map("prod_record")
 }
 

@@ -1,9 +1,10 @@
 // 변경 이력 권한·필터 (순수 함수 — 화면·조회·엑셀 내려받기·행 이력 공용)
 // 관리자 화면 기록(area "admin")은 관리자(대표)만: 화면에서 숨기는 게 아니라 조회 조건(historyWhere)에서 뺀다
-import type { Prisma } from "@/shared/db/generated/client";
+// 경영지원팀은 경영지원 + 생산 기록(TEAM_AREAS, 2026-11-03)
+import { AUDIT_ACTIONS, type AuditArea } from "@/shared/audit/types";
 import { can, canManageUsers } from "@/shared/auth/can";
 import type { AppUser } from "@/shared/auth/types";
-import { AUDIT_ACTIONS } from "@/shared/audit/types";
+import type { Prisma } from "@/shared/db/generated/client";
 
 import { HISTORY_SCREENS } from "./labels";
 
@@ -90,7 +91,14 @@ function kstStart(date: string): Date {
   return new Date(new Date(`${date}T00:00:00Z`).getTime() - KST_MS);
 }
 
-/** 조회 조건 — 관리자(대표)가 아니면 어떤 필터를 넣어도 area "management" 만 */
+/**
+ * 관리자(대표)가 아니면 볼 수 있는 기록 영역 — 경영지원 + 생산(2026-11-03, 경영지원팀은 생산 열람 권한이 있다)
+ * 관리자 화면 기록(area "admin")은 빠진다
+ */
+export const TEAM_AREAS: AuditArea[] = ["management", "production"];
+export const teamAreaWhere = { area: { in: TEAM_AREAS } };
+
+/** 조회 조건 — 관리자(대표)가 아니면 어떤 필터를 넣어도 TEAM_AREAS 만 */
 export function historyWhere(
   filter: Omit<HistoryFilter, "page">,
   abilities: HistoryAbilities,
@@ -106,7 +114,7 @@ export function historyWhere(
     ...(filter.q
       ? { targetLabel: { contains: filter.q, mode: "insensitive" as const } }
       : {}),
-    ...(abilities.canSeeAdmin ? {} : { area: "management" }),
+    ...(abilities.canSeeAdmin ? {} : teamAreaWhere),
   };
 }
 
@@ -126,7 +134,7 @@ export function historySearch(
 /** 화면 고르기 목록 — 관리자(대표)가 아니면 관리자 화면은 목록에도 없다 */
 export function screenOptions(abilities: HistoryAbilities) {
   return HISTORY_SCREENS.filter(
-    (s) => abilities.canSeeAdmin || s.area === "management",
+    (s) => abilities.canSeeAdmin || TEAM_AREAS.includes(s.area),
   );
 }
 

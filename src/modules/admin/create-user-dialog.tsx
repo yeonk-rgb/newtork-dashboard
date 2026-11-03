@@ -9,6 +9,7 @@ import {
   TEAM_LABEL,
   type Role,
   type ScopeTeam,
+  VIEWERS_CAN_EDIT_NOTE,
 } from "@/shared/auth/types";
 
 import type { AdminActionResult } from "./actions";
@@ -184,6 +185,9 @@ export function CreateUserDialog({
                   })}
                 </fieldset>
               ))}
+              <p className="col-span-2 text-xs text-muted-foreground">
+                {VIEWERS_CAN_EDIT_NOTE}
+              </p>
             </div>
           )}
           {error && (

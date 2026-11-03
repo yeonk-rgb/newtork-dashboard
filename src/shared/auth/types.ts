@@ -7,6 +7,14 @@ export type ScopeTeam = Exclude<Team, "management">;
 export const SCOPE_TEAMS: readonly ScopeTeam[] = ["production", "service"];
 
 /**
+ * 열람 범위만 있으면 팀원도 입력·수정·숨김까지 하는 팀 (수정 권한 체크와 무관)
+ * 생산: 2026-11-03 사용자 결정 — 생산팀 저장소 규칙(2026-10-18 "생산팀 데이터 접근 권한이 있는 모든 사용자")을 따름
+ */
+export const VIEWERS_CAN_EDIT: readonly ScopeTeam[] = ["production"];
+export const VIEWERS_CAN_EDIT_NOTE =
+  "생산은 열람 범위만 있으면 팀원도 입력·수정할 수 있습니다 (생산팀 규칙).";
+
+/**
  * - ADMIN: 관리자(대표) — 모든 팀 + 관리자 설정
  * - MANAGEMENT: 경영지원팀 — 모든 팀 (관리자 설정 제외)
  * - LEADER: 팀장 — 열람 범위의 팀 열람, 수정 권한의 팀 수정

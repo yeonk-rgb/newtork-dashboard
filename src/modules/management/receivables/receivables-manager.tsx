@@ -16,7 +16,7 @@ import {
 } from "./actions";
 import { RowHistoryButton } from "../history/row-history-button";
 import { CollectForm } from "./collect-form";
-import { Modal } from "./modal";
+import { Modal } from "@/shared/ui/modal";
 import { ReceivableForm } from "./receivable-form";
 import {
   canCreateReceivable,

@@ -14,6 +14,7 @@ import {
   HISTORY_EXPORT_MAX,
   HISTORY_PAGE_SIZE,
   historyWhere,
+  teamAreaWhere,
   type HistoryAbilities,
   type HistoryFilter,
   type RowHistoryType,
@@ -76,7 +77,7 @@ export async function loadHistoryPage(
     }),
     prisma.auditLog.groupBy({
       by: ["actorId", "actorLoginId"],
-      where: abilities.canSeeAdmin ? {} : { area: "management" },
+      where: abilities.canSeeAdmin ? {} : teamAreaWhere,
     }),
   ]);
   const userOf = await loadNames([

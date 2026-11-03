@@ -163,7 +163,9 @@
 |---|---|---|---|---|
 | 메인 산업 분야별·제품별 도넛 실제 생산 데이터 | 통합 1단계 | `modules/production` · `prisma/schema/production.prisma` · `components/dashboard/model.ts` | 완료 | 목업 삭제. 확정 출고 수량 기준(금액 없음 — 05-10 갱신), 출고일자 기준, 수량 미확정·미분류는 "제외:" 안내 |
 | 메인 팀별 현황 (생산·서비스) | 통합 1단계 | `team-card.tsx` · `modules/service` · `prisma/schema/service.prisma` | 완료 | 생산 확정 출고 수량·목표 달성률·납기 일정 / 서비스 출장 건수·유상 비율·수리 제품. 가짜 데이터 `npm run seed:teams` |
-| 생산 화면 (업로드·제조내역·일련번호 검색·납기 캘린더·사업구분·목표) | 통합 2단계 | `app/(dashboard)/production` | 미착수 | 친구 저장소 Vue 화면 6개 + Django API |
+| 생산 엑셀 업로드·제조내역·사업구분 지정 | 통합 2단계 ②-a | `/production/upload` · `/production/records` · `/production/categories` | 완료 | 친구 저장소 규칙 그대로(미리보기·SHA-256 차단·체크한 행만 덮어쓰기·수량 유지) + 숨김·변경 이력(`area: production`). 권한: 생산은 열람 범위만 있으면 팀원도 수정(2026-11-03 사용자 결정) |
+| 생산 대시보드·목표 설정 | 통합 2단계 ②-b | `/production` | 미착수 | |
+| 일련번호 검색·납기 캘린더 | 통합 2단계 ②-c | `/production/search` · `/production/calendar` | 미착수 | |
 | 서비스 화면 (출장보고서·PDF 등록·부품·출장지·가격) | 통합 3단계 | `app/(dashboard)/service` | 미착수 | 친구 저장소 Vue 화면 8개 + Django API. 부품·출장지·가격 스키마도 이때 |
 | 생산·서비스 지표 AI 분석 입력 | 후속 | `ai/build-input.ts` | 미착수 | 넣으면 `PROMPT_VERSION` 올리기 |
 
