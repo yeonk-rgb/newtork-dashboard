@@ -2,7 +2,8 @@
 // - 테이블명은 svc_ 접두사, *ById 는 외래키 없는 사용자 id 문자열 (docs/integration-notes.md 8번)
 // - 출장보고서 1건 = 출장 1건, 기간 기준 = 출장 시작일 (specs/07 S0)
 // - 사람 이름(작성자·동행자·승인자)은 PDF처럼 글자로 저장 (앱 계정과 연결하지 않음)
-// - 부품·출장지·출장지별 가격(Part·Site·SitePartPrice)은 다음 단계에서 옮긴다 (메인 연동에는 쓰지 않음)
+// - 통합 3단계(2026-11-03): 부품·출장지·출장지별 가격·부품 사용·첨부를 옮김 (docs/service-migration.md)
+// - 삭제 대신 숨김(deletedAt) — 조회할 때는 반드시 deletedAt: null
 
 /// 비용청구 유무 — null = 미입력 (유상 비율에서 뺌)
 enum SvcBilling {
@@ -43,8 +44,14 @@ model SvcReport {
   cc               String      @default("")
   note             String      @default("")
 
-  companions SvcReportCompanion[]
-  products   SvcReportProduct[]
+  companions  SvcReportCompanion[]
+  products    SvcReportProduct[]
+  parts       SvcReportPart[]
+  attachments SvcReportAttachment[]
+
+  /// 숨김(삭제 대신) — 대시보드·목록·메인 집계에서 빠짐
+  deletedAt   DateTime?
+  deletedById String?
 
   createdById String
   updatedById String
@@ -53,6 +60,7 @@ model SvcReport {
 
   @@index([tripStart])
   @@index([region, sigungu])
+  @@index([deletedAt])
   @@map("svc_report")
 }
 
@@ -79,4 +87,113 @@ model SvcReportProduct {
 
   @@index([reportId])
   @@map("svc_report_product")
+}
+
+/// 교체 부품 — 가격은 출장지마다 달라 SvcSitePartPrice 에 따로 둔다
+model SvcPart {
+  id   String @id @default(cuid())
+  name String @unique
+  note String @default("")
+
+  usages     SvcReportPart[]
+  sitePrices SvcSitePartPrice[]
+
+  deletedAt   DateTime?
+  deletedById String?
+  createdById String
+  updatedById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("svc_part")
+}
+
+/// 출장지 — 이름이 출장보고서 요청처(requestOrg)와 같은 글자여야 보고서와 연결된다
+model SvcSite {
+  id      String  @id @default(cuid())
+  name    String  @unique
+  region  String?
+  sigungu String?
+  note    String  @default("")
+
+  prices SvcSitePartPrice[]
+
+  deletedAt   DateTime?
+  deletedById String?
+  createdById String
+  updatedById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("svc_site")
+}
+
+/// 출장지별 부품 가격(직접 입력, 원) — 행이 없거나 숨긴 조합 = 미입력 (다른 값으로 채우지 않음)
+model SvcSitePartPrice {
+  id        String  @id @default(cuid())
+  siteId    String
+  site      SvcSite @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  partId    String
+  part      SvcPart @relation(fields: [partId], references: [id], onDelete: Restrict)
+  unitPrice BigInt
+  note      String  @default("")
+
+  /// 숨김 = 가격 삭제(미입력). 다시 입력하면 같은 행을 되살린다
+  deletedAt   DateTime?
+  deletedById String?
+  updatedById String
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([siteId, partId])
+  @@index([partId])
+  @@map("svc_site_part_price")
+}
+
+/// 출장보고서의 부품 사용 내역 (수량은 PDF에 없어 선택)
+model SvcReportPart {
+  id       String    @id @default(cuid())
+  reportId String
+  report   SvcReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  partId   String
+  part     SvcPart   @relation(fields: [partId], references: [id], onDelete: Restrict)
+  quantity Int?
+  /// 보고서 안 순서
+  position Int       @default(0)
+
+  @@unique([reportId, partId])
+  @@index([partId])
+  @@map("svc_report_part")
+}
+
+/// 사진·자료 첨부 — 배포 서버에 디스크가 없어 파일 내용을 DB 에 저장 (파일당 20MB 이하)
+enum SvcAttachmentKind {
+  ORIGINAL
+  NAMEPLATE
+  BEFORE_WORK
+  AFTER_WORK
+  BEFORE_PART
+  AFTER_PART
+  RELATED
+}
+
+model SvcReportAttachment {
+  id           String            @id @default(cuid())
+  reportId     String
+  report       SvcReport         @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  kind         SvcAttachmentKind
+  originalName String
+  contentType  String
+  size         Int
+  /// 같은 파일(특히 원본 PDF)을 두 번 등록하지 않도록
+  sha256       String
+  content      Bytes
+
+  deletedAt    DateTime?
+  deletedById  String?
+  uploadedById String
+  uploadedAt   DateTime  @default(now())
+
+  @@index([reportId])
+  @@index([sha256])
+  @@map("svc_report_attachment")
 }

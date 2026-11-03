@@ -1,10 +1,9 @@
-// 서비스팀 집계 (순수 함수). 친구 저장소 backend/service/dashboard.py 규칙 그대로:
-// - 기간 기준 = 출장 시작일. 출장 시작일이 없는 보고서는 어느 기간에도 넣지 않음
-// - 출장 1건 = 출장보고서 1건
-// - 유상 비율 = 유상 ÷ (유상 + 무상). 비용청구 미입력은 비율에서 뺌
-// - 수리 제품 대수 = 입력된 수량만 합함
-// - 금액(부품 비용·매출)은 계산하지 않는다
+// 서비스팀 메인 "팀별 현황" 카드 (순수 함수) — 서비스 대시보드와 같은 summarize() (metrics/dashboard.ts) 를 쓴다
+// 친구 저장소 backend/service/dashboard.py 규칙: 출장 시작일 기준, 출장 1건 = 보고서 1건,
+// 유상 비율 = 유상 ÷ (유상 + 무상)(미입력 제외), 수리 제품 대수 = 입력된 수량만, 금액은 계산하지 않음
 import type { ServiceOverview } from "@/shared/contracts/service";
+
+import { summarize } from "./dashboard";
 
 export type ReportRow = {
   billing: "PAID" | "FREE" | null;
@@ -13,19 +12,20 @@ export type ReportRow = {
 };
 
 export function serviceOverview(reports: ReportRow[]): ServiceOverview {
-  const paid = reports.filter((r) => r.billing === "PAID").length;
-  const free = reports.filter((r) => r.billing === "FREE").length;
+  const s = summarize(
+    reports.map((r) => ({
+      billing: r.billing,
+      products: r.productQuantities.map((quantity) => ({ quantity })),
+      parts: [],
+    })),
+  );
   return {
-    trips: reports.length,
-    paid,
-    free,
-    billingUnset: reports.length - paid - free,
-    paidRatio: paid + free > 0 ? paid / (paid + free) : null,
-    productQuantity: reports.reduce(
-      (n, r) =>
-        n + r.productQuantities.reduce<number>((m, q) => m + (q ?? 0), 0),
-      0,
-    ),
+    trips: s.trips,
+    paid: s.paid,
+    free: s.free,
+    billingUnset: s.billingUnset,
+    paidRatio: s.paidRatio,
+    productQuantity: s.productQty,
     hasSample: reports.some((r) => r.sample),
   };
 }

@@ -1,6 +1,6 @@
 // 변경 이력 권한·필터 (순수 함수 — 화면·조회·엑셀 내려받기·행 이력 공용)
 // 관리자 화면 기록(area "admin")은 관리자(대표)만: 화면에서 숨기는 게 아니라 조회 조건(historyWhere)에서 뺀다
-// 경영지원팀은 경영지원 + 생산 기록(TEAM_AREAS, 2026-11-03)
+// 경영지원팀은 경영지원 + 생산 + 서비스 기록(TEAM_AREAS, 2026-11-03)
 import { AUDIT_ACTIONS, type AuditArea } from "@/shared/audit/types";
 import { can, canManageUsers } from "@/shared/auth/can";
 import type { AppUser } from "@/shared/auth/types";
@@ -95,7 +95,7 @@ function kstStart(date: string): Date {
  * 관리자(대표)가 아니면 볼 수 있는 기록 영역 — 경영지원 + 생산(2026-11-03, 경영지원팀은 생산 열람 권한이 있다)
  * 관리자 화면 기록(area "admin")은 빠진다
  */
-export const TEAM_AREAS: AuditArea[] = ["management", "production"];
+export const TEAM_AREAS: AuditArea[] = ["management", "production", "service"];
 export const teamAreaWhere = { area: { in: TEAM_AREAS } };
 
 /** 조회 조건 — 관리자(대표)가 아니면 어떤 필터를 넣어도 TEAM_AREAS 만 */

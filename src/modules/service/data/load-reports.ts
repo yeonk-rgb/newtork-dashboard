@@ -11,6 +11,7 @@ export async function loadReports(period: Period): Promise<ReportRow[]> {
   const rows = await prisma.svcReport.findMany({
     where: {
       tripStart: periodDateRange(period),
+      deletedAt: null,
     },
     select: {
       billing: true,

@@ -2,10 +2,21 @@
 import { can, canManageUsers } from "./can";
 import type { Action, AppUser, Team } from "./types";
 
-export type NavItem = { href: string; label: string; children?: NavItem[] };
+export type NavItem = {
+  href: string;
+  label: string;
+  children?: NavItem[];
+  /** 하위 경로에서는 선택 표시하지 않음 (예: 부품 가격 관리 ↔ 출장지별 가격 조회) */
+  exact?: boolean;
+};
 
 /** 하위 메뉴: 팀의 해당 동작 권한이 있을 때만 보인다 (숨김은 보조 수단 — 실제 차단은 각 페이지) */
-type SubRule = { href: string; label: string; action: Action };
+type SubRule = {
+  href: string;
+  label: string;
+  action: Action;
+  exact?: boolean;
+};
 
 type NavRule = { href: string; label: string; children?: SubRule[] } & (
   { team: Team } | { adminOnly: true }
@@ -69,7 +80,41 @@ const NAV_RULES: NavRule[] = [
       },
     ],
   },
-  { href: "/service", label: "서비스", team: "service" },
+  // 통합 3단계(2026-11-03): 서비스팀 저장소 화면 — 메뉴 묶음·순서도 친구 저장소 config/menu.js 그대로
+  {
+    href: "/service",
+    label: "서비스",
+    team: "service",
+    children: [
+      { href: "/service", label: "서비스 대시보드", action: "view" },
+      { href: "/service/reports", label: "출장보고서", action: "view" },
+    ],
+  },
+  {
+    href: "/service/parts",
+    label: "부품·가격",
+    team: "service",
+    children: [
+      { href: "/service/parts", label: "부품 목록", action: "view" },
+      { href: "/service/sites", label: "출장지 관리", action: "view" },
+      {
+        href: "/service/prices",
+        label: "부품 가격 관리",
+        action: "view",
+        exact: true,
+      },
+      {
+        href: "/service/prices/by-site",
+        label: "출장지별 가격 조회",
+        action: "view",
+      },
+      {
+        href: "/service/prices/compare",
+        label: "출장지 비교 분석",
+        action: "view",
+      },
+    ],
+  },
   { href: "/admin", label: "관리자", adminOnly: true },
 ];
 
@@ -87,7 +132,11 @@ export function accessiblePages(user: AppUser): NavItem[] {
       "team" in rule && rule.children
         ? rule.children
             .filter((c) => can(user, c.action, rule.team))
-            .map(({ href, label }) => ({ href, label }))
+            .map(({ href, label, exact }) => ({
+              href,
+              label,
+              ...(exact ? { exact } : {}),
+            }))
         : undefined;
     return {
       href: rule.href,

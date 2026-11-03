@@ -13,6 +13,7 @@ describe("accessiblePages", () => {
       "/management",
       "/production",
       "/service",
+      "/service/parts",
       "/admin",
     ]);
   });
@@ -23,13 +24,19 @@ describe("accessiblePages", () => {
       "/management",
       "/production",
       "/service",
+      "/service/parts",
     ]);
   });
 
   it("팀장·팀원은 열람 범위의 팀만, 겸직은 둘 다", () => {
     expect(hrefs("prodMember")).toEqual(["/production"]);
-    expect(hrefs("svcLeader")).toEqual(["/service"]);
-    expect(hrefs("dual")).toEqual(["/production", "/service"]);
+    // 서비스는 친구 저장소처럼 "서비스"·"부품·가격" 두 묶음 (2026-11-03 통합 3단계)
+    expect(hrefs("svcLeader")).toEqual(["/service", "/service/parts"]);
+    expect(hrefs("dual")).toEqual([
+      "/production",
+      "/service",
+      "/service/parts",
+    ]);
   });
 });
 
@@ -77,5 +84,25 @@ describe("경영지원 하위 메뉴", () => {
 
   it("생산 팀원은 경영지원 메뉴 자체가 없음", () => {
     expect(children("prodMember")).toBeUndefined();
+  });
+});
+
+describe("서비스 하위 메뉴 (친구 저장소 config/menu.js 순서)", () => {
+  it("서비스팀원도 열람 화면은 모두 보임 — 버튼만 비활성", () => {
+    const pages = accessiblePages(FAKE_USERS.svcMember);
+    expect(pages.map((p) => p.children?.map((c) => c.label))).toEqual([
+      ["서비스 대시보드", "출장보고서"],
+      [
+        "부품 목록",
+        "출장지 관리",
+        "부품 가격 관리",
+        "출장지별 가격 조회",
+        "출장지 비교 분석",
+      ],
+    ]);
+  });
+
+  it("생산팀은 서비스 메뉴 없음", () => {
+    expect(hrefs("prodMember")).not.toContain("/service/parts");
   });
 });

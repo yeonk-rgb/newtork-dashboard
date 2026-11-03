@@ -115,7 +115,7 @@ describe("목록 조회 (서버에서 거름)", () => {
 
   it("경영지원팀: 주소에 관리자 화면을 넣어도 조회 조건에 경영지원·생산 영역만", async () => {
     await loadHistoryPage(filter, historyAbilities(FAKE_USERS.mgmt));
-    const teamOnly = { area: { in: ["management", "production"] } };
+    const teamOnly = { area: { in: ["management", "production", "service"] } };
     expect(whereOf(auditFindMany)).toMatchObject(teamOnly);
     expect(whereOf(auditCount)).toMatchObject(teamOnly);
     // 사람 고르기 목록도 경영지원 기록을 남긴 사람만

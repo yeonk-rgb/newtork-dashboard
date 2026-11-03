@@ -11,6 +11,7 @@ const TEAM_PREFIXES: [string, Team][] = [
   ["/api/management", "management"],
   ["/production", "production"],
   ["/service", "service"],
+  ["/api/service", "service"],
 ];
 
 const matches = (pathname: string, prefix: string) =>
