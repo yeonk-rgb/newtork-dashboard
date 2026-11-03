@@ -3,6 +3,7 @@
 import "server-only";
 
 import { can, getCurrentUser } from "@/shared/auth";
+import { prisma } from "@/shared/db/client";
 import type { ServiceOverview } from "@/shared/contracts/service";
 import type { Period } from "@/shared/period/period";
 
@@ -26,3 +27,18 @@ export async function getServiceOverview(
   }
   return serviceOverview(await loadReports(period));
 }
+
+/** 출장보고서 첨부 파일 (숨긴 첨부·숨긴 보고서 제외). 권한: 서비스 view */
+export async function getAttachmentFile(id: string) {
+  const user = await getCurrentUser();
+  if (!user || !can(user, "view", "service")) return "forbidden" as const;
+  return prisma.svcReportAttachment.findFirst({
+    where: { id, deletedAt: null, report: { deletedAt: null } },
+    select: { content: true, contentType: true, originalName: true },
+  });
+}
+
+// 서비스 화면 (통합 3단계 ③-a, 2026-11-03)
+export { ReportsScreen } from "./reports/reports-screen";
+export { ReportDetailScreen } from "./reports/report-detail-screen";
+export { ReportFormScreen } from "./reports/report-form-screen";
