@@ -270,134 +270,141 @@ export function RecordTable({
           {message.text}
         </p>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[72rem] text-sm">
-          <thead>
-            <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
-              {[
-                "일련번호",
-                "모델명",
-                "부시 가공",
-                "판매처",
-                "최종발주처",
-                "수주번호",
-                "사업구분",
-                "제조년월",
-                "납기일자",
-                "출고일자",
-                "수량",
-                "비고",
-                "",
-              ].map((h, i) => (
-                <th
-                  key={i}
+      {/* 행이 없어도 이 컴포넌트는 남긴다 — 숨긴 행 보기에서 마지막 행을 복구해도 "복구했습니다"가 보이게 */}
+      {rows.length === 0 ? (
+        <p className="px-6 text-sm text-muted-foreground">
+          조건에 맞는 제조내역이 없습니다.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[72rem] text-sm">
+            <thead>
+              <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
+                {[
+                  "일련번호",
+                  "모델명",
+                  "부시 가공",
+                  "판매처",
+                  "최종발주처",
+                  "수주번호",
+                  "사업구분",
+                  "제조년월",
+                  "납기일자",
+                  "출고일자",
+                  "수량",
+                  "비고",
+                  "",
+                ].map((h, i) => (
+                  <th
+                    key={i}
+                    className={cn(
+                      "px-3 py-2 font-medium",
+                      h === "수량" && "text-right",
+                    )}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.id}
                   className={cn(
-                    "px-3 py-2 font-medium",
-                    h === "수량" && "text-right",
+                    "border-b align-top last:border-0",
+                    r.hidden && "text-muted-foreground",
                   )}
                 >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr
-                key={r.id}
-                className={cn(
-                  "border-b align-top last:border-0",
-                  r.hidden && "text-muted-foreground",
-                )}
-              >
-                <td className="px-3 py-2 font-medium">
-                  {r.serialNo}
-                  <span className="block text-xs font-normal text-muted-foreground">
-                    {r.sheetName}
-                  </span>
-                </td>
-                <td className="px-3 py-2">{dash(r.modelCode)}</td>
-                <td className="px-3 py-2">
-                  {dash(formatBush(r.bushSize ?? ""))}
-                </td>
-                <td className="px-3 py-2">{dash(r.seller)}</td>
-                <td className="px-3 py-2">{dash(r.finalClient)}</td>
-                <td className="px-3 py-2">{dash(r.orderNo)}</td>
-                <td className="px-3 py-2">
-                  {r.category ? (
-                    <span
-                      className={cn(pillClass, "bg-brand-soft text-primary")}
-                    >
-                      {INDUSTRY_LABEL[r.category]}
+                  <td className="px-3 py-2 font-medium">
+                    {r.serialNo}
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {r.sheetName}
                     </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      {UNCLASSIFIED_LABEL}
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-2 tabular-nums">
-                  {dash(r.manufacturedDate?.slice(0, 7))}
-                </td>
-                <td className="px-3 py-2 tabular-nums">{dash(r.dueDate)}</td>
-                <td className="px-3 py-2 tabular-nums">
-                  {r.shippedDate || (
-                    <span
-                      className={cn(
-                        pillClass,
-                        "bg-warning-soft text-warning-strong",
+                  </td>
+                  <td className="px-3 py-2">{dash(r.modelCode)}</td>
+                  <td className="px-3 py-2">
+                    {dash(formatBush(r.bushSize ?? ""))}
+                  </td>
+                  <td className="px-3 py-2">{dash(r.seller)}</td>
+                  <td className="px-3 py-2">{dash(r.finalClient)}</td>
+                  <td className="px-3 py-2">{dash(r.orderNo)}</td>
+                  <td className="px-3 py-2">
+                    {r.category ? (
+                      <span
+                        className={cn(pillClass, "bg-brand-soft text-primary")}
+                      >
+                        {INDUSTRY_LABEL[r.category]}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {UNCLASSIFIED_LABEL}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {dash(r.manufacturedDate?.slice(0, 7))}
+                  </td>
+                  <td className="px-3 py-2 tabular-nums">{dash(r.dueDate)}</td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {r.shippedDate || (
+                      <span
+                        className={cn(
+                          pillClass,
+                          "bg-warning-soft text-warning-strong",
+                        )}
+                      >
+                        출고일 없음
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {r.quantity || (
+                      <span className="text-xs text-muted-foreground">
+                        미입력
+                      </span>
+                    )}
+                  </td>
+                  <td
+                    className="max-w-48 truncate px-3 py-2"
+                    title={r.note ?? ""}
+                  >
+                    {dash(r.note)}
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex justify-end gap-1">
+                      {!r.hidden && (
+                        <button
+                          type="button"
+                          disabled={!canEdit}
+                          title={
+                            canEdit ? undefined : "열람 전용 — 수정은 팀장만"
+                          }
+                          onClick={() => setEditing(r)}
+                          className={buttonCompactClass}
+                        >
+                          수정
+                        </button>
                       )}
-                    >
-                      출고일 없음
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums">
-                  {r.quantity || (
-                    <span className="text-xs text-muted-foreground">
-                      미확정
-                    </span>
-                  )}
-                </td>
-                <td
-                  className="max-w-48 truncate px-3 py-2"
-                  title={r.note ?? ""}
-                >
-                  {dash(r.note)}
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex justify-end gap-1">
-                    {!r.hidden && (
                       <button
                         type="button"
-                        disabled={!canEdit}
+                        disabled={pending || !canHide}
                         title={
-                          canEdit ? undefined : "열람 전용 — 수정은 팀장만"
+                          canHide ? undefined : "열람 전용 — 숨기기는 팀장만"
                         }
-                        onClick={() => setEditing(r)}
+                        onClick={() => toggleHidden(r)}
                         className={buttonCompactClass}
                       >
-                        수정
+                        {r.hidden ? "복구" : "숨김"}
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={pending || !canHide}
-                      title={
-                        canHide ? undefined : "열람 전용 — 숨기기는 팀장만"
-                      }
-                      onClick={() => toggleHidden(r)}
-                      className={buttonCompactClass}
-                    >
-                      {r.hidden ? "복구" : "숨김"}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {editing && <EditDialog row={editing} onClose={() => setEditing(null)} />}
     </>
   );

@@ -7,6 +7,7 @@ import { useRef, useState, useTransition } from "react";
 import { cn } from "@/shared/lib/utils";
 import {
   buttonPrimaryClass,
+  buttonSecondaryClass,
   cardTitleClass,
   pillClass,
 } from "@/shared/ui/styles";
@@ -250,7 +251,12 @@ export function UploadPanel({ canEdit }: { canEdit: boolean }) {
           )}
 
           <section className="rounded-card border bg-card p-6">
-            <h2 className={cardTitleClass}>미리보기 — {preview.fileName}</h2>
+            <h2 className={cardTitleClass}>
+              미리보기 — {preview.fileName}
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                아직 저장되지 않았습니다.
+              </span>
+            </h2>
             <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
               {SUMMARY.map(({ key, label }) => (
                 <div key={key}>
@@ -430,11 +436,28 @@ export function UploadPanel({ canEdit }: { canEdit: boolean }) {
             )}
             <button
               type="button"
+              onClick={() => {
+                setPreview(null);
+                setFile(null);
+                setOverwrite(new Set());
+                setMessage(null);
+              }}
+              disabled={pending}
+              className={buttonSecondaryClass}
+            >
+              취소
+            </button>
+            <button
+              type="button"
               onClick={save}
               disabled={!canPressSave}
               className={buttonPrimaryClass}
             >
-              {pending ? "처리 중…" : saved ? "저장됨" : "저장"}
+              {pending
+                ? "처리 중…"
+                : saved
+                  ? "저장됨"
+                  : `저장 (새 행 ${preview.summary.created.toLocaleString("ko-KR")}건${overwrite.size > 0 ? ` · 덮어쓰기 ${overwrite.size.toLocaleString("ko-KR")}건` : ""})`}
             </button>
           </div>
         </>

@@ -55,9 +55,9 @@ export function CategoryTable({
           <thead>
             <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
               <th className="px-3 py-2 font-medium">수주번호</th>
-              <th className="px-3 py-2 text-right font-medium">제조내역 행</th>
               <th className="px-3 py-2 font-medium">판매처</th>
               <th className="px-3 py-2 font-medium">최종발주처</th>
+              <th className="px-3 py-2 text-right font-medium">일련번호 수</th>
               <th className="px-3 py-2 font-medium">사업구분</th>
             </tr>
           </thead>
@@ -65,11 +65,11 @@ export function CategoryTable({
             {rows.map((r) => (
               <tr key={r.orderNo} className="border-b last:border-0">
                 <td className="px-3 py-2 font-medium">{r.orderNo}</td>
+                <td className="px-3 py-2">{r.sellers || "-"}</td>
+                <td className="px-3 py-2">{r.finalClients || "-"}</td>
                 <td className="px-3 py-2 text-right tabular-nums">
                   {r.recordCount}
                 </td>
-                <td className="px-3 py-2">{r.sellers || "-"}</td>
-                <td className="px-3 py-2">{r.finalClients || "-"}</td>
                 <td className="px-3 py-2">
                   <select
                     aria-label={`${r.orderNo} 사업구분`}

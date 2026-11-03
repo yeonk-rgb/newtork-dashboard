@@ -42,7 +42,7 @@ export async function CategoriesScreen({
     <div className="space-y-6">
       <div>
         <h1 className={`${pageTitleClass} flex flex-wrap items-center gap-3`}>
-          사업구분 지정
+          수주번호별 사업구분 지정
           {!abilities.canEdit && (
             <ReadOnlyBadge note="사업구분 변경은 팀장만 할 수 있습니다" />
           )}

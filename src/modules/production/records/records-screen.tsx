@@ -149,7 +149,7 @@ export async function RecordsScreen({
             className={inputClass}
           >
             <option value="">전체</option>
-            <option value="yes">출고됨</option>
+            <option value="yes">출고일 있음</option>
             <option value="none">출고일 없음</option>
           </select>
         </label>
@@ -191,20 +191,19 @@ export async function RecordsScreen({
       </form>
 
       <section className="rounded-card border bg-card py-6">
-        <p className="px-6 pb-3 text-sm text-muted-foreground">
-          {total.toLocaleString("ko-KR")}행 · {filter.page}/{pages}쪽
-        </p>
-        {rows.length === 0 ? (
-          <p className="px-6 text-sm text-muted-foreground">
-            조건에 맞는 제조내역이 없습니다.
+        <div className="flex flex-wrap items-center justify-between gap-2 px-6 pb-3">
+          <p className="text-sm text-muted-foreground">
+            {total.toLocaleString("ko-KR")}행 · {filter.page}/{pages}쪽
           </p>
-        ) : (
-          <RecordTable
-            rows={rows.map((r) => toRow(r, nameOf))}
-            canEdit={abilities.canEdit}
-            canHide={abilities.canHide}
-          />
-        )}
+          <Link href="/production/upload" className={buttonSecondaryClass}>
+            엑셀 업로드
+          </Link>
+        </div>
+        <RecordTable
+          rows={rows.map((r) => toRow(r, nameOf))}
+          canEdit={abilities.canEdit}
+          canHide={abilities.canHide}
+        />
         {pages > 1 && (
           <nav
             aria-label="쪽 이동"
