@@ -21,6 +21,8 @@ export type RecordRow = {
   serialNo: string;
   orderNo: string;
   modelCode: string;
+  /** M열 판매처 (생산 대시보드 판매처별) */
+  seller: string;
   shippedDate: Date | null;
   dueDate: Date | null;
   quantity: number | null;

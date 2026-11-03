@@ -59,6 +59,11 @@ export const HISTORY_SCREENS: {
   },
   { key: "production-records", label: "생산 · 제조내역", area: "production" },
   {
+    key: "production-targets",
+    label: "생산 · 목표 생산량",
+    area: "production",
+  },
+  {
     key: "production-categories",
     label: "생산 · 사업구분 지정",
     area: "production",

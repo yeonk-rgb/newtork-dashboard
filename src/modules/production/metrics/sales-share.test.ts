@@ -21,6 +21,7 @@ const row = (over: Partial<RecordRow>): RecordRow => ({
   serialNo: String(++serial).padStart(4, "0"),
   orderNo: "",
   modelCode: "02",
+  seller: "",
   shippedDate: null,
   dueDate: null,
   quantity: 1,
