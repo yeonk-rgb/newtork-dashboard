@@ -29,7 +29,7 @@ import { productionAbilities } from "../rules";
 import { TargetDialog } from "../targets/target-dialog";
 import { CsvButton, type CsvRow } from "./csv-button";
 import { loadDashboardData } from "./load-dashboard";
-import { NavSelect } from "./nav-select";
+import { NavSelect } from "@/shared/ui/nav-select";
 import {
   dashboardHref,
   parseDashboardParams,

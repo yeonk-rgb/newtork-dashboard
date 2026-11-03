@@ -31,8 +31,22 @@ export const won = (v: number | null | undefined) =>
     ? "-"
     : `${Math.round(v).toLocaleString("ko-KR")}원`;
 
+/** 비율(0~1) → % 소수 1자리 숫자. 친구 앱 파이썬 round(x, 1) 과 같게 딱 절반이면 짝수 쪽 (56.25 → 56.2) */
+export function pct1(v: number): number {
+  const scaled = v * 1000;
+  const floor = Math.floor(scaled);
+  const diff = scaled - floor;
+  const r =
+    Math.abs(diff - 0.5) < 1e-9
+      ? floor % 2 === 0
+        ? floor
+        : floor + 1
+      : Math.round(scaled);
+  return r / 10;
+}
+
 /** 비율(0~1) → "62.5%" (친구 앱 소수 1자리) */
 export const pct = (v: number | null | undefined) =>
   v === null || v === undefined
     ? "-"
-    : `${(Math.round(v * 1000) / 10).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+    : `${pct1(v).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;

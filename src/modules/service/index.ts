@@ -42,3 +42,5 @@ export async function getAttachmentFile(id: string) {
 export { ReportsScreen } from "./reports/reports-screen";
 export { ReportDetailScreen } from "./reports/report-detail-screen";
 export { ReportFormScreen } from "./reports/report-form-screen";
+// ③-b
+export { ServiceDashboardScreen } from "./dashboard/dashboard-screen";
