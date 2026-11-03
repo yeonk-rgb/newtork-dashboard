@@ -1,5 +1,7 @@
 "use client";
 // 제조내역 표 + [수정] 창 + [숨김]/[복구] — 친구 저장소 ProductionRecordsView.vue · RecordEditModal.vue
+// [수정] 창은 일련번호 검색 상세(search/)도 같이 쓴다
+import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 
 import { INDUSTRIES } from "@/shared/contracts/production";
@@ -95,7 +97,13 @@ const GROUPS: { title: string; fields: Field[] }[] = [
 
 const dash = (v: string | null | undefined) => v || "-";
 
-function EditDialog({ row, onClose }: { row: RecordRow; onClose: () => void }) {
+export function RecordEditDialog({
+  row,
+  onClose,
+}: {
+  row: RecordRow;
+  onClose: () => void;
+}) {
   const titleId = useId();
   const [form, setForm] = useState<RecordEditInput>(
     () =>
@@ -317,7 +325,17 @@ export function RecordTable({
                   )}
                 >
                   <td className="px-3 py-2 font-medium">
-                    {r.serialNo}
+                    {r.hidden ? (
+                      r.serialNo
+                    ) : (
+                      <Link
+                        href={`/production/search?id=${r.id}`}
+                        title="제품 상세 보기"
+                        className="text-primary hover:underline"
+                      >
+                        {r.serialNo}
+                      </Link>
+                    )}
                     <span className="block text-xs font-normal text-muted-foreground">
                       {r.sheetName}
                     </span>
@@ -405,7 +423,9 @@ export function RecordTable({
           </table>
         </div>
       )}
-      {editing && <EditDialog row={editing} onClose={() => setEditing(null)} />}
+      {editing && (
+        <RecordEditDialog row={editing} onClose={() => setEditing(null)} />
+      )}
     </>
   );
 }

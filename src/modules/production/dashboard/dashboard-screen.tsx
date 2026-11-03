@@ -48,7 +48,6 @@ const pct = (v: number | null) =>
   v === null
     ? "-"
     : `${(v * 100).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
-const CALENDAR_READY = false;
 const activeChip =
   "border-primary bg-primary text-primary-foreground hover:bg-primary";
 
@@ -131,10 +130,7 @@ export async function ProductionDashboardScreen({
       variant={variant}
     />
   );
-  // 납기 캘린더는 다음 PR(②-c) — 그 전까지 링크 대신 글자만
-  const calendarHref = CALENDAR_READY
-    ? `/production/calendar?year=${p.year}&month=${p.due}`
-    : null;
+  const calendarHref = `/production/calendar?year=${p.year}&month=${p.due}`;
 
   const chartRows =
     p.unit === "quarter"
@@ -284,32 +280,24 @@ export async function ProductionDashboardScreen({
             </>
           }
           value={
-            calendarHref ? (
-              <Link
-                href={calendarHref}
-                className="hover:text-primary hover:underline"
-                title={`${p.year}년 ${p.due}월 납기 캘린더 열기`}
-              >
-                {n(due[p.due - 1])}건
-              </Link>
-            ) : (
-              `${n(due[p.due - 1])}건`
-            )
+            <Link
+              href={calendarHref}
+              className="hover:text-primary hover:underline"
+              title={`${p.year}년 ${p.due}월 납기 캘린더 열기`}
+            >
+              {n(due[p.due - 1])}건
+            </Link>
           }
           sub={
-            calendarHref ? (
-              <>
-                <Link
-                  href={calendarHref}
-                  className="text-primary hover:underline"
-                >
-                  {p.due}월 납기 캘린더 보기 →
-                </Link>{" "}
-                · 실적과 별개
-              </>
-            ) : (
-              "같은 납기일 + 같은 수주번호 = 1건 · 실적과 별개"
-            )
+            <>
+              <Link
+                href={calendarHref}
+                className="text-primary hover:underline"
+              >
+                {p.due}월 납기 캘린더 보기 →
+              </Link>{" "}
+              · 실적과 별개
+            </>
           }
         />
       </div>

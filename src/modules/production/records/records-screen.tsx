@@ -5,7 +5,6 @@ import Link from "next/link";
 
 import { getCurrentUser, loadUserNames } from "@/shared/auth";
 import { INDUSTRIES } from "@/shared/contracts/production";
-import { kstDateTime } from "@/shared/format/date-time";
 import { AuditNotice } from "@/shared/ui/audit-notice";
 import { Forbidden } from "@/shared/ui/forbidden";
 import {
@@ -18,53 +17,17 @@ import {
 import { UNCLASSIFIED_LABEL } from "../labels";
 import { ReadOnlyBadge } from "../read-only-badge";
 import { productionAbilities } from "../rules";
-import { COLUMNS, DATE_FIELDS } from "../upload/columns";
-import type { ParseWarning } from "../upload/parse-sheet";
 import {
   PAGE_SIZE,
   loadRecordPage,
   parseRecordFilter,
   recordSearch,
-  type RecordRowData,
 } from "./load-records";
-import { RecordTable, type RecordRow } from "./record-table";
+import { RecordTable } from "./record-table";
+import { toRow } from "./to-row";
 
 const inputClass =
   "h-10 rounded-lg border border-input bg-background px-3 text-sm";
-
-function toRow(r: RecordRowData, nameOf: (id: string) => string): RecordRow {
-  const values = Object.fromEntries(
-    COLUMNS.map((c) => {
-      const v = (r as Record<string, unknown>)[c.field];
-      return [
-        c.field,
-        DATE_FIELDS.has(c.field)
-          ? v instanceof Date
-            ? v.toISOString().slice(0, 10)
-            : ""
-          : String(v ?? ""),
-      ];
-    }),
-  );
-  return {
-    ...(values as unknown as Omit<RecordRow, "id">),
-    id: r.id,
-    sheetName: r.sheetName,
-    serialNo: r.serialNo,
-    quantity: r.quantity === null ? "" : String(r.quantity),
-    category: r.category,
-    sourceRow: r.sourceRow,
-    fileName: r.batch.fileName,
-    updatedAt: r.updatedAt.toISOString(),
-    updatedBy: nameOf(r.updatedById),
-    updatedAtLabel: kstDateTime(r.updatedAt),
-    hidden: r.deletedAt !== null,
-    warnings: (r.importWarnings as ParseWarning[]).map((w) => ({
-      field: w.field,
-      message: w.message,
-    })),
-  };
-}
 
 export async function RecordsScreen({
   searchParams,

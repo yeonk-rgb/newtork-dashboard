@@ -31,9 +31,9 @@ function withPeriod(href: string, period: string | null) {
     : href;
 }
 
-/** 하위 메뉴: "/management"(대시보드)는 정확히 일치, 나머지는 하위 경로 포함 */
-function isSubActive(pathname: string, href: string) {
-  return href === "/management"
+/** 하위 메뉴: 묶음과 같은 주소(각 팀 대시보드 "/management"·"/production")는 정확히 일치, 나머지는 하위 경로 포함 */
+function isSubActive(pathname: string, href: string, groupHref: string) {
+  return href === groupHref
     ? pathname === href
     : pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -68,7 +68,7 @@ export function Sidebar({ items }: { items: NavItem[] }) {
         if (children && children.length > 0) {
           // 하위 메뉴가 있으면 상위는 묶음 제목 (하위 중 하나가 활성이면 굵게)
           const groupActive = children.some((c) =>
-            isSubActive(pathname, c.href),
+            isSubActive(pathname, c.href, href),
           );
           return (
             <div key={href}>
@@ -84,7 +84,7 @@ export function Sidebar({ items }: { items: NavItem[] }) {
               </Link>
               <ul className="mt-1 space-y-1">
                 {children.map((child) => {
-                  const active = isSubActive(pathname, child.href);
+                  const active = isSubActive(pathname, child.href, href);
                   return (
                     <li key={child.href}>
                       <Link

@@ -124,12 +124,8 @@ export async function loadRecordPage(filter: RecordFilter) {
       : {}),
     ...(await categoryWhere(filter.category)),
   };
-  const [total, rows, models] = await Promise.all([
-    prisma.prodRecord.count({ where }),
-    prisma.prodRecord.findMany({
-      where,
-      select: SELECT,
-      orderBy: [{ sheetName: "asc" }, { serialNo: "asc" }],
+  const [{ total, rows }, models] = await Promise.all([
+    loadRecordList(where, {
       skip: (filter.page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
@@ -138,6 +134,27 @@ export async function loadRecordPage(filter: RecordFilter) {
       distinct: ["modelCode"],
       select: { modelCode: true },
       orderBy: { modelCode: "asc" },
+    }),
+  ]);
+  return {
+    total,
+    rows,
+    models: models.map((m) => m.modelCode).filter(Boolean),
+  };
+}
+
+/** 조건에 맞는 제조내역 + 전체 행 수 (사업구분 붙임) — 제조내역 표·일련번호 검색 공용 */
+export async function loadRecordList(
+  where: Prisma.ProdRecordWhereInput,
+  page: { skip?: number; take: number },
+) {
+  const [total, rows] = await Promise.all([
+    prisma.prodRecord.count({ where }),
+    prisma.prodRecord.findMany({
+      where,
+      select: SELECT,
+      orderBy: [{ sheetName: "asc" }, { serialNo: "asc" }],
+      ...page,
     }),
   ]);
   const categories = await prisma.prodOrderCategory.findMany({
@@ -151,10 +168,9 @@ export async function loadRecordPage(filter: RecordFilter) {
       ...r,
       category: (r.orderNo && categoryOf.get(r.orderNo)) || null,
     })),
-    models: models.map((m) => m.modelCode).filter(Boolean),
   };
 }
 
 export type RecordRowData = Awaited<
-  ReturnType<typeof loadRecordPage>
+  ReturnType<typeof loadRecordList>
 >["rows"][number];
