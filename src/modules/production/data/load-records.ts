@@ -19,6 +19,7 @@ export async function loadRecords(period: Period): Promise<RecordRow[]> {
       serialNo: true,
       orderNo: true,
       modelCode: true,
+      seller: true,
       shippedDate: true,
       dueDate: true,
       quantity: true,

@@ -34,6 +34,7 @@ import {
   loadTargets,
 } from "@/modules/production/data/load-records";
 import { loadOrders } from "@/modules/production/categories/load-orders";
+import { loadDashboardData } from "@/modules/production/dashboard/load-dashboard";
 import {
   loadRecordPage,
   parseRecordFilter,
@@ -157,6 +158,10 @@ async function main() {
         ]),
         loadRecentBatches(),
       ]),
+  );
+  await check(
+    "생산 대시보드: 그 해 제조내역·목표·연도 목록 (loadDashboardData)",
+    () => loadDashboardData(2026, 2026),
   );
   await check("생산 사업구분 지정 (loadOrders)", () =>
     loadOrders({ q: "v", onlyNone: true }),
