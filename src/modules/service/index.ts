@@ -44,3 +44,6 @@ export { ReportDetailScreen } from "./reports/report-detail-screen";
 export { ReportFormScreen } from "./reports/report-form-screen";
 // ③-b
 export { ServiceDashboardScreen } from "./dashboard/dashboard-screen";
+// ③-c
+export { PartsScreen } from "./catalog/parts-screen";
+export { SitesScreen } from "./catalog/sites-screen";
