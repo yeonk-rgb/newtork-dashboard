@@ -33,6 +33,16 @@ import {
   loadRecords,
   loadTargets,
 } from "@/modules/production/data/load-records";
+import { loadOrders } from "@/modules/production/categories/load-orders";
+import { loadDashboardData } from "@/modules/production/dashboard/load-dashboard";
+import {
+  loadRecordPage,
+  parseRecordFilter,
+} from "@/modules/production/records/load-records";
+import {
+  loadExisting,
+  loadRecentBatches,
+} from "@/modules/production/upload/save-upload";
 import { loadReports } from "@/modules/service/data/load-reports";
 import { recordAudit } from "@/shared/audit/record";
 import { findSessionUser } from "@/shared/auth/session";
@@ -115,6 +125,46 @@ async function main() {
   );
   await check("메인 팀별 현황: 서비스 출장보고서 (loadReports)", () =>
     loadReports(q3),
+  );
+  await check("생산 제조내역 목록·필터 (loadRecordPage)", () =>
+    Promise.all([
+      loadRecordPage(parseRecordFilter({})),
+      loadRecordPage(
+        parseRecordFilter({
+          q: "a",
+          category: "none",
+          shipped: "yes",
+          from: "2026-01-01",
+          to: "2026-12-31",
+          hidden: "1",
+        }),
+      ),
+      loadRecordPage(parseRecordFilter({ category: "WATER" })),
+    ]),
+  );
+  await check(
+    "생산 업로드: 기존 행·이력 (loadExisting·loadRecentBatches)",
+    () =>
+      Promise.all([
+        loadExisting([
+          {
+            name: "smoke",
+            error: null,
+            fields: [],
+            rows: [],
+            skippedRows: [],
+            duplicateRows: [],
+          },
+        ]),
+        loadRecentBatches(),
+      ]),
+  );
+  await check(
+    "생산 대시보드: 그 해 제조내역·목표·연도 목록 (loadDashboardData)",
+    () => loadDashboardData(2026, 2026),
+  );
+  await check("생산 사업구분 지정 (loadOrders)", () =>
+    loadOrders({ q: "v", onlyNone: true }),
   );
   {
     // 변경 이력: 검색(대소문자 무시)·사람 목록(groupBy)·행 이력(이관 줄) — 관리자(대표) / 경영지원팀 조건 둘 다

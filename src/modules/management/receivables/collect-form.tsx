@@ -6,7 +6,7 @@ import { formatWon } from "@/shared/format/money";
 
 import type { ReceivableActionResult } from "./actions";
 import { collectReceivable } from "./actions";
-import { DialogButtons, FieldError, fieldClass } from "./modal";
+import { DialogButtons, FieldError, fieldClass } from "@/shared/ui/modal";
 import { receivableDateErrors, type ReceivableRow } from "./rules";
 
 export function CollectForm({

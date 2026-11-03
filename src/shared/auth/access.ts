@@ -50,7 +50,25 @@ const NAV_RULES: NavRule[] = [
       },
     ],
   },
-  { href: "/production", label: "생산", team: "production" },
+  {
+    href: "/production",
+    label: "생산",
+    team: "production",
+    // 통합 2단계(2026-11-03): 생산팀 저장소 화면 — 메뉴 순서도 친구 저장소 config/menu.js 그대로
+    children: [
+      { href: "/production", label: "생산 대시보드", action: "view" },
+      { href: "/production/records", label: "제조내역", action: "view" },
+      { href: "/production/search", label: "일련번호 검색", action: "view" },
+      { href: "/production/calendar", label: "납기 캘린더", action: "view" },
+      // 팀원도 화면은 보고 버튼만 비활성 ("열람 전용")
+      { href: "/production/upload", label: "엑셀 업로드", action: "view" },
+      {
+        href: "/production/categories",
+        label: "사업구분 지정",
+        action: "view",
+      },
+    ],
+  },
   { href: "/service", label: "서비스", team: "service" },
   { href: "/admin", label: "관리자", adminOnly: true },
 ];

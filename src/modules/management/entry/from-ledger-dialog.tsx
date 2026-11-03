@@ -9,7 +9,7 @@ import { cn } from "@/shared/lib/utils";
 import { buttonPrimaryClass, buttonSecondaryClass } from "@/shared/ui/styles";
 
 import { EXPENSE_TYPE_LABEL, KIND_LABEL } from "../ledger/labels";
-import { Modal } from "../receivables/modal";
+import { Modal } from "@/shared/ui/modal";
 import { TERMS } from "../terms";
 import { loadLedgerForEntry } from "./actions";
 import { FIELD_LABEL } from "./field-help";

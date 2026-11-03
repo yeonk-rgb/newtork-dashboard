@@ -100,12 +100,12 @@ describe("필터", () => {
       lt: new Date("2026-10-31T15:00:00Z"),
     });
   });
-  it("경영지원팀은 화면=관리자 계정 관리로 주소를 바꿔도 area management 조건이 붙는다", () => {
+  it("경영지원팀은 화면=관리자 계정 관리로 주소를 바꿔도 경영지원·생산 영역 조건이 붙는다", () => {
     const f = parseHistoryFilter({ screen: "admin-users" }, TODAY);
     expect(f.screen).toBe("admin-users");
     expect(historyWhere(f, historyAbilities(FAKE_USERS.mgmt))).toMatchObject({
       screen: "admin-users",
-      area: "management",
+      area: { in: ["management", "production"] },
     });
     expect(
       historyWhere(f, historyAbilities(FAKE_USERS.admin)),

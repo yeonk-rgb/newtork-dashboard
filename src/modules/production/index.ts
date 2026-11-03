@@ -59,3 +59,13 @@ export async function getProductionOverview(
   ]);
   return productionOverview(rows, targets, period);
 }
+
+// 생산 화면 (통합 2단계 ②-a, 2026-11-03)
+export { ProductionUploadScreen } from "./upload/upload-screen";
+export { RecordsScreen } from "./records/records-screen";
+export { CategoriesScreen } from "./categories/categories-screen";
+// ②-b
+export { ProductionDashboardScreen } from "./dashboard/dashboard-screen";
+// ②-c
+export { SerialSearchScreen } from "./search/search-screen";
+export { DueCalendarScreen } from "./calendar/calendar-screen";

@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 import { formatAmount } from "@/shared/format/money";
 import { buttonPrimaryClass, buttonSecondaryClass } from "@/shared/ui/styles";
 
-import { Modal } from "../receivables/modal";
+import { Modal } from "@/shared/ui/modal";
 import { TERMS } from "../terms";
 import {
   copyPreviousMonth,

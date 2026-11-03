@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { Prisma } from "@/shared/db/generated/client";
 
 import { findForbiddenKeys, isForbiddenKey } from "./forbidden";
-import { AUDIT_ACTIONS, type AuditEntry } from "./types";
+import { AUDIT_ACTIONS, AUDIT_AREAS, type AuditEntry } from "./types";
 
 /** prisma 트랜잭션 클라이언트 중 기록 표만 — 테스트에서는 가짜를 넣는다 */
 export type AuditTx = Pick<Prisma.TransactionClient, "auditLog">;
@@ -20,7 +20,7 @@ export class AuditForbiddenFieldError extends Error {
 const entrySchema = z.object({
   occurredAt: z.date(),
   actor: z.object({ id: z.string().min(1), loginId: z.string().min(1) }),
-  area: z.enum(["management", "admin"]),
+  area: z.enum(AUDIT_AREAS),
   screen: z.string().min(1).max(40),
   action: z.enum(AUDIT_ACTIONS),
   target: z.object({

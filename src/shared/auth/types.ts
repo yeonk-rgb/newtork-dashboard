@@ -6,6 +6,10 @@ export type Team = "management" | "production" | "service";
 export type ScopeTeam = Exclude<Team, "management">;
 export const SCOPE_TEAMS: readonly ScopeTeam[] = ["production", "service"];
 
+/** 관리자 화면 안내 — 팀원은 열람만, 수정은 팀장에게 "수정 권한" (처음 요구사항, 2026-11-03 생산 예외 되돌림) */
+export const SCOPE_EDIT_NOTE =
+  "팀원은 열람만 할 수 있습니다. 입력·수정·업로드가 필요한 사람은 팀장으로 바꾸고 수정 권한을 체크하세요.";
+
 /**
  * - ADMIN: 관리자(대표) — 모든 팀 + 관리자 설정
  * - MANAGEMENT: 경영지원팀 — 모든 팀 (관리자 설정 제외)

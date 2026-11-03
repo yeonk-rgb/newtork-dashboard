@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { MoneyTextInput } from "../entry/money-text-input";
 import type { ReceivableActionResult } from "./actions";
 import { createReceivable, updateReceivable } from "./actions";
-import { DialogButtons, FieldError, fieldClass } from "./modal";
+import { DialogButtons, FieldError, fieldClass } from "@/shared/ui/modal";
 import {
   CUSTOMER_MAX,
   normalizeCustomerName,

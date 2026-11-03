@@ -1,5 +1,5 @@
 "use client";
-// 입력용 모달 (네이티브 <dialog> — 포커스 가두기·Esc 닫기를 브라우저가 처리)
+// 입력용 모달 (네이티브 <dialog> — 포커스 가두기·Esc 닫기를 브라우저가 처리) — 팀 공통 (2026-11-03 receivables 에서 옮김)
 import { useEffect, useRef } from "react";
 import {
   buttonPrimaryClass,

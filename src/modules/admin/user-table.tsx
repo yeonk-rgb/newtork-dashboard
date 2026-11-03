@@ -9,6 +9,7 @@ import {
   TEAM_LABEL,
   type Role,
   type ScopeTeam,
+  SCOPE_EDIT_NOTE,
 } from "@/shared/auth/types";
 import { cn } from "@/shared/lib/utils";
 
@@ -390,6 +391,9 @@ export function UserTable({
           </tbody>
         </table>
       </div>
+      <p className="px-6 pt-3 text-xs text-muted-foreground">
+        {SCOPE_EDIT_NOTE}
+      </p>
 
       {result && (
         <p

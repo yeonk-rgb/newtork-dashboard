@@ -25,7 +25,7 @@ import {
   screenOptions,
 } from "./rules";
 
-// receivables/modal.tsx 의 fieldClass 와 같은 모양 (그 파일은 "use client" 라 서버 컴포넌트에서 상수를 가져오지 않는다)
+// shared/ui/modal.tsx 의 fieldClass 와 같은 모양 (그 파일은 "use client" 라 서버 컴포넌트에서 상수를 가져오지 않는다)
 const fieldClass =
   "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
