@@ -15,8 +15,7 @@ const ROLE_MATRIX: [string, AppUser, Expect][] = [
   ["관리자", FAKE_USERS.admin, { view: "MPS", edit: "MPS", confirm: "MPS" }],
   ["경영지원팀", FAKE_USERS.mgmt, { view: "MPS", edit: "MPS", confirm: "MPS" }],
   ["팀장(생산)", FAKE_USERS.prodLeader, { view: "P", edit: "P", confirm: "P" }],
-  // 생산은 열람 범위만 있으면 팀원도 수정·확정 (VIEWERS_CAN_EDIT, 2026-11-03)
-  ["팀원(생산)", FAKE_USERS.prodMember, { view: "P", edit: "P", confirm: "P" }],
+  ["팀원(생산)", FAKE_USERS.prodMember, { view: "P", edit: "", confirm: "" }],
 ];
 
 /** 시드 계정 7명 전체 */
@@ -24,10 +23,10 @@ const SEED_EXPECTED: Record<FakeUserKey, Expect> = {
   admin: { view: "MPS", edit: "MPS", confirm: "MPS" },
   mgmt: { view: "MPS", edit: "MPS", confirm: "MPS" },
   prodLeader: { view: "P", edit: "P", confirm: "P" },
-  prodMember: { view: "P", edit: "P", confirm: "P" },
+  prodMember: { view: "P", edit: "", confirm: "" },
   svcLeader: { view: "S", edit: "S", confirm: "S" },
   svcMember: { view: "S", edit: "", confirm: "" },
-  dual: { view: "PS", edit: "P", confirm: "P" },
+  dual: { view: "PS", edit: "", confirm: "" },
 };
 
 const LETTER: Record<Team, string> = {
@@ -78,9 +77,9 @@ describe("시드 계정 7명", () => {
 });
 
 describe("열람 범위·수정 권한 조합", () => {
-  it("겸직 팀원: 생산·서비스 둘 다 열람, 수정은 생산만 (생산팀 규칙)", () => {
+  it("겸직 팀원: 생산·서비스 둘 다 열람, 수정 불가", () => {
     expect(allowedTeams(FAKE_USERS.dual, "view")).toBe("PS");
-    expect(allowedTeams(FAKE_USERS.dual, "edit")).toBe("P");
+    expect(allowedTeams(FAKE_USERS.dual, "edit")).toBe("");
   });
 
   it("겸직 팀장: 수정 권한은 체크한 팀만", () => {
@@ -89,9 +88,8 @@ describe("열람 범위·수정 권한 조합", () => {
       editTeams: ["service"],
     });
     expect(allowedTeams(leader, "view")).toBe("PS");
-    // 생산은 열람 범위만으로 수정 (수정 권한 체크와 무관)
-    expect(allowedTeams(leader, "edit")).toBe("PS");
-    expect(allowedTeams(leader, "confirm")).toBe("PS");
+    expect(allowedTeams(leader, "edit")).toBe("S");
+    expect(allowedTeams(leader, "confirm")).toBe("S");
   });
 
   it("생산팀과 서비스팀은 서로의 페이지를 볼 수 없다", () => {
@@ -114,15 +112,9 @@ describe("열람 범위·수정 권한 조합", () => {
     expect(can(odd, "view", "service")).toBe(false);
   });
 
-  it("서비스 팀원은 수정 권한 데이터가 있어도 수정 불가", () => {
-    const odd = fakeUser("svcMember", { editTeams: ["service"] });
-    expect(can(odd, "edit", "service")).toBe(false);
-  });
-
-  it("생산은 열람 범위가 있어야 수정 — 수정 권한 데이터만 있으면 불가", () => {
-    const odd = fakeUser("svcMember", { editTeams: ["production"] });
+  it("팀원은 수정 권한 데이터가 있어도 수정 불가", () => {
+    const odd = fakeUser("prodMember", { editTeams: ["production"] });
     expect(can(odd, "edit", "production")).toBe(false);
-    expect(can(odd, "view", "production")).toBe(false);
   });
 
   it("열람 범위가 비어 있는 팀장·팀원은 아무것도 못 본다", () => {

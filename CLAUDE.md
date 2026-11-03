@@ -44,7 +44,7 @@
   - 현재 사용자: `getCurrentUser()` (cookies를 읽으므로 **`<Suspense>` 안 컴포넌트에서** 호출 — cacheComponents). 로그인 안 함·만료·비활성이면 `null`
   - 동작: `view` / `edit`(입력·임시저장) / `confirm`(확정·설정 변경). 저장 시 `createdById`/`updatedById` = `getCurrentUser().id` (외래키 없는 문자열, 시드 데이터는 `"seed"`) — 화면 표시 이름은 `loadUserNames(ids)`
   - `src/proxy.ts`: 미로그인 → `/login?next=…`, 초기 비밀번호 사용 중 → `/account/password?next=…`, 경로 권한(`route-access.ts`): 팀 경로·`/admin`은 권한 없으면 403 화면, 메인은 자기 팀으로 이동. 쓰기는 각 Server Action에서 `can()`으로 다시 확인
-  - 권한 규칙(`can.ts`, 2026-10-26 자료 기반 확정 05-14·15): 관리자·경영지원팀 = 모든 팀 view·edit·confirm, 팀장 = 열람 범위 view + 수정 권한 edit·confirm, 팀원 = 열람 범위 view. **예외: 생산은 열람 범위만 있으면 팀장·팀원 모두 edit·confirm**(`types.ts` `VIEWERS_CAN_EDIT`, 2026-11-03 사용자 결정 — 생산팀 저장소 규칙 따름, 관리자 화면에 안내 문구). 비활성·초기 비밀번호 계정은 전부 false. 관리자 설정은 `canManageUsers()`
+  - 권한 규칙(`can.ts`, 2026-10-26 자료 기반 확정 05-14·15): 관리자·경영지원팀 = 모든 팀 view·edit·confirm, 팀장 = 열람 범위 view + 수정 권한 edit·confirm, 팀원 = 열람 범위 view. (2026-11-03 생산 예외를 넣었다가 같은 날 사용자 지시로 되돌림 — 생산도 팀원은 열람만, 화면은 버튼 비활성 + "열람 전용"). 비활성·초기 비밀번호 계정은 전부 false. 관리자 설정은 `canManageUsers()`
   - 세션 12시간, 로그인 5회 실패 시 10분 잠금, 새 비밀번호 8자 이상·영문+숫자·아이디/현재 비밀번호와 다르게 (`login-rules.ts`)
   - 테스트용 가짜 사용자: `shared/auth/testing/fake-users.ts` (`*.test.ts`에서만 import)
   - **관리자 설정** `/admin`(`modules/admin`): 규칙은 `rules.ts`(`normalizeScope`·`scopeError`·`keepsAnAdmin`·`rowAbilities` — 화면·Server Action 공용), Action은 모두 `canManageUsers()` 확인. 역할·범위는 모아서 [변경]으로 일괄 저장(`updatedAt` 동시 수정 확인, Serializable 트랜잭션), 임시 비밀번호는 응답으로 한 번만 돌려주고 DB에는 해시만. 비활성화·초기화는 그 사람 세션 삭제
@@ -132,7 +132,7 @@
   - 메인 순서에 **④ 팀별 현황**(추이 및 분석 아래, AI 분석 위): 생산(확정 출고 수량·목표 달성률·납기 일정/출고 대기) / 서비스(출장 건수·유상 비율·수리 제품). 표시 모델 `productionCardModel`·`serviceCardModel`(`components/dashboard/model.ts`), 카드 `team-card.tsx`
   - 가짜 데이터: `npm run seed:teams`(`-- --remove`) — 작성자 id `seed-production`·`seed-service`면 "샘플 데이터" 배지. **실제 데이터 전에 삭제**
   - AI 분석 입력에는 아직 넣지 않음 (`build-input.ts` TODO 그대로)
-- **생산 화면 이식 ②-a(2026-11-03)**: 친구 저장소 규칙 그대로 + 이 저장소 규칙(숨김·변경 이력). 권한 `production/rules.ts`의 `productionAbilities()`(화면·Server Action 공용)
+- **생산 화면 이식 ②-a(2026-11-03)**: 친구 저장소 규칙 그대로 + 이 저장소 규칙(숨김·변경 이력). 권한 `production/rules.ts`의 `productionAbilities()`(화면·Server Action 공용) — 팀원은 열람만(버튼 비활성 + "열람 전용" 배지, Server Action 거부 테스트 `records/actions.test.ts`·`upload/actions.test.ts`)
   - **제조내역 엑셀 업로드** `/production/upload`(`upload/`): 양식 `columns.ts`(8~9행 머리글 B~Y, 10행부터, J8 "뉴토크 번호"), 파서 `parse-sheet.ts`(순수 함수 — 날짜 못 읽으면 비우고 경고, 부시 가공 숫자 셀 6자리 복원, 일련번호·모델명 숫자 셀 경고, 일련번호 없는 행 건너뜀, 파일 안 중복 오류), 판정 `classify.ts`(키 = 시트 + 일련번호, 새로 / 값이 다름 / 변경 없음 / **숨긴 행과 같음 = 저장 안 함**), 저장 `save-upload.ts`(Serializable 트랜잭션 안에서 다시 판정, 같은 파일 SHA-256 차단, 바뀐 행은 체크한 것만·엑셀 칸만 덮어씀 — 수량 유지, 변경 이력 요약 1건 `area: "production"`·`screen: "production-upload"`). .xlsx만·5MB. 파일 읽기는 `shared/upload/read-table.ts`
   - **제조내역** `/production/records`(`records/`): 필터(검색·모델명·사업구분·출고 여부·출고일 기간)는 주소 GET, 50행씩. [수정] 창(시트·일련번호 제외 전 칸 + 수량 + 사업구분 — 고친 칸의 변환 경고는 지움, `updatedAt` 동시 수정 확인), **삭제 대신 숨김**(`deletedAt` — 조회 시 반드시 `deletedAt: null`, 지표 `loadRecords()`도 제외)·복구. 변경 이력 `production-records`
   - **사업구분 지정** `/production/categories`(`categories/`): 수주번호별 행 수·판매처·최종발주처, 고르면 바로 저장(`setOrderCategory`, 숨기지 않은 제조내역에 있는 수주번호만). 변경 이력 `production-categories`

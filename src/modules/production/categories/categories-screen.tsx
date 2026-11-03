@@ -12,6 +12,7 @@ import {
   pageTitleClass,
 } from "@/shared/ui/styles";
 
+import { ReadOnlyBadge } from "../read-only-badge";
 import { productionAbilities } from "../rules";
 import { CategoryTable } from "./category-table";
 import { loadOrders } from "./load-orders";
@@ -40,7 +41,12 @@ export async function CategoriesScreen({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={pageTitleClass}>사업구분 지정</h1>
+        <h1 className={`${pageTitleClass} flex flex-wrap items-center gap-3`}>
+          사업구분 지정
+          {!abilities.canEdit && (
+            <ReadOnlyBadge note="사업구분 변경은 팀장만 할 수 있습니다" />
+          )}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           제조내역 엑셀에는 산업 분야가 없어 수주번호마다 직접 지정합니다.
           지정하면 같은 수주번호의 일련번호 전체에 적용되고, 나중에 올라오는

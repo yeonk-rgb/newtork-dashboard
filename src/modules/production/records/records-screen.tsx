@@ -16,6 +16,7 @@ import {
 } from "@/shared/ui/styles";
 
 import { UNCLASSIFIED_LABEL } from "../labels";
+import { ReadOnlyBadge } from "../read-only-badge";
 import { productionAbilities } from "../rules";
 import { COLUMNS, DATE_FIELDS } from "../upload/columns";
 import type { ParseWarning } from "../upload/parse-sheet";
@@ -82,8 +83,11 @@ export async function RecordsScreen({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className={pageTitleClass}>
+        <h1 className={`${pageTitleClass} flex flex-wrap items-center gap-3`}>
           제조내역{filter.hidden ? " — 숨긴 행" : ""}
+          {!abilities.canEdit && (
+            <ReadOnlyBadge note="수정·숨기기는 팀장만 할 수 있습니다" />
+          )}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           엑셀 1행 = 일련번호 1개. 수량은 엑셀에 없어 확인된 것만 [수정]에서

@@ -6,15 +6,9 @@
 //   경영지원팀   열람·수정·확정       열람·수정·확정
 //   팀장         ✕                   열람 범위 → 열람, 수정 권한 → 수정·확정
 //   팀원         ✕                   열람 범위 → 열람
-//   (예외) 생산   열람 범위가 있으면 팀장·팀원 모두 열람·수정·확정 — VIEWERS_CAN_EDIT (2026-11-03 사용자 결정, 생산팀 규칙)
 //
 // 비활성 계정, 초기 비밀번호를 아직 안 바꾼 계정은 모든 동작 불가.
-import {
-  VIEWERS_CAN_EDIT,
-  type Action,
-  type AppUser,
-  type Team,
-} from "./types";
+import type { Action, AppUser, Team } from "./types";
 
 export function can(user: AppUser, action: Action, team: Team): boolean {
   if (!user.active || user.mustChangePassword) return false;
@@ -27,14 +21,11 @@ export function can(user: AppUser, action: Action, team: Team): boolean {
       if (team === "management" || !user.viewTeams.includes(team)) {
         return false;
       }
-      if (VIEWERS_CAN_EDIT.includes(team)) return true;
       // 수정 권한이 있으면 확정까지 (팀장 = 자기 팀 데이터 수정 가능)
       return action === "view" || user.editTeams.includes(team);
     case "MEMBER":
-      if (team === "management" || !user.viewTeams.includes(team)) {
-        return false;
-      }
-      return action === "view" || VIEWERS_CAN_EDIT.includes(team);
+      if (team === "management") return false;
+      return action === "view" && user.viewTeams.includes(team);
   }
 }
 

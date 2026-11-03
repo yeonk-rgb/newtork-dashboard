@@ -367,25 +367,30 @@ export function RecordTable({
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex justify-end gap-1">
-                    {canEdit && !r.hidden && (
+                    {!r.hidden && (
                       <button
                         type="button"
+                        disabled={!canEdit}
+                        title={
+                          canEdit ? undefined : "열람 전용 — 수정은 팀장만"
+                        }
                         onClick={() => setEditing(r)}
                         className={buttonCompactClass}
                       >
                         수정
                       </button>
                     )}
-                    {canHide && (
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => toggleHidden(r)}
-                        className={buttonCompactClass}
-                      >
-                        {r.hidden ? "복구" : "숨김"}
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      disabled={pending || !canHide}
+                      title={
+                        canHide ? undefined : "열람 전용 — 숨기기는 팀장만"
+                      }
+                      onClick={() => toggleHidden(r)}
+                      className={buttonCompactClass}
+                    >
+                      {r.hidden ? "복구" : "숨김"}
+                    </button>
                   </div>
                 </td>
               </tr>

@@ -117,6 +117,7 @@ export function UploadPanel({ canEdit }: { canEdit: boolean }) {
   };
 
   const choose = (list: FileList | null) => {
+    if (!canEdit) return;
     const next = list?.[0] ?? null;
     setFile(next);
     setMessage(null);
@@ -165,10 +166,12 @@ export function UploadPanel({ canEdit }: { canEdit: boolean }) {
       <section className="rounded-card border bg-card p-6">
         <div
           role="button"
-          tabIndex={0}
-          onClick={() => inputRef.current?.click()}
+          tabIndex={canEdit ? 0 : -1}
+          aria-disabled={!canEdit}
+          onClick={() => canEdit && inputRef.current?.click()}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+            if (canEdit && (e.key === "Enter" || e.key === " "))
+              inputRef.current?.click();
           }}
           onDragOver={(e) => {
             e.preventDefault();
@@ -181,13 +184,19 @@ export function UploadPanel({ canEdit }: { canEdit: boolean }) {
             choose(e.dataTransfer.files);
           }}
           className={cn(
-            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-10 text-center transition-colors duration-150",
-            dragging ? "border-primary bg-brand-soft" : "hover:bg-primary-50",
+            "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-10 text-center transition-colors duration-150",
+            !canEdit
+              ? "cursor-not-allowed bg-muted text-muted-foreground"
+              : dragging
+                ? "cursor-pointer border-primary bg-brand-soft"
+                : "cursor-pointer hover:bg-primary-50",
           )}
         >
           <Upload className="size-5 text-muted-foreground" aria-hidden />
           <p className="text-sm font-medium">
-            제조내역 엑셀(.xlsx)을 여기에 끌어다 놓거나 클릭해서 선택
+            {canEdit
+              ? "제조내역 엑셀(.xlsx)을 여기에 끌어다 놓거나 클릭해서 선택"
+              : "열람 전용 — 업로드는 팀장만 할 수 있습니다"}
           </p>
           <p className="text-xs text-muted-foreground">
             8~9행 머리글, 10행부터 데이터 · 최대 5MB
@@ -203,6 +212,7 @@ export function UploadPanel({ canEdit }: { canEdit: boolean }) {
           ref={inputRef}
           type="file"
           accept=".xlsx"
+          disabled={!canEdit}
           className="hidden"
           onChange={(e) => {
             choose(e.target.files);

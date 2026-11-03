@@ -57,7 +57,8 @@ const NAV_RULES: NavRule[] = [
     // 통합 2단계(2026-11-03): 생산팀 저장소 화면을 옮기는 중 — 대시보드·검색·캘린더는 다음 PR
     children: [
       { href: "/production/records", label: "제조내역", action: "view" },
-      { href: "/production/upload", label: "엑셀 업로드", action: "edit" },
+      // 팀원도 화면은 보고 버튼만 비활성 ("열람 전용")
+      { href: "/production/upload", label: "엑셀 업로드", action: "view" },
       {
         href: "/production/categories",
         label: "사업구분 지정",
