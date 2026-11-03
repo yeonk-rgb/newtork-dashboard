@@ -51,13 +51,31 @@ export const INDUSTRY_COLORS: Record<string, string> = {
   ETC: PALETTE.slate,
 };
 
-/** 제품 시리즈 (목업 코드 기준 — 실제 시리즈 목록은 생산팀과 합의 후 갱신) */
-export const SERIES_COLORS: Record<string, string> = {
-  SERIES_A: PALETTE.navy,
-  SERIES_B: PALETTE.copper,
-  SERIES_C: PALETTE.sage,
-  SERIES_D: PALETTE.mauve,
-};
+/**
+ * 제품(모델명)별 색 — 모델 목록이 기간마다 달라 고정 표를 둘 수 없으므로, 모델명 오름차순으로 팔레트 순서대로 준다
+ * (조각도 같은 순서라 인접 쌍은 위 검증 순서와 같다). "기타 모델"(otherKey)·7번째부터는 슬레이트
+ */
+const SERIES_SEQUENCE = [
+  PALETTE.navy,
+  PALETTE.copper,
+  PALETTE.sage,
+  PALETTE.mauve,
+  PALETTE.sand,
+  PALETTE.steel,
+];
+export function seriesColors(
+  keys: string[],
+  otherKey: string,
+): { order: string[]; colors: Record<string, string> } {
+  const named = keys.filter((k) => k !== otherKey).sort();
+  const order = keys.includes(otherKey) ? [...named, otherKey] : named;
+  const colors: Record<string, string> = {};
+  order.forEach((k, i) => {
+    colors[k] =
+      k === otherKey ? PALETTE.slate : (SERIES_SEQUENCE[i] ?? PALETTE.slate);
+  });
+  return { order, colors };
+}
 
 /** 매출 구성: 제품·상품·용역 */
 export const REVENUE_COLORS: Record<string, string> = {

@@ -95,6 +95,17 @@ export function periodEndDate(period: Period): Date {
   return new Date(Date.UTC(last.year, last.month, 0));
 }
 
+/** 기간의 날짜 범위 [시작, 끝) — UTC 자정 (DB @db.Date 칸 조회용: { gte, lt }) */
+export function periodDateRange(period: Period): { gte: Date; lt: Date } {
+  const months = periodMonths(period);
+  const first = months[0];
+  const last = months.at(-1)!;
+  return {
+    gte: new Date(Date.UTC(first.year, first.month - 1, 1)),
+    lt: new Date(Date.UTC(last.year, last.month, 1)),
+  };
+}
+
 export function periodLabel(period: Period): string {
   switch (period.unit) {
     case "month":

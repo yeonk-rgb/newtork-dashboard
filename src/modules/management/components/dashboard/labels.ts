@@ -26,6 +26,7 @@ export const DASHBOARD_LABELS = {
   areas: {
     status: "분기별 목표 달성 현황",
     trend: "추이 및 분석",
+    teams: "팀별 현황",
     ai: "AI 분석",
   },
   targetCard: "목표매출 달성률",
@@ -45,15 +46,22 @@ export const DASHBOARD_LABELS = {
   otherExpenseHint: "(광고선전비·접대비 등)",
   otherExpenseToggle: "항목별 보기",
   trendChart: "매출·지출 추이",
-  industry: "산업 분야별 매출",
-  series: "제품별 매출",
-  /** 제품별 매출 카드 안 작은 글씨 — 기준은 처음 요구사항대로 제품 시리즈 */
-  seriesBasis: "제품 시리즈 기준 · 금액 기준",
-  /** 산업 분야별 매출 카드 안 작은 글씨 — 처음 요구사항의 7개 분류, 비중은 금액 기준 (05-6·10) */
+  /** 생산팀 데이터에 금액이 없어 확정 출고 수량 기준 (2026-11-03, 05-10 갱신) */
+  industry: "산업 분야별 판매량",
+  series: "제품별 판매량",
+  /** 제품별 카드 안 작은 글씨 — 모델명은 제조내역 엑셀 C열 원본 값 (생산팀 specs/07 Q7) */
+  seriesBasis: "모델명(제조내역 C열) 기준 · 확정 출고 수량",
+  /** 산업 분야별 카드 안 작은 글씨 — 처음 요구사항의 7개 분류, 수주번호별 사업구분 (05-6) */
   industryBasis:
-    "7개 분류(상하수도·발전소·가스·오일·석유·민간 플랜트·기타) · 금액 기준",
+    "7개 분류(상하수도·발전소·가스·오일·석유·민간 플랜트·기타) · 확정 출고 수량",
+  shareEmpty: "이 기간에 확정 출고 수량이 없습니다.",
   sampleBadge: "샘플 데이터",
   sampleNote: "합계는 이 기간 확정 매출, 비중은 가상(생산팀 데이터 연동 전)",
+  sampleProductionNote: "시연용 가짜 데이터 포함 (실제 데이터 넣기 전에 삭제)",
+  team: {
+    production: "생산팀",
+    service: "서비스팀",
+  },
 } as const;
 
 /** 비교 줄 이름: 전월 / 전분기 / 전년 + 전년 동기 */

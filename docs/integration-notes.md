@@ -77,12 +77,13 @@ type Period =
 
 ## 6. 팀 간 연동 함수
 
-메인 화면이 생산팀 데이터를 가져가는 형식: **`docs/interface-production.md`** (합의 전 초안)
+메인 화면이 생산·서비스팀 데이터를 가져가는 형식: **`docs/interface-production.md`** (2026-11-03 통합 1단계 구현)
 
-- `getSalesShareByIndustry(period)`, `getSalesShareBySeries(period)` → `{ items, source: "mock" | "production" }`
-- 타입: `src/shared/contracts/production.ts`
-- 합의 전까지 경영지원팀은 같은 형식의 **목업**(`src/modules/management/external/production-mock.ts`)으로 개발합니다. 이름·타입을 바꿀 땐 서로 알려 주세요.
-- 메인 화면은 목업일 때(`source: "mock"`)만 **합계를 그 기간 확정 총매출에 맞추고 비중만 가상으로** 보여줍니다 (`src/modules/management/external/align-mock.ts`, 시연 시 매출 카드와 합계가 다르지 않게). 실제 생산팀 데이터(`source: "production"`)는 그대로 쓰므로, **통합 후에는 이 맞춤이 필요 없습니다** — 목업 파일과 함께 정리해 주세요. 단, 실제 데이터의 판매 합계와 경영지원 매출 합계가 다를 수 있으니(집계 기준일·VAT·용역 포함 여부) 그 차이를 화면에서 어떻게 안내할지는 통합 때 정합니다.
+- 생산 `getSalesShareByIndustry(period)`·`getSalesShareBySeries(period)` → `{ items, source, basis: "quantity", unconfirmedRows, unclassifiedQuantity, hasSample }`, `getProductionOverview(period)` / 서비스 `getServiceOverview(period)`
+- 타입: `src/shared/contracts/production.ts`·`service.ts`
+- **통합 1단계(2026-11-03)**: 친구 저장소(lyjradiant-max/newtalk-korea-system, Django+Vue)의 생산·서비스 모델을 Prisma 로(`prisma/schema/production.prisma` `prod_*`, `service.prisma` `svc_*`), 집계 규칙을 순수 함수로(`modules/production/metrics/`·`modules/service/metrics/`) 옮겼습니다. 목업(`production-mock.ts`·`align-mock.ts`)은 지웠습니다
+- 생산팀 자료에 판매 금액이 없어 산업 분야별·제품별 도넛은 **확정 출고 수량 기준**입니다 (05-10 갱신). 경영지원 매출 합계와 맞추지 않습니다
+- 다음 단계: 생산(엑셀 업로드·제조내역·일련번호 검색·납기 캘린더·사업구분 지정·목표)·서비스(출장보고서·PDF 등록·부품·출장지·가격) 화면 이식. 지금 데이터는 `npm run seed:teams` 가짜 데이터뿐 (`-- --remove` 로 삭제)
 
 ## 7. 공통 UI
 

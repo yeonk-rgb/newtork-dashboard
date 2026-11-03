@@ -39,7 +39,7 @@
 팀별로 각자 저장소에서 개발하고 나중에 합친다. **이 저장소는 경영지원팀(메인 화면 포함) 모듈 개발용**이다.
 
 - **개발 범위**: `modules/management`, `app/(dashboard)/`의 메인(`page.tsx`)·`management/`, `prisma/schema/management.prisma`(`mgmt_*` 테이블), 경영지원팀이 쓰는 `shared/`
-- **손대지 않는 곳**: `production/`, `service/` 폴더(모듈·화면·스키마)는 placeholder 그대로 두고 수정하지 않는다
+- **통합 1단계(2026-11-03 사용자 지시)**: 생산·서비스팀 친구 저장소(lyjradiant-max/newtalk-korea-system, Django+Vue)를 이 저장소로 옮기는 중 — `modules/production`·`modules/service`·`production.prisma`(`prod_*`)·`service.prisma`(`svc_*`)도 수정한다. 지금은 메인 연동(집계 규칙·스키마·가짜 시드)만, 생산·서비스 화면(`app/(dashboard)/production|service`)은 아직 placeholder. 옮길 때는 친구 저장소의 규칙(specs/·`backend/*/dashboard.py`)을 그대로 따르고 바꾸면 사용자에게 먼저 알린다
 - **인증·계정·권한** (2026-10-21 실제 로그인으로 교체): 아이디·비밀번호 로그인(회원가입 없음, 관리자가 발급), 외부 패키지 없이 Node 내장 `scrypt` + DB 세션(`auth_user`·`auth_session`, `prisma/schema/auth.prisma`). 권한 확인은 **반드시 `shared/auth`의 `can()` 함수를 거친다**
   - 현재 사용자: `getCurrentUser()` (cookies를 읽으므로 **`<Suspense>` 안 컴포넌트에서** 호출 — cacheComponents). 로그인 안 함·만료·비활성이면 `null`
   - 동작: `view` / `edit`(입력·임시저장) / `confirm`(확정·설정 변경). 저장 시 `createdById`/`updatedById` = `getCurrentUser().id` (외래키 없는 문자열, 시드 데이터는 `"seed"`) — 화면 표시 이름은 `loadUserNames(ids)`
@@ -127,7 +127,11 @@
 - **화면 단어(2026-10-26 담당자 요청)**: 화면·엑셀·변경 이력·AI 문장의 단어는 담당자님 자료 단어 — 경영지원 관리(옛 채권·채무), 장기 미수금, 당월 수금, 당월 수금예정, 미수금 건별 기록(옛 미수금 관리), 자금 수지 예측. **단어는 `modules/management/terms.ts`의 `TERMS` 한 곳**(사이드바 `shared/auth/access.ts`는 shared라 글자로 두고 `terms.test.ts`가 같은지 고정, 같은 테스트가 src 코드(주석 제외)에 옛 단어가 다시 들어오면 실패). 주소·코드 이름·DB 값·파일명 `경영지원_관리_*.xlsx`·엑셀 메모 판별 글자("장기미수금"·"수금된"·"수금예정")는 그대로. 리포트 시트 "경영지원 관리 2026-10"·"경영지원 관리 상세", 예전 "채권·채무 2026-10"도 `selectLedgerSheet`가 이름 끝 기준년월로 고름. AI 프롬프트 `2026-10-26.2`
 - **3~6개월 자금 수지 예측(2026-10-26 결정 05-41~46, PR ⑤)**: 계산 `metrics/cash-forecast.ts`(순수 함수 `computeCashForecast`), 조회 `data/load-cash-forecast.ts`, 공개 `getCashForecast()`(경영지원 view, **오늘 기준 — 고른 기간과 무관**), 화면 `/management#cash-forecast`(`cash-forecast-section.tsx`, 미수금 아래). 규칙 표는 `docs/design-cashflow-forecast.md` 맨 위 — 다음 달부터 최대 6개월(기본 3), 예정 = 경영지원 관리 기준월 B 행(외상매출금 당월 수금예정 / 외상매입금·미지급비용 — 예정일 없으면 B+1), 추정 = B+2 달부터 최근 확정 3개월 평균(매출·매입·그 외 ×1.1, 경비 그대로), 장기 미수금 제외, 부가세 포함 금액. 기준 문구 `settings.ts` `CASH_FORECAST_BASIS`, 설정 `cashForecast`. 엑셀·리포트·AI·메인에는 아직 넣지 않음
   - **월말 통장 잔액**: `MonthlyFinance.cashBalance BigInt?`(마이그레이션 `20261026120000_monthly_cash_balance`), 월간 입력 맨 아래 "자금 (선택)" — 빈칸 = null(0원과 다름), 합계·확정 0원 확인·엑셀 업로드·월간 입력 엑셀에 넣지 않음, 변경 이력 "월말 통장 잔액"(확정·확정 후 수정 때), 브라우저 임시 보관 `cash`. 예상 잔액 = 이번 달까지 가장 최근 값(임시저장 달 포함) + 누적 순수지
-- 생산팀 데이터(산업분야·제품 시리즈 비중) 연동 형식: `docs/interface-production.md` (합의 전 초안)
+- **생산·서비스 메인 연동(2026-11-03 통합 1단계)**: 형식 `docs/interface-production.md`. `page.tsx`가 `modules/production`·`modules/service` `index.ts`를 불러 `MainDashboard`의 `teams`로 넘긴다(모듈끼리 import 금지). 목업(`production-mock.ts`·`align-mock.ts`)은 삭제
+  - 산업 분야별·제품별 도넛 = **확정 출고 수량 기준**(생산팀 자료에 금액 없음, 05-10 갱신) — 출고일자 기준, 수량 미확정 행·사업구분 미분류 수량은 조각에 넣지 않고 "제외:" 안내, 제품 = 모델명(C열) 원본 값, 색은 `seriesColors()`(모델명 오름차순)
+  - 메인 순서에 **④ 팀별 현황**(추이 및 분석 아래, AI 분석 위): 생산(확정 출고 수량·목표 달성률·납기 일정/출고 대기) / 서비스(출장 건수·유상 비율·수리 제품). 표시 모델 `productionCardModel`·`serviceCardModel`(`components/dashboard/model.ts`), 카드 `team-card.tsx`
+  - 가짜 데이터: `npm run seed:teams`(`-- --remove`) — 작성자 id `seed-production`·`seed-service`면 "샘플 데이터" 배지. **실제 데이터 전에 삭제**
+  - AI 분석 입력에는 아직 넣지 않음 (`build-input.ts` TODO 그대로)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
   - **[경영지원 관리에서 불러오기](2026-10-26 결정 05-1·24·25, PR ③)**: 계산 `entry/from-ledger.ts`(순수 함수), 행 읽기 Server Action `loadLedgerForEntry`(읽기만, `entryAbilities`가 readOnly면 거부, 숨긴 행·외상매출금 제외), 미리보기 `from-ledger-dialog.tsx`. 외상매입금 → 상품·원재료 매입(매입유형, 빈 행은 고른 칸), 직원 → 경비, 업체 → 그 외 지출(같은 이름 항목, "기타"는 "기타…" 항목, 없으면 고름). **업체는 자동이체 포함 전체 합계**(F열 총액·자동이체 합계도 표시). 블록별 ÷1.1 체크(외상매입금·업체 기본 체크, 직원 해제), 칸 단위 반올림(`toSupplyAmount`). [입력란에 채우기]는 저장하지 않음 — 저장·변경 이력은 기존 [임시저장]·[확정] 그대로
@@ -245,8 +249,8 @@ newtork-dashboard/ (= 이 폴더)
 │  │  ├─ base.prisma          # datasource, generator
 │  │  ├─ auth.prisma          # auth_user, auth_session (로그인·권한, 공통)
 │  │  ├─ management.prisma    # mgmt_* 테이블
-│  │  ├─ production.prisma    # (이 저장소에서는 만들지 않음)
-│  │  └─ service.prisma       # (이 저장소에서는 만들지 않음)
+│  │  ├─ production.prisma    # prod_* (통합 1단계 2026-11-03 — 친구 저장소에서 옮김)
+│  │  └─ service.prisma       # svc_* (통합 1단계 — 출장보고서·동행자·제품만, 부품·가격은 다음 단계)
 │  ├─ migrations/
 │  └─ seed.ts                 # 경영지원팀 샘플 데이터 (가짜)
 ├─ src/
@@ -257,8 +261,8 @@ newtork-dashboard/ (= 이 폴더)
 │  │  │  ├─ page.tsx          # 메인 = 전사 요약 (경영지원팀)
 │  │  │  ├─ admin/            # 관리자 설정 (관리자만)
 │  │  │  ├─ management/
-│  │  │  ├─ production/       # placeholder — 수정 금지
-│  │  │  └─ service/          # placeholder — 수정 금지
+│  │  │  ├─ production/       # placeholder (화면 이식은 다음 단계)
+│  │  │  └─ service/          # placeholder (화면 이식은 다음 단계)
 │  │  ├─ account/password/    # 비밀번호 변경 (초기 비밀번호면 강제)
 │  │  └─ api/                 # 꼭 필요한 Route Handler만
 │  ├─ modules/
@@ -270,8 +274,8 @@ newtork-dashboard/ (= 이 폴더)
 │  │  │  ├─ schemas.ts        # Zod 스키마
 │  │  │  ├─ excel-mapping.ts  # 엑셀 열 → 필드 매핑
 │  │  │  └─ index.ts          # 외부 공개 API
-│  │  ├─ production/          # placeholder — 수정 금지
-│  │  └─ service/             # placeholder — 수정 금지
+│  │  ├─ production/          # 메인 연동 집계(metrics/)·조회(data/)·index.ts (통합 1단계)
+│  │  └─ service/             # 메인 연동 집계(metrics/)·조회(data/)·index.ts (통합 1단계)
 │  ├─ shared/
 │  │  ├─ auth/                # can(user, action, team), 로그인 세션, 비밀번호 해시, getCurrentUser()
 │  │  ├─ db/                  # Prisma client (generated/ 는 git 제외)
@@ -301,12 +305,12 @@ newtork-dashboard/ (= 이 폴더)
 |---|---|
 | `management/`, 메인 화면, `shared/`, `prisma/schema/base.prisma`·`management.prisma` | 나 (경영지원팀) — **이 저장소의 개발 범위** |
 | `admin/`, 로그인·계정 | 나 (경영지원팀) — 2026-10-21 인증 시리즈로 구현, 다른 팀은 `docs/integration-notes.md` 8번 방식으로 붙인다 |
-| `production/` (+ `production.prisma`) | 생산팀 담당자 — 각자 저장소에서 개발, 여기서는 placeholder |
-| `service/` (+ `service.prisma`) | 서비스팀 담당자 — 각자 저장소에서 개발, 여기서는 placeholder |
+| `production/` (+ `production.prisma`) | 생산팀 담당 친구 저장소(Django+Vue)에서 개발 → 통합 1단계(2026-11-03)부터 이 저장소로 옮기는 중 |
+| `service/` (+ `service.prisma`) | 서비스팀 담당 친구 저장소에서 개발 → 통합 1단계부터 이 저장소로 옮기는 중 |
 
 ## 운영 규칙
 
-- **다른 팀 모듈 폴더 수정 금지**: 내 담당이 아닌 `modules/<팀>`, `app/(dashboard)/<팀>`, `<팀>.prisma`는 수정하지 않는다. 필요한 변경은 해당 담당자에게 요청한다.
+- **다른 팀 모듈 폴더**: 통합 1단계(2026-11-03)부터 생산·서비스 폴더도 이 저장소에서 수정한다 (친구 저장소 규칙을 옮기는 범위). 규칙 자체를 바꿔야 하면 생산·서비스 담당 친구와 먼저 맞춘다.
 - **모듈 간 import 금지**: `modules/<팀>`끼리 직접 import하지 않는다. 공통 코드는 `shared/`에만 둔다. (`eslint-plugin-boundaries`로 검사)
 - **연동은 `index.ts` 공개 함수로만**: 메인 대시보드 등에서 다른 팀 데이터가 필요하면 해당 모듈 `index.ts`가 export한 함수(예: `getSalesShareByIndustry(period)`)만 사용한다. 통합 전까지는 `docs/interface-production.md` 형식 그대로의 **목업**을 쓴다.
 - **기간 처리**: DB에는 **월 단위로만 저장**하고, 분기·연간은 조회할 때 계산한다.

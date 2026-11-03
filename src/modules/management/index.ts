@@ -69,7 +69,11 @@ export {
   DashboardTopSkeleton,
   resolvePeriod,
 } from "./components/dashboard-top";
-export { AiArea, MainDashboard } from "./components/dashboard/main-dashboard";
+export {
+  AiArea,
+  MainDashboard,
+  type TeamData,
+} from "./components/dashboard/main-dashboard";
 export { AiCommentSection } from "./ai/ai-comment-card";
 export { ManagementDetail } from "./components/detail/management-detail";
 
@@ -89,12 +93,6 @@ export { HistoryScreen } from "./history/history-screen";
 export { exportHistory, HistoryExportError } from "./history/export-history";
 export { UploadScreen } from "./upload/upload-screen";
 export { buildTemplate, TEMPLATE_FILE_NAME } from "./upload/template";
-
-// 메인 원형 그래프용 생산팀 데이터 — 통합 전까지 목업 (source: "mock")
-export {
-  getSalesShareByIndustry,
-  getSalesShareBySeries,
-} from "./external/production-mock";
 
 export type {
   ManagementSummary,

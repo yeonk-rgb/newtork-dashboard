@@ -1,0 +1,82 @@
+// 서비스팀 스키마 — 친구 저장소(lyjradiant-max/newtalk-korea-system) backend/service/models.py 를 옮김 (2026-11-03 통합 1단계)
+// - 테이블명은 svc_ 접두사, *ById 는 외래키 없는 사용자 id 문자열 (docs/integration-notes.md 8번)
+// - 출장보고서 1건 = 출장 1건, 기간 기준 = 출장 시작일 (specs/07 S0)
+// - 사람 이름(작성자·동행자·승인자)은 PDF처럼 글자로 저장 (앱 계정과 연결하지 않음)
+// - 부품·출장지·출장지별 가격(Part·Site·SitePartPrice)은 다음 단계에서 옮긴다 (메인 연동에는 쓰지 않음)
+
+/// 비용청구 유무 — null = 미입력 (유상 비율에서 뺌)
+enum SvcBilling {
+  PAID
+  FREE
+}
+
+/// 출장보고서
+model SvcReport {
+  id               String      @id @default(cuid())
+  /// 출장 목적
+  title            String
+  status           String      @default("")
+  requestOrgType   String      @default("")
+  /// 요청처
+  requestOrg       String      @default("")
+  siteContact      String      @default("")
+  address          String      @default("")
+  /// 시·도 (null = 미지정)
+  region           String?
+  /// 시·군·구 (null = 미확인)
+  sigungu          String?
+  /// 출장 시작일 — 집계 기준일. 없으면 어느 기간에도 넣지 않음
+  tripStart        DateTime?   @db.Date
+  tripEnd          DateTime?   @db.Date
+  extraTrip        String      @default("")
+  authorName       String      @default("")
+  writtenAt        DateTime?
+  happyCallDate    DateTime?   @db.Date
+  workType         String      @default("")
+  faultDescription String      @default("")
+  workDescription  String      @default("")
+  workResult       String      @default("")
+  billing          SvcBilling?
+  quoteType        String      @default("")
+  quote            String      @default("")
+  approver         String      @default("")
+  cc               String      @default("")
+  note             String      @default("")
+
+  companions SvcReportCompanion[]
+  products   SvcReportProduct[]
+
+  createdById String
+  updatedById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tripStart])
+  @@index([region, sigungu])
+  @@map("svc_report")
+}
+
+/// 동행자
+model SvcReportCompanion {
+  id       String    @id @default(cuid())
+  reportId String
+  report   SvcReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  name     String
+
+  @@index([reportId])
+  @@map("svc_report_companion")
+}
+
+/// 제품 목록 (수량은 선택 — PDF에 없음)
+model SvcReportProduct {
+  id        String    @id @default(cuid())
+  reportId  String
+  report    SvcReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  modelName String
+  spec      String    @default("")
+  serialNo  String    @default("")
+  quantity  Int?
+
+  @@index([reportId])
+  @@map("svc_report_product")
+}
