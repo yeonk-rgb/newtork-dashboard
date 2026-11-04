@@ -13,6 +13,8 @@ import {
 import { can, getCurrentUser } from "@/shared/auth";
 import { Forbidden } from "@/shared/ui/forbidden";
 
+import { aiTeams } from "../ai-teams";
+
 // 경영지원 상세: 상단(기간·AI 분석·KPI) + 표·수치 위주 상세 (금액은 원 단위 전체)
 export default function ManagementPage({
   searchParams,
@@ -49,7 +51,7 @@ async function ManagementContent({
       <DashboardTop
         title="경영지원 상세"
         summary={summary}
-        aboveKpis={<AiCommentSection summary={summary} />}
+        aboveKpis={<AiCommentSection summary={summary} teams={aiTeams} />}
       />
       <ManagementDetail summary={summary} trend={trend} forecast={forecast} />
     </div>

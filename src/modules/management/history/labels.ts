@@ -71,6 +71,11 @@ export const HISTORY_SCREENS: {
   // 서비스 (2026-11-03 통합 3단계)
   { key: "service-reports", label: "서비스 · 출장보고서", area: "service" },
   {
+    key: "service-import",
+    label: "서비스 · 출장보고서 엑셀 가져오기",
+    area: "service",
+  },
+  {
     key: "service-attachments",
     label: "서비스 · 출장보고서 첨부",
     area: "service",

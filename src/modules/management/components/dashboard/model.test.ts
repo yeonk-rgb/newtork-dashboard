@@ -475,6 +475,7 @@ describe("팀별 현황 카드", () => {
       target: 1500,
       targetNote: null,
       achievement: 1234 / 1500,
+      shortfall: 266,
       unconfirmedRows: 3,
       dueEvents: 12,
       dueEventsPending: 2,
@@ -495,6 +496,7 @@ describe("팀별 현황 카드", () => {
       target: null,
       targetNote: "월 목표 2/3개월만 입력",
       achievement: null,
+      shortfall: null,
       unconfirmedRows: 0,
       dueEvents: 0,
       dueEventsPending: 0,
@@ -517,6 +519,9 @@ describe("팀별 현황 카드", () => {
       billingUnset: 2,
       paidRatio: 0.75,
       productQuantity: 14,
+      topRegion: null,
+      regionUnassigned: 0,
+      topParts: [],
       hasSample: false,
     });
     expect(m.stats).toEqual([

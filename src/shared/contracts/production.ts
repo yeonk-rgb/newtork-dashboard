@@ -50,6 +50,8 @@ export type ProductionOverview = {
   targetNote: string | null;
   /** 달성률 0~1+ (목표 없으면 null) */
   achievement: number | null;
+  /** 부족 수량 max(목표 − 확정, 0) (목표 없으면 null) — 생산 대시보드 KPI 와 같음 */
+  shortfall: number | null;
   /** 출고됐지만 수량 미확정 행 수 */
   unconfirmedRows: number;
   /** 기간 안 납기 일정 수 (같은 납기일 + 같은 수주번호 = 1건) */

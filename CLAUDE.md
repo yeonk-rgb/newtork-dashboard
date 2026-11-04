@@ -95,7 +95,7 @@
   - 카드 위치: 메인(`/`) **맨 아래 "AI 분석" 영역**(2026-10-25 재구성), 경영지원 상세(`/management`) KPI 위 — 같은 `AiCommentSection` 재사용, 기록은 (연도, 분기)로만 찾으므로 두 화면이 같은 기록을 공유
   - 끝난 분기만, confirm 권한만 생성 (`ai/rules.ts`의 `aiAbilities()` — 화면·Server Action 공용). 월 보기 = 그 달의 분기, 연간·누적 = 확정 월이 있는 마지막 분기
   - 응답 형식(프롬프트 v2): `{ summary[2~3], shortfalls[0~3], improvements[1~3] }`. 프롬프트는 문장 60자, 저장 검증은 80자 — 넘는 문장·3개 초과는 `normalizeAiComment()`가 잘라서 살리고(로그 경고) 요약이 없을 때만 실패. 옛 형식(`summary` 문자열 + `weaknesses`)은 `readStoredComment()`로 **화면 읽기만** 지원, 새로 저장하는 건 새 형식만
-  - AI가 계산하지 않도록 입력에 미리 넣는다: 금액 `formatWonShort()`("7.09억원"·"6,668만원"), 목표 차이 `achievementText()`("82.4%로 17.6%p 부족/초과"), 연간 진도 `progressText()`, 기대치 대비 부족액, 매입·경비 합계, 추정 손익, 미수금(외상매출금 기준월·장기 미수금·당월 수금예정·당월 수금 금액·건수 — 프롬프트 v3 `2026-10-26.1`, 단어 정리 `2026-10-26.2`). 산업분야·제품 시리즈 비중은 생산팀 연동 전까지 입력에서 제외 (`build-input.ts`의 TODO 위치에 `is_sample`과 함께 추가)
+  - AI가 계산하지 않도록 입력에 미리 넣는다: 금액 `formatWonShort()`("7.09억원"·"6,668만원"), 목표 차이 `achievementText()`("82.4%로 17.6%p 부족/초과"), 연간 진도 `progressText()`, 기대치 대비 부족액, 매입·경비 합계, 추정 손익, 미수금(외상매출금 기준월·장기 미수금·당월 수금예정·당월 수금 금액·건수 — 프롬프트 v3 `2026-10-26.1`, 단어 정리 `2026-10-26.2`). **생산·서비스 숫자(2026-11-04, 프롬프트 `2026-11-04.1` 13번 규칙)** = 메인 "팀별 현황" 카드와 같은 집계(`TeamAiFacts` — 생산 확정 출고·목표·달성률·부족 수량·수량 미확정·납기 미출고·산업 분야/제품 비중(수량), 서비스 출장 수·유상 비율·최다 지역·교체 부품 상위, 유상 매출은 금액 자료가 없어 "계산하지 않음"), `is_sample` 포함. 경영지원 모듈은 다른 팀을 import 하지 않으므로 app 계층(`src/app/(dashboard)/team-ai-facts.ts`·`ai-actions.ts`·`ai-teams.ts`)이 만들어 `AiCommentSection teams`로 넘기고, [분석하기]도 서버에서 다시 만든다(브라우저 값 안 받음). 예시 분석 스크립트는 `scripts/lib/team-ai-facts.ts`
   - **headline(연간 목표 달성 한 줄)과 장기 미수금 거래처명은 AI가 아니라 서버가 만든다** (`ai/annotations.ts`, 생성 시 결과와 함께 저장 — 2026-10-26부터 외상매출금 장기 미수금 거래처, 경과일 없음. 옛 기록의 `ageDays`는 읽기만). 거래처명은 AI 입력에 넣지 않는다 (05-19)
   - 카드 모양: 연한 네이비 바탕 + 왼쪽 네이비 강조선, 오른쪽 위 "AI 분석/모의 응답 · 생성일시" + [다시 분석], headline, 3단(이번 기간 현황 / 부족한 점·주의 / 다음 분기 개선할 점) • 목록
   - 저장된 코멘트의 `promptVersion`이 현재와 다르면 "분석 기준이 바뀌어…", 입력 해시가 다르면 "데이터가 변경되어…" 안내
@@ -133,7 +133,7 @@
   - 산업 분야별·제품별 도넛 = **확정 출고 수량 기준**(생산팀 자료에 금액 없음, 05-10 갱신) — 출고일자 기준, 수량 미확정 행·사업구분 미분류 수량은 조각에 넣지 않고 "제외:" 안내, 제품 = 모델명(C열) 원본 값, 색은 `seriesColors()`(모델명 오름차순)
   - 메인 순서에 **④ 팀별 현황**(추이 및 분석 아래, AI 분석 위): 생산(확정 출고 수량·목표 달성률·납기 일정/출고 대기) / 서비스(출장 건수·유상 비율·수리 제품). 표시 모델 `productionCardModel`·`serviceCardModel`(`components/dashboard/model.ts`), 카드 `team-card.tsx`
   - 가짜 데이터: `npm run seed:teams`(`-- --remove`) — 작성자 id `seed-production`·`seed-service`면 "샘플 데이터" 배지. **실제 데이터 전에 삭제**
-  - AI 분석 입력에는 아직 넣지 않음 (`build-input.ts` TODO 그대로)
+  - AI 분석 입력에도 같은 숫자 (2026-11-04, 위 "AI 분석 코멘트" 참고)
 - **생산 화면 이식 ②-a(2026-11-03)**: 친구 저장소 규칙 그대로 + 이 저장소 규칙(숨김·변경 이력). 권한 `production/rules.ts`의 `productionAbilities()`(화면·Server Action 공용) — 팀원은 열람만(버튼 비활성 + "열람 전용" 배지, Server Action 거부 테스트 `records/actions.test.ts`·`upload/actions.test.ts`)
   - **제조내역 엑셀 업로드** `/production/upload`(`upload/`): 양식 `columns.ts`(8~9행 머리글 B~Y, 10행부터, J8 "뉴토크 번호"), 파서 `parse-sheet.ts`(순수 함수 — 날짜 못 읽으면 비우고 경고, 부시 가공 숫자 셀 6자리 복원, 일련번호·모델명 숫자 셀 경고, 일련번호 없는 행 건너뜀, 파일 안 중복 오류), 판정 `classify.ts`(키 = 시트 + 일련번호, 새로 / 값이 다름 / 변경 없음 / **숨긴 행과 같음 = 저장 안 함**), 저장 `save-upload.ts`(Serializable 트랜잭션 안에서 다시 판정, 같은 파일 SHA-256 차단, 바뀐 행은 체크한 것만·엑셀 칸만 덮어씀 — 수량 유지, 변경 이력 요약 1건 `area: "production"`·`screen: "production-upload"`). .xlsx만·5MB. 파일 읽기는 `shared/upload/read-table.ts`
   - **제조내역** `/production/records`(`records/`): 필터(검색·모델명·사업구분·출고 여부·출고일 기간)는 주소 GET, 50행씩. [수정] 창(시트·일련번호 제외 전 칸 + 수량 + 사업구분 — 고친 칸의 변환 경고는 지움, `updatedAt` 동시 수정 확인), **삭제 대신 숨김**(`deletedAt` — 조회 시 반드시 `deletedAt: null`, 지표 `loadRecords()`도 제외)·복구. 변경 이력 `production-records`
@@ -153,6 +153,7 @@
   - PDF 읽기 `pdf/`: 친구 `parse()` 그대로 + **PDFium WASM**(`@embedpdf/pdfium` — 이 양식은 숫자가 특수 글꼴이라 pdf.js 로는 깨짐). `init({ thisProgram: "pdfium" })` 필수(프로젝트 경로가 한글이면 emscripten assert), wasm 은 `process.cwd()` 경로로 읽기(`require.resolve` 쓰면 Turbopack 이 묶으려다 실패), NBSP → 공백
   - 대시보드 `dashboard/` + 집계 `metrics/dashboard.ts`(메인 서비스 카드와 같은 `summarize()`), 비율은 친구 파이썬 round 처럼 절반이면 짝수(`labels.ts` `pct1`). 지도는 `scripts/make-korea-map.ts`로 만든 SVG 경로(메르카토르)
   - 부품·출장지 `catalog/`, 가격 3개 `prices/`(계산 `compute.ts`). 출장지 숨기면 그 가격도 숨김, 가격 삭제 = 숨김(다시 입력하면 되살림)
+  - 출장보고서 엑셀 가져오기 `npm run import:service -- <파일> [--save]` (`service/import/`, 친구 import_service_xlsx 그대로 — 저장은 화면과 같은 `reports/save-report.ts`), 가상 제조내역 엑셀 `npm run make:production-sample`
   - 트랜잭션 안에서는 관계 `include`·`Promise.all` 로 동시에 읽지 않는다 (pg "client.query() when already executing" 경고)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`

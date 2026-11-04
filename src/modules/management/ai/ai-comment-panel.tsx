@@ -7,7 +7,7 @@ import { useState, useTransition } from "react";
 import { cn } from "@/shared/lib/utils";
 
 import { AiCardColumn, AiCardFrame } from "./ai-card-frame";
-import { generateAiComment, type AiActionResult } from "./actions";
+import type { AiActionResult } from "./generate";
 import type { AiCommentMethod, AiCommentView } from "./load-comment";
 import { buttonPrimaryClass } from "@/shared/ui/styles";
 
@@ -23,11 +23,14 @@ export function AiCommentPanel({
   title,
   view,
   basisNote,
+  generateAction,
 }: {
   title: string;
   view: AiCommentView;
   /** 연간·누적·월 보기일 때 "어느 분기를 보여주는지" 안내 */
   basisNote: string | null;
+  /** [분석하기] Server Action — app 계층이 생산·서비스 숫자를 함께 넣어 만든다 (src/app/(dashboard)/ai-actions.ts) */
+  generateAction: (raw: unknown) => Promise<AiActionResult>;
 }) {
   const [pending, startTransition] = useTransition();
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -42,7 +45,7 @@ export function AiCommentPanel({
     setFailure(null);
     setDone(null);
     startTransition(async () => {
-      const result = await generateAiComment({
+      const result = await generateAction({
         year: view.year,
         quarter: view.quarter,
         expectedLatestId: view.latestId,

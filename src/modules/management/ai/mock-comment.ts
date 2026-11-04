@@ -28,7 +28,10 @@ export function mockAiComment(input: AiInput): AiCommentResponse {
         : isUnavailable(previous)
           ? "[모의] 전 분기와는 비교할 수 없습니다."
           : `[모의] 전 분기 대비 매출이 ${previous} 변했습니다.`,
-    `[모의] 매입 ${input.expense.purchaseTotal}·경비 ${input.expense.operatingTotal}, 추정 손익 ${input.profit.estimatedProfit}입니다.`,
+    // 13번 규칙: 생산·서비스 숫자가 있으면 한 문장 (샘플이면 밝힌다)
+    input.teams?.production && input.teams.service
+      ? `[모의] 생산 확정 출고 ${input.teams.production.confirmedShipped}, 서비스 출장 ${input.teams.service.trips}입니다${input.teams.production.is_sample || input.teams.service.is_sample ? "(샘플 데이터 기준)" : ""}.`
+      : `[모의] 매입 ${input.expense.purchaseTotal}·경비 ${input.expense.operatingTotal}, 추정 손익 ${input.profit.estimatedProfit}입니다.`,
   ];
 
   // 부족한 점과 개선 제안은 같은 순서로 짝을 맞춘다

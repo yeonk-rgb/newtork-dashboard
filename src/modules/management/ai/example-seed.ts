@@ -2,6 +2,7 @@
 // - 넣기: 고정 id(ai-example-2026-q2 등)로 upsert → 여러 번 실행해도 중복 없음
 //   다시 실행할 때는 내용만 갱신하고 생성 시각은 그대로 둔다 (그 사이 [다시 분석]한 새 기록이 계속 최신으로 남게)
 // - 지우기: model = "example" 이면서 id 가 ai-example- 로 시작하는 것만 (다른 기록은 건드리지 않음)
+import type { TeamAiFacts } from "@/shared/contracts/team-ai";
 import type { ManagementSummary } from "../metrics/types";
 import { buildAnnotations } from "./annotations";
 import { buildAiInput } from "./build-input";
@@ -38,9 +39,13 @@ export type ExampleRow = {
 export function buildExampleRow(
   summary: ManagementSummary,
   quarter: QuarterPeriod,
+  /** 생산·서비스 숫자 — 화면과 같은 입력이어야 "데이터가 변경되어" 안내가 뜨지 않는다 */
+  teams?: TeamAiFacts,
 ): ExampleRow {
-  const input = buildAiInput(summary, quarter);
-  const normalized = normalizeAiComment(buildExampleComment(summary, quarter));
+  const input = buildAiInput(summary, quarter, teams);
+  const normalized = normalizeAiComment(
+    buildExampleComment(summary, quarter, teams),
+  );
   if (!normalized)
     throw new Error(`${summary.label} 예시: 매출 현황 문장 없음`);
   const { truncated, dropped } = normalized.report;

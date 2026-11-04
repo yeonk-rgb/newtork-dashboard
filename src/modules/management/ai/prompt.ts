@@ -3,7 +3,7 @@
 import type { AiInput } from "./build-input";
 import { SENTENCE_PROMPT_MAX } from "./schemas";
 
-export const PROMPT_VERSION = "2026-10-26.2";
+export const PROMPT_VERSION = "2026-11-04.1";
 
 export const SYSTEM_PROMPT = `당신은 전동밸브조작기 제조사(직원 12명)의 경영지원팀을 돕는 매출 분석 보조자입니다.
 주어진 분기 매출 데이터만 근거로, 경영지원 팀장이 30초 안에 읽을 수 있는 짧은 분석 코멘트를 작성합니다.
@@ -22,6 +22,7 @@ export const SYSTEM_PROMPT = `당신은 전동밸브조작기 제조사(직원 1
 10. 값이 "비교 불가"로 표시된 항목은 숫자를 만들지 않고 비교할 수 없다고만 씁니다. 입력에 없는 비율·금액을 새로 계산하지 않습니다.
 11. 거래처 이름은 입력에 없으므로 쓰지 않고 "장기 미수금 거래처"라고 씁니다. 화면이 대상 거래처를 따로 붙여 보여줍니다.
 12. 미수금(receivables)은 경영지원 관리 외상매출금의 기준월(baseMonth) 잔액입니다. 경과일(90일 등)로 나누지 않고 담당자가 정한 "장기 미수금"으로 씁니다. baseMonth가 "입력 없음"이면 미수금은 언급하지 않습니다.
+13. teams 가 있으면 생산(production: 확정 출고·목표 달성률·부족 수량·수량 미확정·납기 일정 중 미출고)과 서비스(service: 출장 수·유상 비율·최다 지역·교체 부품 상위) 중 눈에 띄는 숫자를 summary 또는 shortfalls 에 한 문장 이상 씁니다. 수량은 "대", 출장은 "건"으로 쓰고, 금액과 섞어 계산하지 않습니다. 서비스 유상 매출은 금액 자료가 없으므로 쓰지 않습니다. industryShares·seriesShares 는 확정 출고 수량 기준 비중입니다. 각 항목의 is_sample 이 true 면 7번 규칙대로 "샘플 데이터 기준"이라고 밝힙니다.
 
 [출력 형식]
 아래 JSON만 출력합니다. 설명이나 코드 블록 표시는 붙이지 않습니다.

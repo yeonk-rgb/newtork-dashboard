@@ -5,24 +5,25 @@ import { createHash } from "node:crypto";
 
 import { refresh } from "next/cache";
 
-import {
-  date,
-  diffFields,
-  labelOf,
-  type AuditField,
-} from "@/shared/audit/diff";
+import { diffFields } from "@/shared/audit/diff";
 import { recordAudit } from "@/shared/audit/record";
 import { getCurrentUser, type AppUser } from "@/shared/auth";
 import { prisma } from "@/shared/db/client";
-import type { Prisma, SvcAttachmentKind } from "@/shared/db/generated/client";
+import type { SvcAttachmentKind } from "@/shared/db/generated/client";
 import { getNow } from "@/shared/time/now";
 
-import { ATTACHMENT_KIND_LABEL, BILLING_LABEL } from "../labels";
+import { ATTACHMENT_KIND_LABEL } from "../labels";
 import { parseReportLines, PdfImportError, type Extracted } from "../pdf/parse";
 import { readLines } from "../pdf/read-lines";
-import { regionLabel } from "../regions/regions";
 import { NO_EDIT_MESSAGE, serviceAbilities } from "../rules";
-import { fieldErrors, reportInputSchema, type ReportValues } from "./schemas";
+import {
+  REPORT_FIELDS,
+  auditRow,
+  createReportIn,
+  reportData,
+  saveChildren,
+} from "./save-report";
+import { fieldErrors, reportInputSchema } from "./schemas";
 
 export type ActionResult = {
   ok: boolean;
@@ -44,73 +45,10 @@ const SIGNATURES: Record<string, { magic: number[]; type: string }> = {
 
 const actor = (u: AppUser) => ({ id: u.id, loginId: u.loginId });
 const day = (v: string) => (v ? new Date(`${v}T00:00:00Z`) : null);
-/** 한국 시간 "YYYY-MM-DDTHH:mm" → UTC 시각 */
-const kstTime = (v: string) => (v ? new Date(`${v}:00+09:00`) : null);
 
 async function editor() {
   const user = await getCurrentUser();
   return user && serviceAbilities(user).canEdit ? user : null;
-}
-
-type AuditRow = Record<string, unknown>;
-const REPORT_FIELDS: AuditField<AuditRow>[] = [
-  { key: "title", label: "출장 목적" },
-  { key: "status", label: "작성 상태" },
-  { key: "requestOrgType", label: "요청처 구분" },
-  { key: "requestOrg", label: "요청처" },
-  { key: "siteContact", label: "현장담당자/연락처" },
-  { key: "address", label: "출장지 주소" },
-  { key: "regionLabel", label: "지역" },
-  { key: "tripStart", label: "출장 시작일", format: date },
-  { key: "tripEnd", label: "출장 종료일", format: date },
-  { key: "extraTrip", label: "추가 출장" },
-  { key: "authorName", label: "작성자" },
-  { key: "writtenAt", label: "작성일" },
-  { key: "happyCallDate", label: "해피콜 예정일", format: date },
-  { key: "companions", label: "동행자" },
-  { key: "workType", label: "작업 구분" },
-  { key: "products", label: "제품 목록" },
-  { key: "faultDescription", label: "고장 내용" },
-  { key: "workDescription", label: "작업 내용" },
-  { key: "workResult", label: "작업 결과" },
-  { key: "billing", label: "비용청구 유무", format: labelOf(BILLING_LABEL) },
-  { key: "quoteType", label: "견적서 구분" },
-  { key: "quote", label: "견적서" },
-  { key: "approver", label: "승인자" },
-  { key: "cc", label: "참조자" },
-  { key: "parts", label: "부품 사용 내역" },
-  { key: "note", label: "메모" },
-];
-
-/** 화면 표기 글자로 — 목록은 한 줄씩 */
-function auditRow(v: {
-  region: string | null;
-  sigungu: string | null;
-  companions: string[];
-  products: {
-    modelName: string;
-    spec: string;
-    serialNo: string;
-    quantity: number | null;
-  }[];
-  parts: { name: string; quantity: number | null }[];
-  writtenAt: string;
-  [k: string]: unknown;
-}): AuditRow {
-  return {
-    ...v,
-    regionLabel: regionLabel(v.region, v.sigungu),
-    companions: v.companions.join(", "),
-    products: v.products
-      .map(
-        (p) =>
-          `${p.modelName} / ${p.spec || "-"} / ${p.serialNo || "-"} / ${p.quantity ?? "미입력"}대`,
-      )
-      .join("\n"),
-    parts: v.parts
-      .map((p) => `${p.name} (수량 ${p.quantity ?? "미입력"})`)
-      .join("\n"),
-  };
 }
 
 const kstLocal = (d: Date | null) =>
@@ -144,67 +82,6 @@ async function currentValues(id: string) {
   };
 }
 
-function reportData(v: ReportValues) {
-  return {
-    title: v.title,
-    status: v.status,
-    requestOrgType: v.requestOrgType,
-    requestOrg: v.requestOrg,
-    siteContact: v.siteContact,
-    address: v.address,
-    region: v.region,
-    sigungu: v.sigungu,
-    tripStart: day(v.tripStart),
-    tripEnd: day(v.tripEnd),
-    extraTrip: v.extraTrip,
-    authorName: v.authorName,
-    writtenAt: kstTime(v.writtenAt),
-    happyCallDate: day(v.happyCallDate),
-    workType: v.workType,
-    faultDescription: v.faultDescription,
-    workDescription: v.workDescription,
-    workResult: v.workResult,
-    billing: v.billing || null,
-    quoteType: v.quoteType,
-    quote: v.quote,
-    approver: v.approver,
-    cc: v.cc,
-    note: v.note,
-  };
-}
-
-/** 동행자·제품·부품을 통째로 바꾼다. 처음 쓰는 부품명은 부품 목록에 새로 만든다 (숨긴 부품이면 되살림) */
-async function saveChildren(
-  tx: Prisma.TransactionClient,
-  reportId: string,
-  v: ReportValues,
-  user: AppUser,
-) {
-  await tx.svcReportCompanion.deleteMany({ where: { reportId } });
-  await tx.svcReportProduct.deleteMany({ where: { reportId } });
-  await tx.svcReportPart.deleteMany({ where: { reportId } });
-  if (v.companions.length) {
-    await tx.svcReportCompanion.createMany({
-      data: v.companions.map((name) => ({ reportId, name })),
-    });
-  }
-  if (v.products.length) {
-    await tx.svcReportProduct.createMany({
-      data: v.products.map((p) => ({ reportId, ...p })),
-    });
-  }
-  for (const [position, p] of v.parts.entries()) {
-    const part = await tx.svcPart.upsert({
-      where: { name: p.name },
-      create: { name: p.name, createdById: user.id, updatedById: user.id },
-      update: { deletedAt: null, deletedById: null },
-    });
-    await tx.svcReportPart.create({
-      data: { reportId, partId: part.id, position, quantity: p.quantity },
-    });
-  }
-}
-
 function parseInput(raw: unknown) {
   const parsed = reportInputSchema.safeParse(raw);
   if (parsed.success) return { values: parsed.data };
@@ -221,34 +98,6 @@ function parseInput(raw: unknown) {
   };
 }
 
-async function createIn(
-  tx: Prisma.TransactionClient,
-  v: ReportValues,
-  user: AppUser,
-  now: Date,
-  meta?: Record<string, unknown>,
-) {
-  const report = await tx.svcReport.create({
-    data: { ...reportData(v), createdById: user.id, updatedById: user.id },
-  });
-  await saveChildren(tx, report.id, v, user);
-  await recordAudit(tx, {
-    occurredAt: now,
-    actor: actor(user),
-    area: "service",
-    screen: "service-reports",
-    action: "CREATE",
-    target: { type: "SvcReport", id: report.id, label: v.title },
-    changes: diffFields(
-      null,
-      auditRow({ ...v, writtenAt: v.writtenAt.replace("T", " ") }),
-      REPORT_FIELDS,
-    ),
-    ...(meta ? { meta } : {}),
-  });
-  return report;
-}
-
 export async function createReport(raw: unknown): Promise<ActionResult> {
   const user = await editor();
   if (!user) return { ok: false, message: NO_EDIT_MESSAGE };
@@ -256,7 +105,7 @@ export async function createReport(raw: unknown): Promise<ActionResult> {
   if (parsed.error) return parsed.error;
   const now = await getNow();
   const report = await prisma.$transaction((tx) =>
-    createIn(tx, parsed.values, user, now),
+    createReportIn(tx, parsed.values, user, now),
   );
   refresh();
   return {
@@ -620,7 +469,7 @@ export async function createReportFromPdf(formData: FormData): Promise<
   }
   const now = await getNow();
   const report = await prisma.$transaction(async (tx) => {
-    const r = await createIn(tx, parsed.values, user, now, {
+    const r = await createReportIn(tx, parsed.values, user, now, {
       fileName: checked.name,
     });
     await tx.svcReportAttachment.create({

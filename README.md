@@ -87,6 +87,36 @@ npm run build        # 배포 빌드 확인 (선택)
   - 잊었으면 `admin`으로 로그인해 관리자 설정에서 [비밀번호 초기화].
 - 권한 규칙과 다른 팀이 붙이는 방법: [docs/integration-notes.md](docs/integration-notes.md) 8번
 
+### 생산·서비스·부품 메뉴 (2026-11 친구 저장소에서 옮김)
+
+생산·서비스팀 화면은 친구 저장소(lyjradiant-max/newtalk-korea-system, Django+Vue)를 그대로 옮긴 것이다. 다르게 한 것은 [docs/integration-notes.md](docs/integration-notes.md) 11번.
+
+| 묶음 | 메뉴 | 주소 | 팀장 이상 | 팀원 |
+|---|---|---|---|---|
+| 생산 | 생산 대시보드 · 목표 설정 | `/production` | 목표 설정 | 열람 |
+| 생산 | 제조내역 | `/production/records` | 수정·숨김 | 열람 |
+| 생산 | 일련번호 검색 | `/production/search` | 수정 | 열람 |
+| 생산 | 납기 캘린더 | `/production/calendar` | — | 열람 |
+| 생산 | 엑셀 업로드 | `/production/upload` | 업로드 | 열람 |
+| 생산 | 사업구분 지정 | `/production/categories` | 지정 | 열람 |
+| 서비스 | 서비스 대시보드 | `/service` | — | 열람 |
+| 서비스 | 출장보고서 (목록·상세·입력·PDF로 등록·첨부) | `/service/reports` | 입력·수정·숨김·첨부 | 열람 |
+| 부품·가격 | 부품 목록 | `/service/parts` | 추가·메모·숨김 | 열람 |
+| 부품·가격 | 출장지 관리 | `/service/sites` | 추가·수정·숨김·요청처에서 가져오기 | 열람 |
+| 부품·가격 | 부품 가격 관리 | `/service/prices` | 가격 입력·삭제 | 열람 |
+| 부품·가격 | 출장지별 가격 조회 | `/service/prices/by-site` | — | 열람 |
+| 부품·가격 | 출장지 비교 분석 | `/service/prices/compare` | — | 열람 |
+
+- 관리자·경영지원팀은 모든 메뉴, 생산팀은 생산만, 서비스팀은 서비스·부품·가격만 (다른 팀 주소는 403 화면).
+- 시연용 가짜 데이터: `npm run seed:teams` (제조내역·사업구분·목표 + 출장보고서·부품·출장지·출장지별 가격, 이름·주소·가격 모두 가상) / `npm run seed:teams -- --remove` 로 가짜 데이터만 지우기 (직접 입력한 것은 그대로). **고객사 실제 데이터를 넣기 전에 지운다.**
+- 출장보고서 엑셀 가져오기 (한 행 = 보고서 1건, 시트 "출장보고서"): `npm run import:service -- <파일.xlsx>` 로 확인만 → 문제 없으면 `-- <파일.xlsx> --save`. 오류가 한 건이라도 있으면 저장하지 않고, 다시 실행해도 같은 행은 건너뛴다. 머리글은 `src/modules/service/import/parse-import.ts` 의 `COLUMNS`.
+- 업로드 화면 시연용 가짜 제조내역 엑셀: `npm run make:production-sample -- 가상_제조내역.xlsx`
+- 출장보고서 PDF 읽기는 PDFium(WASM, `@embedpdf/pdfium`)을 쓴다 — 별도 설치·환경변수 없음
+
+### 테스트 계정 만들기 (화면 확인용)
+
+샘플 계정 7개와 따로, 역할별 확인용 계정은 관리자(`admin`)로 로그인해 **관리자 설정 → [계정 추가]** 에서 만든다. 화면 확인 때 쓰는 이름(예): `test_admin`(관리자) · `test_prod_leader`(생산팀장, 수정 권한 생산) · `test_prod_member`(생산팀원) · `test_svc_leader`(서비스팀장, 수정 권한 서비스) · `test_svc_member`(서비스팀원). 비밀번호는 각자 `.env.local` 의 `TEST_USER_PASSWORD` 처럼 저장소 밖에 두고, 파일·스크린샷·커밋에 남기지 않는다. 계정을 만들면 첫 로그인 때 비밀번호를 바꾸게 된다.
+
 ### 대시보드 예시 AI 분석
 
 `npm run seed:ai-examples`를 실행하면 시드 데이터가 있는 분기 중 2026년 3분기를 뺀 7곳(2024년 4분기 ~ 2026년 2분기)에 상황이 서로 다른 예시 분석이 들어간다. 숫자는 시드 데이터로 서버가 계산하고(AI 호출 없음), 카드 오른쪽 위에 "예시 · 생성일시"로 표시된다. 여러 번 실행해도 중복되지 않고, [다시 분석]을 누르면 새 기록이 예시를 대체한다. `npm run seed:ai-examples -- --remove`는 예시만 지우고 다른 분석 기록은 남긴다. 2026년 3분기는 [분석하기] 확인용으로 비워 둔다. 먼저 `npm run db:seed`가 되어 있어야 한다.
@@ -115,6 +145,9 @@ npm run build        # 배포 빌드 확인 (선택)
 | `npm run metrics:report -- 2026 Q3` | 지표 계산 결과 검산용 표 출력 (`2026 9` 월 / `2026` 연간 / `2026 ytd9` 누적) |
 | `npm run seed:ai-examples` | 대시보드 예시 AI 분석 7건 넣기 (중복 없음) · `-- --remove` 로 예시만 지우기 |
 | `npm run env:set-key` | AI 분석용 Anthropic API 키를 `.env`에 저장 (입력 숨김, 길이만 표시) |
+| `npm run seed:teams` | 생산·서비스·부품 시연용 가짜 데이터 넣기 (다시 실행하면 지우고 새로) · `-- --remove` 로 가짜 데이터만 지우기 |
+| `npm run import:service -- <파일.xlsx> [--save]` | 출장보고서 엑셀 가져오기 (기본은 확인만) |
+| `npm run make:production-sample -- [경로.xlsx]` | 기업 양식과 같은 가상 제조내역 엑셀 만들기 (업로드 시연용, DB 에는 넣지 않음) |
 
 ## 6. 팀 작업 규칙 (요약)
 
@@ -165,7 +198,8 @@ npm run build        # 배포 빌드 확인 (선택)
 
 - **시드는 DB가 비어 있을 때만** (`npm run db:seed:if-empty`): 계정이 하나라도 있으면 건너뛴다 → 재배포해도 입력한 데이터를 샘플로 덮어쓰지 않는다
 - 첫 배포 때 들어가는 것: 최초 관리자 1명 + 샘플 계정 7개 + 샘플 재무 데이터(2024-10 ~ 2026-09, 가짜). 실제 데이터를 쓰기 전에 샘플 데이터 정리 방법을 따로 정한다
-- 업로드 파일은 디스크에 저장하지 않고 읽은 즉시 DB에 저장한다 (Render 디스크는 재배포 때 초기화)
+- 업로드 파일은 디스크에 저장하지 않고 읽은 즉시 DB에 저장한다 (Render 디스크는 재배포 때 초기화). 출장보고서 첨부(사진·PDF, 파일당 20MB)도 DB에 저장되므로 무료 DB 1GB 용량을 함께 쓴다
+- 생산·서비스 가짜 데이터(`seed:teams`)는 빌드 명령에 넣지 않았다 — 넣을지는 따로 정한다
 - 세션 쿠키는 HTTPS에서만 전송(Secure) — Render 기본 주소(`*.onrender.com`)는 HTTPS
 - 무료 플랜 제약: 웹 서비스는 15분간 요청이 없으면 잠듦(첫 접속 느림), **무료 PostgreSQL은 30일 후 만료** — 계속 쓰려면 유료 플랜으로 바꾸거나 백업
 - 빌드 단계에서 DB 접속(`migrate deploy`)이 실패하면: 웹 서비스와 DB가 같은 지역인지 확인

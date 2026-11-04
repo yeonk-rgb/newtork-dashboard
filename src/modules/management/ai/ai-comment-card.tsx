@@ -5,6 +5,7 @@ import "server-only";
 import { Suspense } from "react";
 
 import { getCurrentUser } from "@/shared/auth";
+import type { TeamAiFacts } from "@/shared/contracts/team-ai";
 import { periodLabel, type Period } from "@/shared/period/period";
 
 import { getTodayKst, loadSummaryInput } from "../data/load-summary-input";
@@ -13,17 +14,26 @@ import type { ManagementSummary } from "../metrics/types";
 import { AiCardFrame } from "./ai-card-frame";
 import { AiCommentPanel } from "./ai-comment-panel";
 import { loadAiCommentView } from "./load-comment";
-import { aiCardAccess, aiTargetQuarter } from "./rules";
+import type { AiActionResult } from "./generate";
+import { aiCardAccess, aiTargetQuarter, type QuarterPeriod } from "./rules";
 
 const TITLE = "AI 분석 코멘트";
+
+/** 생산·서비스 숫자를 넣는 방법 — app 계층(page)이 다른 팀 모듈 index 로 만들어 넘긴다 */
+export type TeamAiHooks = {
+  loadTeams: (quarter: QuarterPeriod) => Promise<TeamAiFacts>;
+  generateAction: (raw: unknown) => Promise<AiActionResult>;
+};
 
 export async function AiCommentCard({
   period,
   summary,
+  teams,
 }: {
   period: Period;
   /** 선택 기간의 지표 (분기 보기면 그대로 재사용) */
   summary: ManagementSummary;
+  teams: TeamAiHooks;
 }) {
   const user = await getCurrentUser();
   if (!user || aiCardAccess(user) === "none") return null;
@@ -45,7 +55,13 @@ export async function AiCommentCard({
     period.unit === "quarter"
       ? summary
       : computeManagementSummary(await loadSummaryInput(quarter, today));
-  const view = await loadAiCommentView(user, quarter, quarterSummary, today);
+  const view = await loadAiCommentView(
+    user,
+    quarter,
+    quarterSummary,
+    today,
+    await teams.loadTeams(quarter),
+  );
 
   const basisNote =
     period.unit === "quarter"
@@ -59,6 +75,7 @@ export async function AiCommentCard({
       title={`${TITLE} · ${view.quarterLabel}`}
       view={view}
       basisNote={basisNote}
+      generateAction={teams.generateAction}
     />
   );
 }
@@ -77,10 +94,16 @@ export function AiCommentCardSkeleton() {
 }
 
 /** 페이지 상단에 넣는 AI 카드 (자체 Suspense — 카드가 늦게 와도 KPI 등은 먼저 보인다) */
-export function AiCommentSection({ summary }: { summary: ManagementSummary }) {
+export function AiCommentSection({
+  summary,
+  teams,
+}: {
+  summary: ManagementSummary;
+  teams: TeamAiHooks;
+}) {
   return (
     <Suspense fallback={<AiCommentCardSkeleton />}>
-      <AiCommentCard period={summary.period} summary={summary} />
+      <AiCommentCard period={summary.period} summary={summary} teams={teams} />
     </Suspense>
   );
 }

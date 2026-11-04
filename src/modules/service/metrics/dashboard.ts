@@ -222,25 +222,16 @@ export type PartPrice = {
   sites: number;
 };
 
-/** 기간(연·분기·월) 유·무상, 지역, 교체 부품·제품 모델·담당자 순위 */
-export function serviceBreakdown(
-  rows: DashRow[],
-  scope: Scope,
-  partPrices: Map<string, PartPrice>,
-) {
-  const inScope = rowsInScope(rows, scope);
-  const s = summarize(inScope);
-
+/** 교체 부품 순위 — 부품을 쓴 보고서 수, 수량은 입력된 것만 (대시보드 순위·메인 카드·AI 입력 공용) */
+export function partRanking(
+  rows: Pick<DashRow, "parts">[],
+  partPrices: Map<string, PartPrice> = new Map(),
+): RankRow[] {
   const part = new Map<
     string,
     { name: string; reports: number; qty: number; missing: number }
   >();
-  const model = new Map<
-    string,
-    { reports: number; qty: number; missing: number }
-  >();
-  const person = new Map<string, number>();
-  for (const r of inScope) {
+  for (const r of rows) {
     for (const p of r.parts) {
       const x = part.get(p.partId) ?? {
         name: p.name,
@@ -253,6 +244,40 @@ export function serviceBreakdown(
       else x.qty += p.quantity;
       part.set(p.partId, x);
     }
+  }
+  return top(
+    [...part].map(([id, x]) => {
+      const price = partPrices.get(id) ?? { min: null, max: null, sites: 0 };
+      return {
+        key: id,
+        label: x.name,
+        reports: x.reports,
+        qty: x.qty,
+        qtyMissing: x.missing,
+        priceMin: price.min,
+        priceMax: price.max,
+        priceSites: price.sites,
+      };
+    }),
+    "reports",
+  );
+}
+
+/** 기간(연·분기·월) 유·무상, 지역, 교체 부품·제품 모델·담당자 순위 */
+export function serviceBreakdown(
+  rows: DashRow[],
+  scope: Scope,
+  partPrices: Map<string, PartPrice>,
+) {
+  const inScope = rowsInScope(rows, scope);
+  const s = summarize(inScope);
+
+  const model = new Map<
+    string,
+    { reports: number; qty: number; missing: number }
+  >();
+  const person = new Map<string, number>();
+  for (const r of inScope) {
     for (const m of new Set(r.products.map((p) => p.modelName))) {
       const x = model.get(m) ?? { reports: 0, qty: 0, missing: 0 };
       x.reports++;
@@ -274,22 +299,7 @@ export function serviceBreakdown(
       paidRatio: s.paidRatio,
     },
     region: regional(inScope),
-    byPart: top(
-      [...part].map(([id, x]) => {
-        const price = partPrices.get(id) ?? { min: null, max: null, sites: 0 };
-        return {
-          key: id,
-          label: x.name,
-          reports: x.reports,
-          qty: x.qty,
-          qtyMissing: x.missing,
-          priceMin: price.min,
-          priceMax: price.max,
-          priceSites: price.sites,
-        };
-      }),
-      "reports",
-    ),
+    byPart: partRanking(inScope, partPrices),
     byModel: top(
       [...model].map(([m, x]) => ({
         key: m,

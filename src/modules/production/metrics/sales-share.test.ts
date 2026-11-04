@@ -212,6 +212,7 @@ describe("팀별 현황 생산 카드", () => {
       target: 30,
       targetNote: null,
       achievement: 10 / 30,
+      shortfall: 20,
       unconfirmedRows: 1,
       dueEvents: 4,
       dueEventsPending: 1,

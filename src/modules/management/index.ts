@@ -74,7 +74,8 @@ export {
   MainDashboard,
   type TeamData,
 } from "./components/dashboard/main-dashboard";
-export { AiCommentSection } from "./ai/ai-comment-card";
+export { AiCommentSection, type TeamAiHooks } from "./ai/ai-comment-card";
+export { generateAiCommentWithTeams } from "./ai/generate";
 export { ManagementDetail } from "./components/detail/management-detail";
 
 // 6단계 입력 화면

@@ -15,12 +15,28 @@ export async function loadReports(period: Period): Promise<ReportRow[]> {
     },
     select: {
       billing: true,
+      region: true,
+      sigungu: true,
       createdById: true,
       products: { select: { quantity: true } },
+      parts: {
+        select: {
+          partId: true,
+          quantity: true,
+          part: { select: { name: true } },
+        },
+      },
     },
   });
   return rows.map((r) => ({
     billing: r.billing,
+    region: r.region,
+    sigungu: r.sigungu,
+    parts: r.parts.map((p) => ({
+      partId: p.partId,
+      name: p.part.name,
+      quantity: p.quantity,
+    })),
     productQuantities: r.products.map((p) => p.quantity),
     sample: r.createdById === SERVICE_SAMPLE_BY,
   }));

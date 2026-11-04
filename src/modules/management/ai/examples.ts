@@ -2,6 +2,7 @@
 // - 숫자는 모두 서버 계산값(ManagementSummary·buildAiInput·formatWonShort)에서 가져오고, 문장 틀만 정해져 있다
 // - 프롬프트 규칙을 따른다: 60자, 금액 표기, 보고서체 평서문, 부족한 점과 개선 제안 짝, 미확정 월 언급, 비교 불가 처리, 추측 금지
 // - 저장은 scripts/seed-ai-examples.ts (npm run seed:ai-examples). 고객사 실제 데이터 사용 전에는 지운다
+import type { TeamAiFacts } from "@/shared/contracts/team-ai";
 import { formatWonShort } from "@/shared/format/money";
 
 import type { Change, ManagementSummary } from "../metrics/types";
@@ -84,8 +85,15 @@ function extremeItem(summary: ManagementSummary, direction: "down" | "up") {
 export function buildExampleComment(
   summary: ManagementSummary,
   quarter: QuarterPeriod,
+  teams?: TeamAiFacts,
 ): AiCommentResponse {
-  const input = buildAiInput(summary, quarter);
+  const input = buildAiInput(summary, quarter, teams);
+  // 13번 규칙: 생산·서비스 숫자가 있으면 한 문장 (샘플이면 밝힌다)
+  const t = input.teams;
+  const teamSentence =
+    t?.production && t.service
+      ? `생산 확정 출고 ${t.production.confirmedShipped}, 서비스 출장 ${t.service.trips}입니다${t.production.is_sample || t.service.is_sample ? "(샘플 데이터 기준)" : ""}.`
+      : null;
   const q = `${quarter.quarter}분기`;
   const item = (label: string) =>
     input.revenue.items.find((i) => i.item === label)?.amount ?? "0원";
@@ -103,9 +111,10 @@ export function buildExampleComment(
     unconfirmed && previous.revenue.rate !== null
       ? `${unconfirmed} 미확정, 같은 달끼리 ${previous.label} 대비 ${absPct(previous.revenue.rate)} ${previous.revenue.rate >= 0 ? "증가" : "감소"}했습니다.`
       : changeSentence(previous.label, previous.revenue),
-    exceeded && quarterTarget
-      ? `분기 목표 ${formatWonShort(quarterTarget.target)}의 ${absPct(quarterTarget.rate!)}로 초과 달성했습니다.`
-      : `매입·경비 합계는 ${formatWonShort(summary.expenses.total)}, 추정 손익은 ${formatWonShort(summary.profit.profit)}입니다.`,
+    teamSentence ??
+      (exceeded && quarterTarget
+        ? `분기 목표 ${formatWonShort(quarterTarget.target)}의 ${absPct(quarterTarget.rate!)}로 초과 달성했습니다.`
+        : `매입·경비 합계는 ${formatWonShort(summary.expenses.total)}, 추정 손익은 ${formatWonShort(summary.profit.profit)}입니다.`),
   ];
 
   // ---------- 부족한 점·주의 ↔ 다음 분기 개선할 점 (같은 순서로 짝) ----------
