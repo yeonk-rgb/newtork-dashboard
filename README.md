@@ -147,6 +147,7 @@ npm run build        # 배포 빌드 확인 (선택)
 | `npm run env:set-key` | AI 분석용 Anthropic API 키를 `.env`에 저장 (입력 숨김, 길이만 표시) |
 | `npm run seed:teams` | 생산·서비스·부품 시연용 가짜 데이터 넣기 (다시 실행하면 지우고 새로) · `-- --remove` 로 가짜 데이터만 지우기 |
 | `npm run import:service -- <파일.xlsx> [--save]` | 출장보고서 엑셀 가져오기 (기본은 확인만) |
+| `npm run check:deployed -- <배포 주소>` | 배포 서버 확인 (로그인 없이 — `/api/health` 200, 생산·서비스·부품 13개 주소가 로그인 화면으로) |
 | `npm run make:production-sample -- [경로.xlsx]` | 기업 양식과 같은 가상 제조내역 엑셀 만들기 (업로드 시연용, DB 에는 넣지 않음) |
 
 ## 6. 팀 작업 규칙 (요약)
@@ -167,6 +168,8 @@ npm run build        # 배포 빌드 확인 (선택)
   3. 터미널 재시작
 
 ## 8. Render 배포 (PoC)
+
+> 배포 확인·시연용 가짜 데이터·운영 주의사항·배포 후 체크리스트: [docs/deploy.md](docs/deploy.md) · 로그인 없이 확인 `npm run check:deployed -- https://newtork-dashboard.onrender.com`
 
 루트의 [`render.yaml`](render.yaml)(Blueprint)이 웹 서비스 `newtork-dashboard`와 PostgreSQL 16 `newtork-db`를 함께 만든다. 둘 다 무료 플랜, 싱가포르 지역.
 
