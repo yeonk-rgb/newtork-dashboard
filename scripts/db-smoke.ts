@@ -44,6 +44,18 @@ import {
   loadRecentBatches,
 } from "@/modules/production/upload/save-upload";
 import { loadReports } from "@/modules/service/data/load-reports";
+import {
+  loadParts,
+  loadPrices,
+  loadSites,
+} from "@/modules/service/catalog/load-catalog";
+import { loadServiceDashRows } from "@/modules/service/dashboard/load-dashboard";
+import {
+  loadNames,
+  loadReport,
+  loadReportPage,
+  parseReportFilter,
+} from "@/modules/service/reports/load-reports";
 import { recordAudit } from "@/shared/audit/record";
 import { findSessionUser } from "@/shared/auth/session";
 import { loadUserNames } from "@/shared/auth/user-names";
@@ -125,6 +137,37 @@ async function main() {
   );
   await check("메인 팀별 현황: 서비스 출장보고서 (loadReports)", () =>
     loadReports(q3),
+  );
+  await check(
+    "서비스 출장보고서 목록·필터·상세·자동완성 (통합 3단계)",
+    async () => {
+      const { rows } = await loadReportPage(parseReportFilter({}));
+      await loadReportPage(
+        parseReportFilter({
+          q: "a",
+          from: "2026-01-01",
+          to: "2026-12-31",
+          billing: "none",
+          region: "경상남도",
+          sigungu: "none",
+          person: "x",
+          model: "x",
+          trip_date: "none",
+          hidden: "1",
+        }),
+      );
+      if (rows[0]) await loadReport(rows[0].id);
+      await loadNames();
+    },
+  );
+  await check("서비스 대시보드·부품·출장지·가격 (통합 3단계)", () =>
+    Promise.all([
+      loadServiceDashRows(),
+      loadParts({ q: "a", noPrice: true }),
+      loadParts({ hidden: true }),
+      loadSites(),
+      loadPrices(),
+    ]),
   );
   await check("생산 제조내역 목록·필터 (loadRecordPage)", () =>
     Promise.all([

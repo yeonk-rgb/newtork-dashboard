@@ -10,7 +10,7 @@ import { Forbidden } from "@/shared/ui/forbidden";
 import { buttonCompactClass, pageTitleClass } from "@/shared/ui/styles";
 import { getNow } from "@/shared/time/now";
 
-import { NavSelect } from "../dashboard/nav-select";
+import { NavSelect } from "@/shared/ui/nav-select";
 import {
   dueUpcoming,
   eventsOfMonth,

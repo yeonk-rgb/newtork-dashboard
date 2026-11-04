@@ -1,7 +1,12 @@
 // 변경 이력 공통 타입 (팀 공통) — 기록은 record.ts 의 recordAudit() 로, 비교는 diff.ts 의 diffFields() 로
 
-/** 관리자 화면 기록은 관리자(대표)만 본다. 생산 화면 기록은 2026-11-03 통합 1단계부터 */
-export const AUDIT_AREAS = ["management", "admin", "production"] as const;
+/** 관리자 화면 기록은 관리자(대표)만 본다. 생산 화면 기록은 2026-11-03 통합 1단계부터, 서비스는 3단계부터 */
+export const AUDIT_AREAS = [
+  "management",
+  "admin",
+  "production",
+  "service",
+] as const;
 export type AuditArea = (typeof AUDIT_AREAS)[number];
 
 /** 무엇을 했는지 — 화면 표기는 AUDIT_ACTION_LABEL */

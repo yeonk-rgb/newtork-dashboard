@@ -68,6 +68,16 @@ export const HISTORY_SCREENS: {
     label: "생산 · 사업구분 지정",
     area: "production",
   },
+  // 서비스 (2026-11-03 통합 3단계)
+  { key: "service-reports", label: "서비스 · 출장보고서", area: "service" },
+  {
+    key: "service-attachments",
+    label: "서비스 · 출장보고서 첨부",
+    area: "service",
+  },
+  { key: "service-parts", label: "서비스 · 부품 목록", area: "service" },
+  { key: "service-sites", label: "서비스 · 출장지 관리", area: "service" },
+  { key: "service-prices", label: "서비스 · 부품 가격", area: "service" },
   { key: "admin-users", label: "관리자(대표) · 계정 관리", area: "admin" },
   {
     key: "history-export",

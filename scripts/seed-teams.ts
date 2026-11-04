@@ -3,7 +3,7 @@
 //       npm run seed:teams -- --remove   가짜 데이터만 지우기 (직접 입력·업로드한 행은 그대로)
 // - 생산: 친구 저장소 seed_production_demo.py 와 같은 규칙 — 시트 "2025(가상)", 일련번호 "V25-0001", 수주번호 "V25001",
 //   출고된 행 일부는 수량 미확정, 수주번호 일부는 사업구분 미분류, 목표는 그 해에 목표가 없을 때만
-// - 서비스: 월 3~8건 출장보고서, 비용청구 일부 미입력, 제품 수량 일부 미입력
+// - 서비스: 월 3~8건 출장보고서(비용청구·제품 수량·부품 수량 일부 미입력, 주소 일부 없음) + 부품 10개·출장지 10곳·출장지별 가격(친구 seed_price_demo.py 규칙)
 // - 작성자 id 로 구분해 지운다 (PRODUCTION_SAMPLE_BY / SERVICE_SAMPLE_BY) → 메인 "팀별 현황"에 "샘플 데이터" 배지
 // ⚠️ 고객사 실제 데이터를 넣기 전에는 --remove 로 지운다
 import "dotenv/config";
@@ -13,6 +13,7 @@ import { createHash } from "node:crypto";
 import { todayKst } from "@/modules/management/data/load-summary-input";
 import { PRODUCTION_SAMPLE_BY } from "@/modules/production/data/sample";
 import { SERVICE_SAMPLE_BY } from "@/modules/service/data/sample";
+import { parseAddress } from "@/modules/service/regions/regions";
 import { prisma } from "@/shared/db/client";
 import type { ProdIndustry, SvcBilling } from "@/shared/db/generated/client";
 
@@ -266,35 +267,73 @@ async function seedProduction(today: Date) {
 
 // ---------- 서비스 ----------
 
-const REGIONS = [
-  ["경상남도", "창원시"],
-  ["경기도", "수원시"],
-  ["충청북도", "청주시"],
-  ["전라남도", "여수시"],
-  ["부산광역시", "강서구"],
-  ["강원특별자치도", "원주시"],
-] as const;
+/** 출장지(요청처, 가상) → 주소(가상 번지) — 지역은 주소에서 판정 (regions.ts parseAddress) */
+const SVC_SITES: Record<string, string> = {
+  새솔정수센터: "경남 창원시 의창구 가상로 12",
+  가람정수장: "경기 수원시 장안구 가상대로 3",
+  아름정수장: "충북 청주시 청원구 오창읍 가상길 7",
+  누리배수지: "부산 강서구 가상로 210",
+  나래하수처리장: "강원 원주시 가상동 45",
+  라온발전소: "전남 여수시 가상로 88",
+  바다가스기지: "인천 서해구 가상부두 1",
+  다온산업단지: "울산 남구 가상산단로 5",
+  한별정유공장: "충남 서산시 대산읍 가상로 9",
+  가온화학단지: "경북 포항시 남구 가상로 30",
+  마루복합단지: "세종 가상대로 100",
+  이음오일터미널: "제주 제주시 가상항로 2",
+};
 const PEOPLE = [
   "가상직원A 대리",
   "가상직원B 과장",
   "가상직원C 사원",
   "가상직원D 차장",
+  "가상직원E 주임",
 ];
 const PURPOSES = [
   "정기 점검",
   "작동 불량 수리",
   "리밋 스위치 교체",
   "설치 시운전",
+  "모터 소음 점검",
+  "제어반 통신 불량",
 ];
-const SVC_MODELS = ["AVA03", "AVA05", "AVB10", "AVC20"];
+const SVC_MODELS = [
+  ["AVA03", "380V/3Ph/60Hz, 29rpm"],
+  ["AVA05", "380V/3Ph/60Hz, 24rpm"],
+  ["AVB10", "220V/1Ph/60Hz, 36rpm"],
+  ["AVC20", "440V/3Ph/60Hz, 18rpm"],
+] as const;
+/** 부품(가상 기준가 원) — 친구 저장소 seed_price_demo.py 의 부품 이름·기준가 */
+const SVC_PARTS: Record<string, number> = {
+  "Control PCB": 180000,
+  "Limit Switch": 45000,
+  "Magnetic Contactor": 65000,
+  "Main Board": 320000,
+  Motor: 450000,
+  "Power Board": 150000,
+  "Torque Switch": 85000,
+  "Hand Wheel": 38000,
+  "Oil Seal": 12000,
+  Bearing: 27000,
+};
 const BILLING: readonly (readonly [SvcBilling | null, number])[] = [
   ["PAID", 60],
   ["FREE", 30],
   [null, 10],
 ];
 
+/** 서비스 가짜 데이터: 출장보고서(월 3~8건) + 부품·출장지·출장지별 가격 — 이름·주소·가격 모두 가상 */
 async function seedService(today: Date) {
   const by = SERVICE_SAMPLE_BY;
+  const who = { createdById: by, updatedById: by };
+  const parts = new Map<string, string>();
+  for (const [name] of Object.entries(SVC_PARTS)) {
+    const part = await prisma.svcPart.create({
+      data: { name, note: "가상 부품(시연용)", ...who },
+    });
+    parts.set(name, part.id);
+  }
+  const partNames = [...parts.keys()];
   let count = 0;
   for (const year of YEARS) {
     for (let month = 1; month <= 12; month++) {
@@ -303,30 +342,81 @@ async function seedService(today: Date) {
       for (let i = int(3, 8); i > 0; i--) {
         const tripStart = utc(year, month, int(1, lastDay));
         if (tripStart > today) continue;
-        const [region, sigungu] = random() < 0.1 ? [null, null] : pick(REGIONS);
+        const org = pick(Object.keys(SVC_SITES));
+        // 10% 주소 없음(미지정), 5% 시·도만 (시·군·구 미확인)
+        const roll = random();
+        const address =
+          roll < 0.1
+            ? ""
+            : roll < 0.15
+              ? SVC_SITES[org].split(" ")[0]
+              : SVC_SITES[org];
+        const { region, sigungu } = parseAddress(address);
+        const used = [
+          ...new Set(
+            Array.from(
+              {
+                length: weighted([
+                  [0, 45],
+                  [1, 35],
+                  [2, 20],
+                ] as const),
+              },
+              () => pick(partNames),
+            ),
+          ),
+        ];
+        const author = pick(PEOPLE);
         await prisma.svcReport.create({
           data: {
-            title: pick(PURPOSES),
-            requestOrg: pick(Object.keys(CLIENTS)),
+            title: `${org} ${pick(PURPOSES)}`,
+            status: "작성",
+            requestOrgType: "검색 불가",
+            requestOrg: org,
+            siteContact: "가상담당 010-0000-0000",
+            address,
             region,
             sigungu,
             tripStart,
             tripEnd: addDays(tripStart, int(0, 1)),
-            authorName: pick(PEOPLE),
+            extraTrip: "없음",
+            authorName: author,
+            // 다음 날 09:05 (한국 시간) = 00:05 UTC
+            writtenAt: new Date(addDays(tripStart, 1).getTime() + 5 * 60_000),
             billing: weighted(BILLING),
             workType: pick(["점검", "수리", "교체"]),
+            faultDescription: "1. 가상 고장 내용.",
+            workDescription: "1. 가상 작업 내용.",
+            workResult: "정상 작동 확인.",
+            approver: "가상직원D 차장",
             note: "시연용 가짜 데이터",
-            createdById: by,
-            updatedById: by,
+            ...who,
             companions: {
-              create: Array.from({ length: int(0, 2) }, () => ({
-                name: pick(PEOPLE),
-              })),
+              create: [
+                ...new Set(
+                  Array.from({ length: int(0, 2) }, () => pick(PEOPLE)),
+                ),
+              ]
+                .filter((n) => n !== author)
+                .map((name) => ({ name })),
             },
             products: {
-              create: Array.from({ length: int(1, 2) }, () => ({
-                modelName: pick(SVC_MODELS),
-                quantity: random() < 0.15 ? null : int(1, 3),
+              create: Array.from({ length: int(1, 2) }, () => {
+                const [modelName, spec] = pick(SVC_MODELS);
+                const yy = pick([25, 26]);
+                return {
+                  modelName,
+                  spec,
+                  serialNo: `V${yy}-${String(int(1, 200)).padStart(4, "0")}`,
+                  quantity: random() < 0.15 ? null : int(1, 3),
+                };
+              }),
+            },
+            parts: {
+              create: used.map((name, position) => ({
+                partId: parts.get(name)!,
+                position,
+                quantity: random() < 0.6 ? null : int(1, 4),
               })),
             },
           },
@@ -335,17 +425,72 @@ async function seedService(today: Date) {
       }
     }
   }
-  return count;
+  // 출장지 = 요청처 (가장 많이 쓴 지역), 마지막 2곳은 출장지에 넣지 않음(가져오기 확인용)
+  const orgs = Object.keys(SVC_SITES).slice(0, -2);
+  const siteIds: string[] = [];
+  for (const name of orgs) {
+    const { region, sigungu } = parseAddress(SVC_SITES[name]);
+    const site = await prisma.svcSite.create({
+      data: { name, region, sigungu, ...who },
+    });
+    siteIds.push(site.id);
+  }
+  // 친구 seed_price_demo.py 규칙: 부품 기준가 × 출장지 정도(0.88~1.2) × ±20%, 15% 는 미입력
+  let prices = 0;
+  const factor = siteIds.map(() => 0.88 + random() * 0.32);
+  for (const [name, base] of Object.entries(SVC_PARTS)) {
+    for (const [i, siteId] of siteIds.entries()) {
+      if (random() < 0.15) continue;
+      const price =
+        Math.round((base * factor[i] * (0.8 + random() * 0.4)) / 100) * 100;
+      await prisma.svcSitePartPrice.create({
+        data: {
+          siteId,
+          partId: parts.get(name)!,
+          unitPrice: BigInt(price),
+          note: "가상 단가(시연용)",
+          updatedById: by,
+        },
+      });
+      prices++;
+    }
+  }
+  return { reports: count, parts: parts.size, sites: siteIds.length, prices };
+}
+
+/** 서비스 가짜 데이터 지우기 — 작성자 id 로만 (직접 입력한 것은 그대로) */
+async function removeService() {
+  const where = { createdById: SERVICE_SAMPLE_BY };
+  const prices = await prisma.svcSitePartPrice.deleteMany({
+    where: {
+      OR: [
+        { updatedById: SERVICE_SAMPLE_BY },
+        { site: where },
+        { part: where },
+      ],
+    },
+  });
+  await prisma.svcReportAttachment.deleteMany({ where: { report: where } });
+  const reports = await prisma.svcReport.deleteMany({ where });
+  // 가짜 부품을 실제 보고서가 쓰고 있으면 남긴다
+  const parts = await prisma.svcPart.deleteMany({
+    where: { ...where, usages: { none: {} } },
+  });
+  const sites = await prisma.svcSite.deleteMany({ where });
+  return {
+    reports: reports.count,
+    parts: parts.count,
+    sites: sites.count,
+    prices: prices.count,
+  };
 }
 
 async function main() {
   const removed = await removeProduction();
-  const reports = await prisma.svcReport.deleteMany({
-    where: { createdById: SERVICE_SAMPLE_BY },
-  });
+  const svc = await removeService();
   if (process.argv.includes("--remove")) {
     console.log(
-      `가짜 데이터 삭제: 제조내역 ${removed.records}행·사업구분 ${removed.categories}건·목표, 출장보고서 ${reports.count}건`,
+      `가짜 데이터 삭제: 제조내역 ${removed.records}행·사업구분 ${removed.categories}건·목표, 출장보고서 ${svc.reports}건·부품 ${svc.parts}개·출장지 ${svc.sites}곳·가격 ${svc.prices}건`,
     );
     return;
   }
@@ -353,7 +498,7 @@ async function main() {
   const p = await seedProduction(today);
   const s = await seedService(today);
   console.log(
-    `생산: 제조내역 ${p.rows}행(수주 ${p.orders}건, 출고 ${p.shipped}행 중 수량 미확정 ${p.blank}행) / 서비스: 출장보고서 ${s}건 — 기준일 ${today.toISOString().slice(0, 10)}`,
+    `생산: 제조내역 ${p.rows}행(수주 ${p.orders}건, 출고 ${p.shipped}행 중 수량 미확정 ${p.blank}행) / 서비스: 출장보고서 ${s.reports}건·부품 ${s.parts}개·출장지 ${s.sites}곳·가격 ${s.prices}건 — 기준일 ${today.toISOString().slice(0, 10)}`,
   );
 }
 

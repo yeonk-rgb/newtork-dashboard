@@ -41,7 +41,7 @@
 팀별로 각자 저장소에서 개발하고 나중에 합친다. **이 저장소는 경영지원팀(메인 화면 포함) 모듈 개발용**이다.
 
 - **개발 범위**: `modules/management`, `app/(dashboard)/`의 메인(`page.tsx`)·`management/`, `prisma/schema/management.prisma`(`mgmt_*` 테이블), 경영지원팀이 쓰는 `shared/`
-- **통합 1단계(2026-11-03 사용자 지시)**: 생산·서비스팀 친구 저장소(lyjradiant-max/newtalk-korea-system, Django+Vue)를 이 저장소로 옮기는 중 — `modules/production`·`modules/service`·`production.prisma`(`prod_*`)·`service.prisma`(`svc_*`)도 수정한다. 지금은 메인 연동(집계 규칙·스키마·가짜 시드)만, 생산·서비스 화면(`app/(dashboard)/production|service`)은 아직 placeholder. 옮길 때는 친구 저장소의 규칙(specs/·`backend/*/dashboard.py`)을 그대로 따르고 바꾸면 사용자에게 먼저 알린다
+- **통합 1단계(2026-11-03 사용자 지시)**: 생산·서비스팀 친구 저장소(lyjradiant-max/newtalk-korea-system, Django+Vue)를 이 저장소로 옮기는 중 — `modules/production`·`modules/service`·`production.prisma`(`prod_*`)·`service.prisma`(`svc_*`)도 수정한다. 생산 화면(②-a~c)·서비스 화면(③-a~d)까지 옮겼다. 옮길 때는 친구 저장소의 규칙(specs/·`backend/*/dashboard.py`)을 그대로 따르고 바꾸면 사용자에게 먼저 알린다
 - **인증·계정·권한** (2026-10-21 실제 로그인으로 교체): 아이디·비밀번호 로그인(회원가입 없음, 관리자가 발급), 외부 패키지 없이 Node 내장 `scrypt` + DB 세션(`auth_user`·`auth_session`, `prisma/schema/auth.prisma`). 권한 확인은 **반드시 `shared/auth`의 `can()` 함수를 거친다**
   - 현재 사용자: `getCurrentUser()` (cookies를 읽으므로 **`<Suspense>` 안 컴포넌트에서** 호출 — cacheComponents). 로그인 안 함·만료·비활성이면 `null`
   - 동작: `view` / `edit`(입력·임시저장) / `confirm`(확정·설정 변경). 저장 시 `createdById`/`updatedById` = `getCurrentUser().id` (외래키 없는 문자열, 시드 데이터는 `"seed"`) — 화면 표시 이름은 `loadUserNames(ids)`
@@ -148,6 +148,12 @@
   - **일련번호 검색** `/production/search`(`search/`): 상태는 주소 `?serial=`(정확 일치 + 일부 일치 50건) / `?id=`(고른 1건) / `&list=1`(비슷한 목록). 같은 일련번호가 여러 건(시트 다름)이면 고르게 함. 3단 카드(제품 사양 / 제조·검사 / 판매·납품) + 원본 추가 정보(`<details>`), [수정]은 제조내역과 같은 `RecordEditDialog`(팀원 비활성), [같은 수주번호 일정 보기] → 캘린더 상세. 제조내역 표 일련번호 → `?id=`
   - **납기 캘린더** `/production/calendar`(`calendar/`): 계산 `metrics/due-calendar.ts`(순수 함수 — 같은 납기일 + 같은 수주번호 = 1건, 출고 상태 all/partial/none = 출고일 유무만, 출고 대기 = 납기 지난 것 + 이번 달 남은 것, 친구 앱 데이터로 65개 값 대조 0건 차이). 주소 `?year=&month=&date=&order=`(그 일정 상세를 바로 엶)·`&find=`(수주번호 찾기). 칩 색 = 미출고 네이비·일부 코퍼·모두 회색, 납기 경과 = 빨간 점선. 오늘은 `getNow()` + 9시간(KST)
   - 사이드바 하위 메뉴: 묶음과 같은 주소(`/production`·`/management`)는 정확히 일치할 때만 선택 표시 (`sidebar.tsx` `isSubActive`)
+- **서비스·부품·가격 화면 ③-a~d(2026-11-03)**: 정리표 `docs/service-migration.md`. 친구 저장소 규칙 그대로 + 이 저장소 규칙(숨김·변경 이력 `area: "service"`). 권한 `service/rules.ts`의 `serviceAbilities()` — 팀장 이상 수정, 팀원 열람 전용, 생산팀 403. 사이드바는 친구처럼 "서비스"·"부품·가격" 두 묶음
+  - 출장보고서 `reports/`: 목록 필터 주소(GET), 상세+첨부(파일은 DB `bytea`, 받기 `/api/service/attachments/{id}`, 20MB), 입력·수정·PDF로 등록. 지역 판정 `regions/regions.ts`(친구 regions.py, 2026-10-01 공식 목록 CC BY 4.0)
+  - PDF 읽기 `pdf/`: 친구 `parse()` 그대로 + **PDFium WASM**(`@embedpdf/pdfium` — 이 양식은 숫자가 특수 글꼴이라 pdf.js 로는 깨짐). `init({ thisProgram: "pdfium" })` 필수(프로젝트 경로가 한글이면 emscripten assert), wasm 은 `process.cwd()` 경로로 읽기(`require.resolve` 쓰면 Turbopack 이 묶으려다 실패), NBSP → 공백
+  - 대시보드 `dashboard/` + 집계 `metrics/dashboard.ts`(메인 서비스 카드와 같은 `summarize()`), 비율은 친구 파이썬 round 처럼 절반이면 짝수(`labels.ts` `pct1`). 지도는 `scripts/make-korea-map.ts`로 만든 SVG 경로(메르카토르)
+  - 부품·출장지 `catalog/`, 가격 3개 `prices/`(계산 `compute.ts`). 출장지 숨기면 그 가격도 숨김, 가격 삭제 = 숨김(다시 입력하면 되살림)
+  - 트랜잭션 안에서는 관계 `include`·`Promise.all` 로 동시에 읽지 않는다 (pg "client.query() when already executing" 경고)
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
   - **[경영지원 관리에서 불러오기](2026-10-26 결정 05-1·24·25, PR ③)**: 계산 `entry/from-ledger.ts`(순수 함수), 행 읽기 Server Action `loadLedgerForEntry`(읽기만, `entryAbilities`가 readOnly면 거부, 숨긴 행·외상매출금 제외), 미리보기 `from-ledger-dialog.tsx`. 외상매입금 → 상품·원재료 매입(매입유형, 빈 행은 고른 칸), 직원 → 경비, 업체 → 그 외 지출(같은 이름 항목, "기타"는 "기타…" 항목, 없으면 고름). **업체는 자동이체 포함 전체 합계**(F열 총액·자동이체 합계도 표시). 블록별 ÷1.1 체크(외상매입금·업체 기본 체크, 직원 해제), 칸 단위 반올림(`toSupplyAmount`). [입력란에 채우기]는 저장하지 않음 — 저장·변경 이력은 기존 [임시저장]·[확정] 그대로
@@ -278,7 +284,7 @@ newtork-dashboard/ (= 이 폴더)
 │  │  │  ├─ admin/            # 관리자 설정 (관리자만)
 │  │  │  ├─ management/
 │  │  │  ├─ production/       # 생산 화면 (대시보드·제조내역·일련번호 검색·납기 캘린더·업로드·사업구분)
-│  │  │  └─ service/          # placeholder (화면 이식은 다음 단계)
+│  │  │  └─ service/          # 서비스 화면 (대시보드·출장보고서·부품·출장지·가격 3개)
 │  │  ├─ account/password/    # 비밀번호 변경 (초기 비밀번호면 강제)
 │  │  └─ api/                 # 꼭 필요한 Route Handler만
 │  ├─ modules/
@@ -291,7 +297,7 @@ newtork-dashboard/ (= 이 폴더)
 │  │  │  ├─ excel-mapping.ts  # 엑셀 열 → 필드 매핑
 │  │  │  └─ index.ts          # 외부 공개 API
 │  │  ├─ production/          # 메인 연동 집계(metrics/)·조회(data/)·index.ts (통합 1단계)
-│  │  └─ service/             # 메인 연동 집계(metrics/)·조회(data/)·index.ts (통합 1단계)
+│  │  └─ service/             # 집계(metrics/)·출장보고서(reports/)·PDF(pdf/)·부품·출장지(catalog/)·가격(prices/)·대시보드(dashboard/)
 │  ├─ shared/
 │  │  ├─ auth/                # can(user, action, team), 로그인 세션, 비밀번호 해시, getCurrentUser()
 │  │  ├─ db/                  # Prisma client (generated/ 는 git 제외)

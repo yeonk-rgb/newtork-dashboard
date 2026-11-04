@@ -1,5 +1,5 @@
 "use client";
-// 고르면 그 주소로 이동하는 선택 상자 (연도·분류별 판매량 기간·납기 예정 월)
+// 고르면 그 주소로 이동하는 선택 상자 (생산·서비스 대시보드 연도·기간, 납기 캘린더 연도 — 팀 공통)
 import { useRouter } from "next/navigation";
 
 export function NavSelect({

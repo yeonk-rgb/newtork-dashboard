@@ -105,7 +105,7 @@ describe("필터", () => {
     expect(f.screen).toBe("admin-users");
     expect(historyWhere(f, historyAbilities(FAKE_USERS.mgmt))).toMatchObject({
       screen: "admin-users",
-      area: { in: ["management", "production"] },
+      area: { in: ["management", "production", "service"] },
     });
     expect(
       historyWhere(f, historyAbilities(FAKE_USERS.admin)),
