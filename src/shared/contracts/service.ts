@@ -12,6 +12,12 @@ export type ServiceOverview = {
   paidRatio: number | null;
   /** 수리 제품 대수 (수량을 입력한 제품만) */
   productQuantity: number;
+  /** 출장이 가장 많은 지역 (시·군·구 또는 시·도만 아는 것, 미지정 제외) — 서비스 대시보드 지도와 같은 집계 */
+  topRegion: { label: string; trips: number; ratio: number } | null;
+  /** 지역 미지정 출장 수 */
+  regionUnassigned: number;
+  /** 교체 부품 상위 3 (부품을 쓴 보고서 수) — 서비스 대시보드 교체 부품 순위와 같은 집계 */
+  topParts: { name: string; reports: number }[];
   hasSample: boolean;
 };
 

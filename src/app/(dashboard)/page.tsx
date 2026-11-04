@@ -20,6 +20,8 @@ import { getServiceOverview } from "@/modules/service";
 import { can, getCurrentUser, homePathFor } from "@/shared/auth";
 import { Forbidden } from "@/shared/ui/forbidden";
 
+import { aiTeams } from "./ai-teams";
+
 // 메인 = 전사 요약 (2026-10-25 담당자 요청 순서): KPI 4개 → 분기별 목표 달성 현황 → 추이 및 분석 → 팀별 현황(2026-11-03) → AI 분석
 export default function MainPage({ searchParams }: PageProps<"/">) {
   return (
@@ -63,7 +65,7 @@ async function MainContent({
         teams={{ industry, series, production, service }}
       />
       <AiArea>
-        <AiCommentSection summary={summary} />
+        <AiCommentSection summary={summary} teams={aiTeams} />
       </AiArea>
     </div>
   );

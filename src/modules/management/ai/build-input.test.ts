@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { NO_TEAM_FACTS } from "@/shared/contracts/team-ai";
+
 import { computeManagementSummary } from "../metrics/summary";
 import { arEntry, date, financeMonth } from "../metrics/test-fixtures";
+
 import { buildAiInput } from "./build-input";
 import { hashAiInput, stableStringify } from "./hash";
 import { mockAiComment } from "./mock-comment";
@@ -91,10 +94,81 @@ describe("buildAiInput", () => {
     expect(text).not.toContain('"r1"');
   });
 
-  it("산업분야·제품 시리즈(목업)는 연동 전까지 넣지 않는다", () => {
+  it("팀 숫자를 넘기지 않으면 teams 칸이 없다 (옛 입력과 해시 같음)", () => {
     expect(text).not.toContain("is_sample");
-    expect(text).not.toContain("industry");
-    expect(text).not.toContain("series");
+    expect(input).not.toHaveProperty("teams");
+    expect(buildAiInput(summaryFor(), q3, NO_TEAM_FACTS)).not.toHaveProperty(
+      "teams",
+    );
+  });
+
+  it("생산·서비스 숫자 — 팀별 현황 카드와 같은 값, 문장에 쓸 표기로 (2026-11-04)", () => {
+    const share = (items: [string, number][], hasSample = true) => ({
+      items: items.map(([label, quantity]) => ({
+        key: label,
+        label,
+        amount: 0n,
+        quantity,
+      })),
+      source: "production" as const,
+      basis: "quantity" as const,
+      unconfirmedRows: 2,
+      unclassifiedQuantity: 3,
+      hasSample,
+    });
+    const withTeams = buildAiInput(summaryFor(), q3, {
+      production: {
+        confirmedQuantity: 71,
+        target: 84,
+        targetNote: null,
+        achievement: 71 / 84,
+        shortfall: 13,
+        unconfirmedRows: 2,
+        dueEvents: 23,
+        dueEventsPending: 4,
+        hasSample: true,
+      },
+      industry: share([
+        ["상하수도", 30],
+        ["발전소", 10],
+        ["가스", 0],
+      ]),
+      series: share([["02", 40]]),
+      service: {
+        trips: 18,
+        paid: 11,
+        free: 5,
+        billingUnset: 2,
+        paidRatio: 11 / 16,
+        productQuantity: 30,
+        topRegion: { label: "경상남도 창원시", trips: 4, ratio: 4 / 18 },
+        regionUnassigned: 2,
+        topParts: [
+          { name: "Motor", reports: 5 },
+          { name: "Bearing", reports: 3 },
+        ],
+        hasSample: true,
+      },
+    });
+    expect(withTeams.teams?.production).toMatchObject({
+      is_sample: true,
+      confirmedShipped: "71대",
+      target: "84대",
+      achievement: "84.5%로 15.5%p 부족",
+      shortfall: "13대",
+    });
+    expect(withTeams.teams?.production?.dueNotShipped).toMatch(/^4건/);
+    expect(withTeams.teams?.industryShares?.items).toEqual([
+      { item: "상하수도", quantity: "30대", share: "75.0%" },
+      { item: "발전소", quantity: "10대", share: "25.0%" },
+    ]);
+    expect(withTeams.teams?.service).toMatchObject({
+      trips: "18건",
+      paidRatio: "68.8% (미입력 제외)",
+      paidRevenue: "출장보고서에 금액이 없어 계산하지 않음",
+      topRegion: "경상남도 창원시 4건 (전체의 22.2%)",
+      topParts: ["Motor 5건", "Bearing 3건"],
+    });
   });
 
   it("금액은 '7.09억원'·'6,668만원' 형식", () => {

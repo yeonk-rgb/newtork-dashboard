@@ -18,6 +18,8 @@ import { EXAMPLE_QUARTERS } from "@/modules/management/ai/examples";
 import { computeManagementSummary } from "@/modules/management/metrics/summary";
 import { prisma } from "@/shared/db/client";
 
+import { loadTeamAiFactsForScript } from "./lib/team-ai-facts";
+
 async function main() {
   if (process.argv.includes("--remove")) {
     const count = await removeExamples(prisma.aiComment);
@@ -46,7 +48,13 @@ async function main() {
         `${summary.label}에 확정 데이터가 없습니다. 먼저 npm run db:seed`,
       );
     }
-    rows.push(buildExampleRow(summary, quarter));
+    rows.push(
+      buildExampleRow(
+        summary,
+        quarter,
+        await loadTeamAiFactsForScript(quarter),
+      ),
+    );
     console.log(`- ${summary.label}: ${situation}`);
   }
   await upsertExamples(prisma.aiComment, rows);

@@ -184,6 +184,7 @@ export function productionOverview(
     target,
     targetNote: note,
     achievement: target ? confirmedQuantity / target : null,
+    shortfall: target === null ? null : Math.max(target - confirmedQuantity, 0),
     unconfirmedRows: shipped.filter((r) => r.quantity === null).length,
     dueEvents: events.size,
     dueEventsPending: [...events.values()].filter(Boolean).length,

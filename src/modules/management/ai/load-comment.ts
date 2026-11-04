@@ -4,6 +4,7 @@ import "server-only";
 
 import type { AppUser } from "@/shared/auth";
 import { loadUserNames } from "@/shared/auth";
+import type { TeamAiFacts } from "@/shared/contracts/team-ai";
 import { prisma } from "@/shared/db/client";
 import { periodLabel } from "@/shared/period/period";
 
@@ -13,10 +14,7 @@ import { hashAiInput } from "./hash";
 import { EXAMPLE_MODEL } from "./examples";
 import { MOCK_MODEL } from "./mock-comment";
 import { PROMPT_VERSION } from "./prompt";
-import {
-  isAiRealDataBlocked,
-  isUploadedDataBlocked,
-} from "./real-data-policy";
+import { isAiRealDataBlocked, isUploadedDataBlocked } from "./real-data-policy";
 import {
   aiAbilities,
   aiInputMonths,
@@ -107,6 +105,8 @@ export async function loadAiCommentView(
   quarter: QuarterPeriod,
   summary: ManagementSummary,
   today: Date,
+  /** 생산·서비스 숫자 — 생성할 때와 같은 입력이어야 "데이터가 변경되어" 판정이 맞는다 */
+  teams?: TeamAiFacts,
 ): Promise<AiCommentView> {
   const [row, uploaded] = await Promise.all([
     loadLatestAiComment(quarter.year, quarter.quarter),
@@ -114,7 +114,7 @@ export async function loadAiCommentView(
   ]);
   const display = row ? readStoredComment(row.result) : null;
   const nameOf = await loadUserNames([row?.createdById]);
-  const currentHash = hashAiInput(buildAiInput(summary, quarter));
+  const currentHash = hashAiInput(buildAiInput(summary, quarter, teams));
 
   return {
     year: quarter.year,

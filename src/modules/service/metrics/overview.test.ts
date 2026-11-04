@@ -5,6 +5,9 @@ import { serviceOverview, type ReportRow } from "./overview";
 
 const report = (over: Partial<ReportRow>): ReportRow => ({
   billing: null,
+  region: null,
+  sigungu: null,
+  parts: [],
   productQuantities: [],
   sample: false,
   ...over,
@@ -26,6 +29,9 @@ describe("팀별 현황 서비스 카드", () => {
       billingUnset: 1,
       paidRatio: 0.75,
       productQuantity: 7,
+      topRegion: null,
+      regionUnassigned: 5,
+      topParts: [],
       hasSample: false,
     });
   });
@@ -37,5 +43,34 @@ describe("팀별 현황 서비스 카드", () => {
 
   it("시드 보고서가 있으면 hasSample", () => {
     expect(serviceOverview([report({ sample: true })]).hasSample).toBe(true);
+  });
+
+  it("최다 지역·교체 부품 상위 3 — 대시보드와 같은 집계", () => {
+    const part = (name: string) => ({ partId: name, name, quantity: null });
+    const o = serviceOverview([
+      report({
+        region: "경상남도",
+        sigungu: "창원시",
+        parts: [part("A"), part("B")],
+      }),
+      report({ region: "경상남도", sigungu: "창원시", parts: [part("A")] }),
+      report({
+        region: "충청북도",
+        sigungu: null,
+        parts: [part("C"), part("D")],
+      }),
+      report({}),
+    ]);
+    expect(o.topRegion).toEqual({
+      label: "경상남도 창원시",
+      trips: 2,
+      ratio: 0.5,
+    });
+    expect(o.regionUnassigned).toBe(1);
+    expect(o.topParts).toEqual([
+      { name: "A", reports: 2 },
+      { name: "B", reports: 1 },
+      { name: "C", reports: 1 },
+    ]);
   });
 });

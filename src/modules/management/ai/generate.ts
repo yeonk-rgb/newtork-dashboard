@@ -1,4 +1,7 @@
-"use server";
+// AI 분석 코멘트 생성 (서버 전용) — Server Action 은 app 계층(src/app/(dashboard)/ai-actions.ts)이 생산·서비스 숫자를 함께 넘겨 부른다
+// (경영지원 모듈은 다른 팀 모듈을 import 하지 않으므로 팀 숫자를 직접 읽지 못한다)
+import "server-only";
+
 // AI 분석 생성 Server Action — confirm 권한, 끝난 분기, 동시 생성 확인을 모두 서버에서 다시 확인한다
 import { refresh } from "next/cache";
 
@@ -11,6 +14,7 @@ import {
 } from "@/shared/ai/errors";
 import { generateJson } from "@/shared/ai/generate-json";
 import { can, getCurrentUser } from "@/shared/auth";
+import type { TeamAiFacts } from "@/shared/contracts/team-ai";
 import { prisma } from "@/shared/db/client";
 import { periodLabel } from "@/shared/period/period";
 
@@ -22,10 +26,7 @@ import { hashAiInput } from "./hash";
 import { hasUploadedInput, loadLatestAiComment } from "./load-comment";
 import { MOCK_MODEL, mockAiComment } from "./mock-comment";
 import { buildUserMessage, PROMPT_VERSION, SYSTEM_PROMPT } from "./prompt";
-import {
-  isAiRealDataBlocked,
-  isUploadedDataBlocked,
-} from "./real-data-policy";
+import { isAiRealDataBlocked, isUploadedDataBlocked } from "./real-data-policy";
 import { aiAbilities, quarterKey, type QuarterPeriod } from "./rules";
 import {
   aiCommentResponseSchema,
@@ -100,7 +101,10 @@ async function callAi(
   return { result: normalized.result, model };
 }
 
-export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
+export async function generateAiCommentWithTeams(
+  raw: unknown,
+  loadTeams: (period: QuarterPeriod) => Promise<TeamAiFacts>,
+): Promise<AiActionResult> {
   const user = await getCurrentUser();
   if (!user || !can(user, "confirm", "management")) {
     return fail("FORBIDDEN", "AI 분석은 팀장만 실행할 수 있습니다.");
@@ -160,7 +164,7 @@ export async function generateAiComment(raw: unknown): Promise<AiActionResult> {
   }
   inFlight.add(key);
   try {
-    const input = buildAiInput(summary, period);
+    const input = buildAiInput(summary, period, await loadTeams(period));
     const inputHash = hashAiInput(input);
     const { result, model } = await callAi(input, key);
     // headline·장기 미수금 거래처명은 AI 가 아니라 서버가 만들어 함께 저장 (거래처명은 AI 로 보내지 않음)

@@ -1,9 +1,12 @@
 // AI 에 보낼 입력 만들기 (순수 함수): getManagementSummary 집계값만 사용
 // - 거래처명·건별 미수 내역·비고·원본 월별 행은 넣지 않는다 (미수금은 금액·건수·구간만)
-// - 생산팀 목업 비중(샘플 데이터)도 넣지 않는다 — AI 가 실제처럼 해석할 위험 (아래 TODO: 연동 시 추가)
+// - 생산·서비스 숫자(2026-11-04)는 메인 "팀별 현황" 카드와 같은 집계(TeamAiFacts)를 그대로 — 가짜 시드가 섞이면 is_sample
+//   생산 수량은 "대", 서비스는 건수뿐 (출장보고서에 금액이 없어 유상 매출은 계산하지 않음)
 // - 금액은 "7.09억원"·"6,668만원", 비율은 "12.3%", 목표·기대치 차이는 "82.4%로 17.6%p 부족"처럼 미리 계산해 AI 가 계산하지 않게 한다
 // - 화면 headline·장기 미수금 거래처명은 AI 에 보내지 않고 서버가 따로 만든다 (annotations.ts)
 // - 오늘 날짜에 따라 바뀌는 값은 넣지 않는다 (끝난 분기는 같은 데이터면 같은 입력 → 같은 해시)
+import type { SalesShareResult } from "@/shared/contracts/production";
+import type { TeamAiFacts } from "@/shared/contracts/team-ai";
 import { formatWonShort } from "@/shared/format/money";
 import { periodMonths, type YearMonth } from "@/shared/period/period";
 
@@ -97,12 +100,91 @@ function comparison(c: Comparison, labels: Map<string, string>) {
   };
 }
 
+const n = (v: number) => v.toLocaleString("ko-KR");
+
+/** 확정 출고 수량 기준 비중 (생산팀 자료에 금액 없음) — 0대 조각은 뺌 */
+function quantityShares(r: SalesShareResult | null) {
+  if (!r) return null;
+  const total = r.items.reduce((t, i) => t + i.quantity, 0);
+  return {
+    is_sample: r.hasSample,
+    basis: "확정 출고 수량(대)",
+    items: r.items
+      .filter((i) => i.quantity > 0)
+      .map((i) => ({
+        item: i.label,
+        quantity: `${n(i.quantity)}대`,
+        share: total ? pct(i.quantity / total) : "-",
+      })),
+    excluded: [
+      r.unconfirmedRows ? `수량 미확정 ${r.unconfirmedRows}행` : null,
+      r.unclassifiedQuantity
+        ? `사업구분 미분류 ${n(r.unclassifiedQuantity)}대`
+        : null,
+    ].filter(Boolean),
+  };
+}
+
+/** 생산·서비스 — 화면 카드와 같은 숫자, 문장에 바로 쓸 수 있게 표기를 미리 만든다 */
+function teamsInput(t: TeamAiFacts) {
+  const p = t.production;
+  const s = t.service;
+  return {
+    production: p && {
+      is_sample: p.hasSample,
+      basis: "출고일자 기준, 수량이 입력된 행만 실적",
+      confirmedShipped: `${n(p.confirmedQuantity)}대`,
+      target:
+        p.target === null
+          ? `목표 없음 (${p.targetNote ?? "미설정"})`
+          : `${n(p.target)}대`,
+      achievement:
+        p.achievement === null || p.target === null
+          ? "목표가 없어 계산하지 않음"
+          : achievementText(p.achievement),
+      shortfall:
+        p.shortfall === null
+          ? "목표가 없어 계산하지 않음"
+          : `${n(p.shortfall)}대`,
+      unconfirmedRows: `${n(p.unconfirmedRows)}행 (출고됐지만 수량 미입력 — 실적에서 제외)`,
+      dueEvents: `${n(p.dueEvents)}건 (같은 납기일 + 같은 수주번호 = 1건)`,
+      dueNotShipped: `${n(p.dueEventsPending)}건 (기간 안 납기 일정 중 출고일 없는 제품이 남은 일정)`,
+    },
+    industryShares: quantityShares(t.industry),
+    seriesShares: quantityShares(t.series),
+    service: s && {
+      is_sample: s.hasSample,
+      basis: "출장 시작일 기준, 출장보고서 1건 = 출장 1건",
+      trips: `${n(s.trips)}건`,
+      paidFree: `유상 ${n(s.paid)}건 / 무상 ${n(s.free)}건 / 미입력 ${n(s.billingUnset)}건`,
+      paidRatio:
+        s.paidRatio === null
+          ? "유상·무상 입력 없음"
+          : `${pct(s.paidRatio)} (미입력 제외)`,
+      paidRevenue: "출장보고서에 금액이 없어 계산하지 않음",
+      topRegion: s.topRegion
+        ? `${s.topRegion.label} ${n(s.topRegion.trips)}건 (전체의 ${pct(s.topRegion.ratio)})`
+        : "지역이 확인된 출장 없음",
+      regionUnassigned: `${n(s.regionUnassigned)}건`,
+      topParts: s.topParts.length
+        ? s.topParts.map((x) => `${x.name} ${n(x.reports)}건`)
+        : ["교체 부품 기록 없음"],
+      repairedProducts: `${n(s.productQuantity)}대 (수량이 입력된 제품)`,
+    },
+  };
+}
+
 /** AI 입력 (이 객체 그대로 JSON 으로 보내고, 해시도 이 객체로 계산) */
 export type AiInput = ReturnType<typeof buildAiInput>;
 
+/**
+ * @param teams 생산·서비스 숫자 — 메인 "팀별 현황" 카드와 같은 집계 (app 계층이 만들어 넘김).
+ *   없으면 teams 칸을 넣지 않는다 (옛 입력과 해시가 같게)
+ */
 export function buildAiInput(
   summary: ManagementSummary,
   quarter: QuarterPeriod,
+  teams?: TeamAiFacts,
 ) {
   const { confirmation, revenue, expenses, profit, targets, receivables } =
     summary;
@@ -189,11 +271,10 @@ export function buildAiInput(
             ),
           }
         : "연간 목표 미설정",
-    // TODO(생산팀 연동): 판매처 산업분야·제품 시리즈 비중은 연동 전까지 넣지 않는다 (목업 = 가짜 비중).
-    // 연동 후 getSalesShareByIndustry / getSalesShareBySeries(quarter) 결과를 아래 형태로 추가하면
-    // 프롬프트 7번 규칙(is_sample 이면 "샘플 데이터 기준")이 그대로 적용된다:
-    //   industryShares: { is_sample: source === "mock", items: [{ item, amount: formatWonShort(..), share: pct(..) }] },
-    //   seriesShares:   { is_sample: ..., items: [...] },
+    // 생산·서비스 (2026-11-04) — teams 가 있을 때만
+    ...(teams && Object.values(teams).some(Boolean)
+      ? { teams: teamsInput(teams) }
+      : {}),
     // 미수금 = 경영지원 관리 외상매출금 기준월 (2026-10-26, 05-22) — 거래처명은 보내지 않음 (05-19)
     receivables: {
       basis: "경영지원 관리 외상매출금 — 미수 = 장기 미수금 + 당월 수금예정",
