@@ -198,10 +198,10 @@ export function PriceBySite({
                               {r.part.name}
                             </Link>
                           </td>
-                          <td className="px-3 py-1.5 text-right tabular-nums">
+                          <td className="px-3 py-1.5 text-right whitespace-nowrap tabular-nums">
                             {r.price === null ? "미입력" : won(r.price)}
                           </td>
-                          <td className="px-3 py-1.5 text-right text-xs tabular-nums">
+                          <td className="px-3 py-1.5 text-right text-xs whitespace-nowrap tabular-nums">
                             {won(r.avg)}
                             {r.avgSites > 0 && (
                               <span className="text-muted-foreground">

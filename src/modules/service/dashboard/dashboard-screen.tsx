@@ -26,6 +26,7 @@ import {
   yearsAvailable,
   type Summary,
 } from "../metrics/dashboard";
+import { ReadOnlyBadge } from "../read-only-badge";
 import { BASE_DATE } from "../regions/regions";
 import { serviceAbilities } from "../rules";
 import { BILLING_COLORS } from "./colors";
@@ -169,7 +170,10 @@ export async function ServiceDashboardScreen({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className={pageTitleClass}>서비스팀 대시보드</h1>
+        <h1 className={`${pageTitleClass} flex flex-wrap items-center gap-3`}>
+          서비스팀 대시보드
+          {!canEdit && <ReadOnlyBadge note="입력은 팀장만 할 수 있습니다" />}
+        </h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <NavSelect
             label="연도"
@@ -524,6 +528,32 @@ export async function ServiceDashboardScreen({
                 </tr>
               ))}
             </tbody>
+            {p.tab !== "year" && (
+              <tfoot>
+                <tr className="border-t bg-muted/50 font-semibold">
+                  <th className="px-3 py-1.5 text-left">연간 합계</th>
+                  {[
+                    summary.annual.trips,
+                    summary.annual.paid,
+                    summary.annual.free,
+                    summary.annual.billingUnset,
+                  ].map((v, i) => (
+                    <td key={i} className="px-3 py-1.5 text-right tabular-nums">
+                      {n(v)}
+                    </td>
+                  ))}
+                  <td className="px-3 py-1.5 text-right tabular-nums">
+                    {pct(summary.annual.paidRatio)}
+                  </td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">
+                    {n(summary.annual.productQty)}
+                  </td>
+                  <td className="px-3 py-1.5 text-right tabular-nums">
+                    {n(summary.annual.reportsWithParts)}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </section>

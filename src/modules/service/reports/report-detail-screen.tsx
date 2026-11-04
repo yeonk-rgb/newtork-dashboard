@@ -8,7 +8,11 @@ import { getCurrentUser, loadUserNames } from "@/shared/auth";
 import { kstDateTime } from "@/shared/format/date-time";
 import { cn } from "@/shared/lib/utils";
 import { Forbidden } from "@/shared/ui/forbidden";
-import { buttonPrimaryClass, pillClass } from "@/shared/ui/styles";
+import {
+  buttonPrimaryClass,
+  pageTitleClass,
+  pillClass,
+} from "@/shared/ui/styles";
 
 import { won } from "../labels";
 import { ReadOnlyBadge } from "../read-only-badge";
@@ -68,6 +72,7 @@ export async function ReportDetailScreen({ id }: { id: string }) {
 
   return (
     <div className="space-y-4">
+      <h1 className={pageTitleClass}>출장보고서</h1>
       <div className="flex flex-wrap items-center gap-2">
         <Link
           href="/service/reports"
