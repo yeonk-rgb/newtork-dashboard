@@ -1,5 +1,5 @@
 # 폴더별 담당자 — PR 리뷰어 자동 지정
-# TODO: @production-dev / @service-dev 를 실제 GitHub 아이디로 교체
+# 생산·서비스: 친구 저장소(lyjradiant-max/newtalk-korea-system) 담당 — 이 저장소 협업자로 초대돼야 리뷰어로 지정된다
 # (뒤에 오는 규칙이 앞의 규칙보다 우선한다)
 
 # 기본 및 공통 영역: 경영지원팀
@@ -15,11 +15,11 @@
 /prisma/schema/management.prisma    @yeonk-rgb
 
 # 생산팀
-/src/modules/production/            @production-dev
-/src/app/(dashboard)/production/    @production-dev
-/prisma/schema/production.prisma    @production-dev
+/src/modules/production/            @lyjradiant-max
+/src/app/(dashboard)/production/    @lyjradiant-max
+/prisma/schema/production.prisma    @lyjradiant-max
 
 # 서비스팀
-/src/modules/service/               @service-dev
-/src/app/(dashboard)/service/       @service-dev
-/prisma/schema/service.prisma       @service-dev
+/src/modules/service/               @lyjradiant-max
+/src/app/(dashboard)/service/       @lyjradiant-max
+/prisma/schema/service.prisma       @lyjradiant-max

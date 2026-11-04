@@ -83,7 +83,9 @@ type Period =
 - 타입: `src/shared/contracts/production.ts`·`service.ts`
 - **통합 1단계(2026-11-03)**: 친구 저장소(lyjradiant-max/newtalk-korea-system, Django+Vue)의 생산·서비스 모델을 Prisma 로(`prisma/schema/production.prisma` `prod_*`, `service.prisma` `svc_*`), 집계 규칙을 순수 함수로(`modules/production/metrics/`·`modules/service/metrics/`) 옮겼습니다. 목업(`production-mock.ts`·`align-mock.ts`)은 지웠습니다
 - 생산팀 자료에 판매 금액이 없어 산업 분야별·제품별 도넛은 **확정 출고 수량 기준**입니다 (05-10 갱신). 경영지원 매출 합계와 맞추지 않습니다
-- 다음 단계: 생산(엑셀 업로드·제조내역·일련번호 검색·납기 캘린더·사업구분 지정·목표)·서비스(출장보고서·PDF 등록·부품·출장지·가격) 화면 이식. 지금 데이터는 `npm run seed:teams` 가짜 데이터뿐 (`-- --remove` 로 삭제)
+- **통합 2·3단계(2026-11-03~04)**: 생산 화면 6개·서비스 화면 2개·부품·가격 화면 5개와 출장보고서 엑셀 가져오기(`npm run import:service`)까지 모두 옮겼습니다. 친구 앱과 다르게 한 것은 11번 표
+- AI 분석 입력(2026-11-04): 생산 `getProductionOverview`·`getSalesShareBy*`, 서비스 `getServiceOverview` 결과를 그대로 넣습니다. 경영지원 모듈은 다른 팀 모듈을 import 하지 않으므로 app 계층(`src/app/(dashboard)/team-ai-facts.ts`·`ai-actions.ts`)이 모아서 넘깁니다
+- 지금 데이터는 `npm run seed:teams` 가짜 데이터뿐 (`-- --remove` 로 삭제)
 
 ## 7. 공통 UI
 
@@ -209,3 +211,28 @@ export async function saveProduction(input: Input) {
 - **파일 업로드 공통**: `src/shared/upload/read-table.ts`의 `readTableFile(fileName, ArrayBuffer)` → 시트별 셀 표(문자열·숫자·null). .xlsx(exceljs 4.4.0 고정)·.csv(UTF-8/EUC-KR 자동 판별) 지원, .xls는 안내 메시지. 팀별 열 인식·검증은 각 모듈에서 합니다(경영지원: `modules/management/upload/`). 병합 셀·글자색·배경색·수식으로 의미를 나타내는 양식은 `src/shared/upload/read-styled-sheet.ts`의 `readStyledXlsx(fileName, ArrayBuffer)`로 읽습니다(셀 값·수식·계산값 유무·표시 형식·글자색·배경색(직접 색 ARGB / 테마 색 번호·tint)·병합 범위·숨김 열). 경영지원 사용처: `modules/management/ledger/import/`.
 - `npm run check` (lint + typecheck + test)가 통과하는 상태로 합칩니다.
 - **배포(Render)**: 루트 `render.yaml` 한 개로 웹 서비스 + PostgreSQL을 만듭니다 (README 8번). 빌드는 `prisma migrate deploy` → `db:seed:if-empty`(빈 DB일 때만) → `next build`. 팀 테이블을 추가하면 마이그레이션 파일만 있으면 자동 반영되고, 팀 시드를 넣는다면 **재배포 때 사용자 데이터를 덮어쓰지 않게** 빈 DB일 때만 실행해 주세요. 헬스체크 `/api/health`는 로그인 없이 열려 있습니다(`proxy.ts`의 `PUBLIC_PATHS`).
+
+## 11. 친구 앱(lyjradiant-max/newtalk-korea-system)과 다르게 한 것 (2026-11-04 정리)
+
+계산 규칙은 친구 저장소 그대로 옮기고(숫자 대조 결과는 `docs/service-migration.md`·각 PR), 아래만 이 저장소 규칙에 맞췄습니다.
+
+| 항목 | 친구 앱 | 본체 | 이유 |
+|---|---|---|---|
+| 삭제 | 제조내역·출장보고서·첨부·부품·출장지·가격을 지움 | **숨김(`deletedAt`) + 복구** — 조회는 모두 `deletedAt: null`. 가격 삭제 = 숨김(다시 입력하면 같은 행을 되살림), 출장지를 숨기면 그 출장지 가격도 숨김 | 이 저장소 규칙(삭제 대신 숨김) |
+| 수정 권한 | 그 팀이면 팀원도 수정 | **팀장(수정 권한)만** 입력·수정·숨김, 팀원은 버튼 비활성 + "열람 전용" | 처음 요구사항(팀원은 열람만) — `can()` |
+| 변경 이력 | 없음 | 저장마다 `audit_log` (`area: "production"`·`"service"`, 바뀐 칸만), 경영지원 [변경 이력] 화면에서 봄 | 이 저장소 규칙 |
+| 색·모양 | 부트스트랩 파랑 | design-guide 팔레트 — 네이비·코퍼(목표선·무상·일부 출고), 도넛 범례·[표로 보기] | `docs/design-guide.md` |
+| 차트 | Chart.js · chartjs-chart-geo | Recharts · 지도는 같은 경계 자료를 미리 SVG 로 투영(`scripts/make-korea-map.ts`) | 이 저장소 차트 도구 |
+| 목록 정렬 | 부품·출장지 목록이 Django 집계 쿼리라 기본 정렬이 빠져 순서가 정해지지 않음 | 이름 순 | 친구 쪽 버그로 보고 고치지 않고 정렬 |
+| 비율 반올림 | 파이썬 `round()` (딱 절반이면 짝수 쪽: 56.25% → 56.2%) | **같게 맞춤** (`modules/service/labels.ts` `pct1`) | 친구 규칙 그대로 |
+| 행 수정 | 행을 누르면 수정 창 | 행마다 [수정]·[숨김] 버튼, 일련번호 → 일련번호 검색 | 숨김 버튼이 필요해서 |
+| 출장보고서 PDF 읽기 | pypdfium2 | PDFium WASM(`@embedpdf/pdfium`) + 같은 `parse()`. 띄어쓰기 NBSP → 공백 | Node 서버. 샘플로 24개 항목 같음 확인 |
+| 첨부 파일 저장 | 서버 디스크 | DB(`bytea`), 받기는 `/api/service/attachments/{id}`(서비스 열람 권한) | 배포 서버(Render)에 디스크 없음 |
+| 엑셀 가져오기 | `manage.py import_service_xlsx` | `npm run import:service` (같은 규칙·같은 결과) | 이 저장소 스크립트 방식 |
+| 가상 데이터 | `seed_production_demo`·`seed_price_demo` | `npm run seed:teams`(DB) + `npm run make:production-sample`(엑셀 파일) | 한 명령으로 생산·서비스 함께 |
+| 계정·로그인 | JWT, `create_admin` 명령, 계정 관리 화면 | 이 저장소 로그인(DB 세션)·`/admin`·`INITIAL_ADMIN_*` | 이미 있던 인증 (8번) |
+| Django 관리자(`/admin`) | 모든 표를 직접 편집 | 없음 — 각 화면에서만 | 변경 이력·숨김 규칙을 거치게 |
+| 외부 REST API | `/api/production/*`·`/api/service/*` JSON | 없음 (Server Action·서버 컴포넌트) | 화면에서 쓰지 않는 필터(정렬·납기일 기간·시트)는 옮기지 않음 |
+| 부서 홈·ping | 경영지원 "준비 중" 화면 | 경영지원 화면은 이 저장소가 원본 | — |
+| 수주번호 찾기(캘린더) | 첫 50건만 셈 (목록 API 쪽 크기) | 전부 셈 | 50건이 넘는 수주번호도 맞게 |
+
