@@ -17,6 +17,7 @@
 | `docs/interface-production.md` | 생산팀 → 경영지원팀 데이터 연동 함수 형식 (합의 전 초안) |
 | `docs/integration-notes.md` | 팀별 저장소를 합칠 때 맞출 규칙 (팀원 공유용) |
 | `docs/design-guide.md` | 공통 UI 디자인 가이드 — 색 토큰·타이포·카드·배지·표·도넛 규칙 (팀원 공유용) |
+| `docs/deploy.md` | 배포(Render) 확인 방법·시연용 가짜 데이터 넣기/지우기·운영 주의사항(DB 만료·용량·첨부·AI 키)·친구 앱 처리·배포 후 화면 체크리스트 (가짜 PDF `docs/samples/가상_출장보고서.pdf`) |
 | `docs/render-db-expiry.md` | Render 시험 서버 무료 DB 만료 대응 선택지 (유료·백업 이전·새로 만들기) |
 | `docs/user-guide.md` | 경영지원팀 담당자용 사용 안내서 (화면별 사용법·불러오기 2종·자금 수지 예측·적용 기준 설명·AI 켜는 방법·자주 묻는 것, 스크린샷 `docs/user-guide-images/` — 가짜 데이터, Word 는 저장소 밖) |
 | `docs/requirements-traceability.md` | 요구사항 대조표 — 처음 문서 3개·기획서·담당자 추가 요청 100항목 (완료 74 / 보류 2 / 범위 밖 24) + 자료 기반 결정 표 |
