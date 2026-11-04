@@ -47,3 +47,9 @@ export { ServiceDashboardScreen } from "./dashboard/dashboard-screen";
 // ③-c
 export { PartsScreen } from "./catalog/parts-screen";
 export { SitesScreen } from "./catalog/sites-screen";
+// ③-d
+export {
+  PriceBySiteScreen,
+  PriceCompareScreen,
+  PriceManageScreen,
+} from "./prices/prices-screen";
