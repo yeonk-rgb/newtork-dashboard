@@ -83,6 +83,17 @@ export const HISTORY_SCREENS: {
   { key: "service-parts", label: "서비스 · 부품 목록", area: "service" },
   { key: "service-sites", label: "서비스 · 출장지 관리", area: "service" },
   { key: "service-prices", label: "서비스 · 부품 가격", area: "service" },
+  // 단가 (2026-11-05 — 친구 우민영 저장소 단가 화면)
+  {
+    key: "service-unit-prices",
+    label: "서비스 · 단가 (기준값·부품 추가)",
+    area: "service",
+  },
+  {
+    key: "service-unit-price-upload",
+    label: "서비스 · 단가 데이터 업로드",
+    area: "service",
+  },
   { key: "admin-users", label: "관리자(대표) · 계정 관리", area: "admin" },
   {
     key: "history-export",
@@ -189,6 +200,15 @@ export function metaSummary(
       num(m, "created") !== null && `새로 저장 ${count("created", "행")}`,
       num(m, "overwritten") !== null && `덮어씀 ${count("overwritten", "행")}`,
       !!num(m, "kept") && `덮어쓰지 않음 ${count("kept", "행")}`,
+      !!num(m, "hidden") && `숨긴 행과 같음 ${count("hidden", "행")}`,
+      str(m, "fileName"),
+    ]);
+  }
+  if (screen === "service-unit-price-upload") {
+    return join([
+      str(m, "kind"),
+      num(m, "created") !== null && `새로 저장 ${count("created", "행")}`,
+      num(m, "overwritten") !== null && `덮어씀 ${count("overwritten", "행")}`,
       !!num(m, "hidden") && `숨긴 행과 같음 ${count("hidden", "행")}`,
       str(m, "fileName"),
     ]);

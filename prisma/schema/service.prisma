@@ -197,3 +197,67 @@ model SvcReportAttachment {
   @@index([sha256])
   @@map("svc_report_attachment")
 }
+
+// ---------- 단가 (2026-11-05 — 친구 우민영 저장소 newtalk-dashboard 의 lib/pricing.js 부품 단가를 옮김) ----------
+// 담당자 피드백: 뉴토크 기준값 = 단가표 기준단가 그대로(할인율·추가단가 없음), 견적서 PDF·단가 직접 입력 대신 CSV/엑셀 업로드
+// 기존 부품·가격(SvcPart·SvcSite·SvcSitePartPrice)과는 따로 둔다 — 합칠지는 친구들과 정한 뒤
+
+/// 단가표 부품 (친구 part_catalog) — 같은 부품 = 파트넘버 + 품목 (친구 UNIQUE(part_no, name) 그대로 —
+/// 고객사 원본에 파트넘버가 같고 품목이 다른 줄이 있음)
+model SvcPriceItem {
+  id        String  @id @default(cuid())
+  /// 파트넘버 원문 (화면 표시)
+  partNo    String
+  /// 파트넘버 비교용 — 공백·하이픈 빼고 대문자 (예: "md-05 a-01" → "MD05A01")
+  partKey   String
+  /// 같은 부품 판별용 = partKey + "|" + 품목(공백 빼고 대문자)
+  itemKey   String  @unique
+  /// 분류 (예: "05 MOTOR")
+  category  String  @default("")
+  /// 품목
+  name      String
+  /// 적용 모델 (원본 엑셀 "적요")
+  appliesTo String  @default("")
+  /// 뉴토크 기준값(원, 부가세 제외) — 빈칸 = 미입력(0원과 다름)
+  basePrice BigInt?
+  /// 원본 순서 (업로드한 파일 순서, 직접 추가는 맨 뒤)
+  sortOrder Int     @default(0)
+
+  quotes SvcPriceQuote[]
+
+  deletedAt   DateTime?
+  deletedById String?
+  createdById String
+  updatedById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([partKey])
+  @@index([category])
+  @@map("svc_price_item")
+}
+
+/// 출장지(업체)별 부품 단가 (친구 part_prices) — 같은 부품·같은 출장지라도 적용 시작일마다 한 줄
+model SvcPriceQuote {
+  id            String       @id @default(cuid())
+  itemId        String
+  item          SvcPriceItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  /// 출장지(업체) 이름
+  company       String
+  /// 단가(원, 부가세 제외)
+  unitPrice     BigInt
+  /// 적용 시작일 (한국 날짜)
+  effectiveDate DateTime     @db.Date
+  note          String       @default("")
+
+  /// 숨김 = 삭제 (조회 시 반드시 deletedAt: null)
+  deletedAt   DateTime?
+  deletedById String?
+  createdById String
+  updatedById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([itemId, company, effectiveDate])
+  @@map("svc_price_quote")
+}

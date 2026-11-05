@@ -233,6 +233,8 @@ export async function saveProduction(input: Input) {
 | 계정·로그인 | JWT, `create_admin` 명령, 계정 관리 화면 | 이 저장소 로그인(DB 세션)·`/admin`·`INITIAL_ADMIN_*` | 이미 있던 인증 (8번) |
 | Django 관리자(`/admin`) | 모든 표를 직접 편집 | 없음 — 각 화면에서만 | 변경 이력·숨김 규칙을 거치게 |
 | 외부 REST API | `/api/production/*`·`/api/service/*` JSON | 없음 (Server Action·서버 컴포넌트) | 화면에서 쓰지 않는 필터(정렬·납기일 기간·시트)는 옮기지 않음 |
+
+단가 화면(친구 우민영 저장소 alsdud8290-crypto/newtalk-dashboard, 2026-11-05)과 다르게 한 것은 `docs/unit-prices.md` "친구 앱과 다르게 한 것" 표에 따로 정리했습니다.
 | 부서 홈·ping | 경영지원 "준비 중" 화면 | 경영지원 화면은 이 저장소가 원본 | — |
 | 수주번호 찾기(캘린더) | 첫 50건만 셈 (목록 API 쪽 크기) | 전부 셈 | 50건이 넘는 수주번호도 맞게 |
 

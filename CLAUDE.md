@@ -25,6 +25,7 @@
 | `docs/client-questions-2026-11.md` | 2차 고객사 확인 요청 정리본 (05-16·30~39, 이번에 반영한 것, 1차 미답 목록) |
 | `docs/client-questions-3rd-draft.md` | 3차 확인 요청 초안 (05-41~46 자금 수지 예측 — 아직 보내지 않음, 2차 답변 회신에 붙일 예정) |
 | `docs/design-cashflow-forecast.md` | 3~6개월 자금 수지 예측 설계안 (구현은 고객 답변 뒤) |
+| `docs/unit-prices.md` | 단가 화면(친구 우민영 저장소에서 옮김) — 담당자 피드백 반영표·화면 4개·계산 규칙·업로드 2종·테이블·친구 앱과 다른 점 |
 | `docs/excel-default-font-review.md` | 엑셀 기본 글꼴 Calibri 후처리 검토 — 보류, 다시 할 때 방법·위험·테스트 |
 
 ## 프로젝트 개요
@@ -156,6 +157,10 @@
   - 부품·출장지 `catalog/`, 가격 3개 `prices/`(계산 `compute.ts`). 출장지 숨기면 그 가격도 숨김, 가격 삭제 = 숨김(다시 입력하면 되살림)
   - 출장보고서 엑셀 가져오기 `npm run import:service -- <파일> [--save]` (`service/import/`, 친구 import_service_xlsx 그대로 — 저장은 화면과 같은 `reports/save-report.ts`), 가상 제조내역 엑셀 `npm run make:production-sample`
   - 트랜잭션 안에서는 관계 `include`·`Promise.all` 로 동시에 읽지 않는다 (pg "client.query() when already executing" 경고)
+- **단가 화면(2026-11-05 — 친구 우민영 저장소 alsdud8290-crypto/newtalk-dashboard 의 "단가" 중 부품 단가 + 담당자 피드백)**: 정리표 `docs/unit-prices.md`. `modules/service/unit-prices/`, 사이드바 "단가"(기존 "부품·가격"은 그대로 — 합칠지는 친구들과 정한 뒤), 테이블 `svc_price_item`(같은 부품 = **파트넘버 + 품목** `itemKey` — 원본에 파트넘버 중복 줄 있음, 친구 `UNIQUE(part_no, name)`)·`svc_price_quote`(부품 + 출장지 + 적용 시작일), 권한 `serviceAbilities()`
+  - 피드백: 뉴토크 기준값 = 기준단가 그대로(산식·할인율·추가단가 없음), 부품별 비교 기준값 칸 **더블클릭 수정**(`updateBasePrice`, `updatedAt` 동시 수정 확인), 파트넘버 클릭 하단의 단가표·할인 줄·"이 부품만 따로" 없음, 견적서 PDF·단가 직접 입력·제품 단가·원가 탭 없음, 요청처 지역 관리는 옮기지 않음
+  - 업로드 2종(CSV·xlsx): ① 부품 단가표(고객사 원본 [부품] 시트 형식도 인식) ② 출장지별 단가 — 같은 행은 **체크 없이 덮어씀**, 오류 1건이라도 있으면 저장 안 함, 숨긴 행과 같으면 저장 안 함, 변경 이력 요약 `service-unit-price-upload`. 계산은 `compute.ts`(최근 단가 1개/출장지, 크게 낮음 −10% `LOW_ALERT_RATE`)
+  - 가짜 데이터 = `seed:teams`(VX… 작성자 `seed-service`). **원본 "부품 및 단가리스트.xlsx"는 대외비 — 저장소·테스트에 넣지 않는다**
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`
   - **[경영지원 관리에서 불러오기](2026-10-26 결정 05-1·24·25, PR ③)**: 계산 `entry/from-ledger.ts`(순수 함수), 행 읽기 Server Action `loadLedgerForEntry`(읽기만, `entryAbilities`가 readOnly면 거부, 숨긴 행·외상매출금 제외), 미리보기 `from-ledger-dialog.tsx`. 외상매입금 → 상품·원재료 매입(매입유형, 빈 행은 고른 칸), 직원 → 경비, 업체 → 그 외 지출(같은 이름 항목, "기타"는 "기타…" 항목, 없으면 고름). **업체는 자동이체 포함 전체 합계**(F열 총액·자동이체 합계도 표시). 블록별 ÷1.1 체크(외상매입금·업체 기본 체크, 직원 해제), 칸 단위 반올림(`toSupplyAmount`). [입력란에 채우기]는 저장하지 않음 — 저장·변경 이력은 기존 [임시저장]·[확정] 그대로
