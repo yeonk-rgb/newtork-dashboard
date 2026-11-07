@@ -25,6 +25,10 @@ import { countExisting } from "@/modules/management/ledger/import/save-import";
 import { loadReceivablesData } from "@/modules/management/receivables/load-receivables";
 import { loadTarget } from "@/modules/management/settings/load-settings";
 import {
+  loadExistingItems,
+  loadExistingQuotes,
+} from "@/modules/service/unit-prices/load-unit-prices";
+import {
   loadExistingData,
   loadRecentUploads,
 } from "@/modules/management/upload/save-upload";
@@ -169,6 +173,17 @@ async function main() {
       loadPrices(),
     ]),
   );
+  // 단가 (2026-11-05) — loadUnitPriceData 는 getNow()(요청 안에서만)를 써서 같은 조회를 직접
+  await check("단가: 단가표·출장지별 단가·업로드 판정용 조회", async () => {
+    const items = await loadExistingItems();
+    await loadExistingQuotes();
+    await prisma.svcPriceItem.findMany({
+      orderBy: [{ sortOrder: "asc" }, { partNo: "asc" }],
+      take: 1,
+    });
+    await prisma.svcPriceQuote.findMany({ take: 1 });
+    return items;
+  });
   await check("생산 제조내역 목록·필터 (loadRecordPage)", () =>
     Promise.all([
       loadRecordPage(parseRecordFilter({})),

@@ -115,6 +115,36 @@ const NAV_RULES: NavRule[] = [
       },
     ],
   },
+  // 2026-11-05: 친구 우민영 저장소 "단가" 메뉴 (담당자 피드백 — 단가 직접 입력·제품 단가·원가 탭 없음)
+  {
+    href: "/service/unit-prices",
+    label: "단가",
+    team: "service",
+    children: [
+      {
+        href: "/service/unit-prices",
+        label: "부품별 비교",
+        action: "view",
+        exact: true,
+      },
+      {
+        href: "/service/unit-prices/companies",
+        label: "출장지별 비교",
+        action: "view",
+      },
+      {
+        href: "/service/unit-prices/upload",
+        label: "단가 데이터 업로드",
+        action: "view",
+      },
+      { href: "/service/unit-prices/new", label: "부품 추가", action: "view" },
+      {
+        href: "/service/unit-prices/uploads",
+        label: "업로드 이력",
+        action: "view",
+      },
+    ],
+  },
   { href: "/admin", label: "관리자", adminOnly: true },
 ];
 

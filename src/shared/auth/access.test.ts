@@ -14,6 +14,7 @@ describe("accessiblePages", () => {
       "/production",
       "/service",
       "/service/parts",
+      "/service/unit-prices",
       "/admin",
     ]);
   });
@@ -25,17 +26,23 @@ describe("accessiblePages", () => {
       "/production",
       "/service",
       "/service/parts",
+      "/service/unit-prices",
     ]);
   });
 
   it("팀장·팀원은 열람 범위의 팀만, 겸직은 둘 다", () => {
     expect(hrefs("prodMember")).toEqual(["/production"]);
-    // 서비스는 친구 저장소처럼 "서비스"·"부품·가격" 두 묶음 (2026-11-03 통합 3단계)
-    expect(hrefs("svcLeader")).toEqual(["/service", "/service/parts"]);
+    // 서비스는 친구 저장소처럼 "서비스"·"부품·가격" 두 묶음 (2026-11-03 통합 3단계) + "단가" (2026-11-05)
+    expect(hrefs("svcLeader")).toEqual([
+      "/service",
+      "/service/parts",
+      "/service/unit-prices",
+    ]);
     expect(hrefs("dual")).toEqual([
       "/production",
       "/service",
       "/service/parts",
+      "/service/unit-prices",
     ]);
   });
 });
@@ -99,10 +106,18 @@ describe("서비스 하위 메뉴 (친구 저장소 config/menu.js 순서)", () 
         "출장지별 가격 조회",
         "출장지 비교 분석",
       ],
+      [
+        "부품별 비교",
+        "출장지별 비교",
+        "단가 데이터 업로드",
+        "부품 추가",
+        "업로드 이력",
+      ],
     ]);
   });
 
   it("생산팀은 서비스 메뉴 없음", () => {
     expect(hrefs("prodMember")).not.toContain("/service/parts");
+    expect(hrefs("prodMember")).not.toContain("/service/unit-prices");
   });
 });

@@ -106,9 +106,14 @@ npm run build        # 배포 빌드 확인 (선택)
 | 부품·가격 | 부품 가격 관리 | `/service/prices` | 가격 입력·삭제 | 열람 |
 | 부품·가격 | 출장지별 가격 조회 | `/service/prices/by-site` | — | 열람 |
 | 부품·가격 | 출장지 비교 분석 | `/service/prices/compare` | — | 열람 |
+| 단가 | 부품별 비교 (뉴토크 기준값 더블클릭 수정) | `/service/unit-prices` | 기준값 수정·숨김 | 열람 |
+| 단가 | 출장지별 비교 | `/service/unit-prices/companies` | — | 열람 |
+| 단가 | 단가 데이터 업로드 (CSV·엑셀 — 부품 단가표 / 출장지별 단가·수주 내역 CSV) | `/service/unit-prices/upload` | 업로드 | 열람 |
+| 단가 | 부품 추가 | `/service/unit-prices/new` | 추가 | 열람 |
+| 단가 | 업로드 이력 | `/service/unit-prices/uploads` | — | 열람 |
 
-- 관리자·경영지원팀은 모든 메뉴, 생산팀은 생산만, 서비스팀은 서비스·부품·가격만 (다른 팀 주소는 403 화면).
-- 시연용 가짜 데이터: `npm run seed:teams` (제조내역·사업구분·목표 + 출장보고서·부품·출장지·출장지별 가격, 이름·주소·가격 모두 가상) / `npm run seed:teams -- --remove` 로 가짜 데이터만 지우기 (직접 입력한 것은 그대로). **고객사 실제 데이터를 넣기 전에 지운다.**
+- 관리자·경영지원팀은 모든 메뉴, 생산팀은 생산만, 서비스팀은 서비스·부품·가격·단가만 (다른 팀 주소는 403 화면). 단가 규칙은 `docs/unit-prices.md`.
+- 시연용 가짜 데이터: `npm run seed:teams` (제조내역·사업구분·목표 + 출장보고서·부품·출장지·출장지별 가격 + 단가표 VX… 8개·출장지별 단가 12건, 이름·주소·가격 모두 가상) / `npm run seed:teams -- --remove` 로 가짜 데이터만 지우기 (직접 입력한 것은 그대로). **고객사 실제 데이터를 넣기 전에 지운다.**
 - 출장보고서 엑셀 가져오기 (한 행 = 보고서 1건, 시트 "출장보고서"): `npm run import:service -- <파일.xlsx>` 로 확인만 → 문제 없으면 `-- <파일.xlsx> --save`. 오류가 한 건이라도 있으면 저장하지 않고, 다시 실행해도 같은 행은 건너뛴다. 머리글은 `src/modules/service/import/parse-import.ts` 의 `COLUMNS`.
 - 업로드 화면 시연용 가짜 제조내역 엑셀: `npm run make:production-sample -- 가상_제조내역.xlsx`
 - 출장보고서 PDF 읽기는 PDFium(WASM, `@embedpdf/pdfium`)을 쓴다 — 별도 설치·환경변수 없음
@@ -147,6 +152,7 @@ npm run build        # 배포 빌드 확인 (선택)
 | `npm run env:set-key` | AI 분석용 Anthropic API 키를 `.env`에 저장 (입력 숨김, 길이만 표시) |
 | `npm run seed:teams` | 생산·서비스·부품 시연용 가짜 데이터 넣기 (다시 실행하면 지우고 새로) · `-- --remove` 로 가짜 데이터만 지우기 |
 | `npm run import:service -- <파일.xlsx> [--save]` | 출장보고서 엑셀 가져오기 (기본은 확인만) |
+| `npm run check:deployed -- <배포 주소>` | 배포 서버 확인 (로그인 없이 — `/api/health` 200, 생산·서비스·부품 13개 주소가 로그인 화면으로) |
 | `npm run make:production-sample -- [경로.xlsx]` | 기업 양식과 같은 가상 제조내역 엑셀 만들기 (업로드 시연용, DB 에는 넣지 않음) |
 
 ## 6. 팀 작업 규칙 (요약)
@@ -167,6 +173,8 @@ npm run build        # 배포 빌드 확인 (선택)
   3. 터미널 재시작
 
 ## 8. Render 배포 (PoC)
+
+> 배포 확인·시연용 가짜 데이터·운영 주의사항·배포 후 체크리스트: [docs/deploy.md](docs/deploy.md) · 로그인 없이 확인 `npm run check:deployed -- https://newtork-dashboard.onrender.com`
 
 루트의 [`render.yaml`](render.yaml)(Blueprint)이 웹 서비스 `newtork-dashboard`와 PostgreSQL 16 `newtork-db`를 함께 만든다. 둘 다 무료 플랜, 싱가포르 지역.
 
