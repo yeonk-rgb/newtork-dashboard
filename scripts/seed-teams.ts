@@ -4,7 +4,7 @@
 // - 생산: 친구 저장소 seed_production_demo.py 와 같은 규칙 — 시트 "2025(가상)", 일련번호 "V25-0001", 수주번호 "V25001",
 //   출고된 행 일부는 수량 미확정, 수주번호 일부는 사업구분 미분류, 목표는 그 해에 목표가 없을 때만
 // - 서비스: 월 3~8건 출장보고서(비용청구·제품 수량·부품 수량 일부 미입력, 주소 일부 없음) + 부품 10개·출장지 10곳·출장지별 가격(친구 seed_price_demo.py 규칙)
-// - 단가(2026-11-05): 친구 우민영 저장소 lib/pricing.js 의 가상 단가표(VX…) 8개 + 출장지별 단가 12건 (실제 단가표는 대외비라 넣지 않음)
+// - 단가(2026-11-05, 11-07 늘림): 가상 단가표(VX…) 30개 + 출장지 6곳의 출장지별 단가 (실제 단가표는 대외비라 넣지 않음)
 // - 작성자 id 로 구분해 지운다 (PRODUCTION_SAMPLE_BY / SERVICE_SAMPLE_BY) → 메인 "팀별 현황"에 "샘플 데이터" 배지
 // ⚠️ 고객사 실제 데이터를 넣기 전에는 --remove 로 지운다
 import "dotenv/config";
@@ -488,30 +488,100 @@ async function removeService() {
 
 // ---------- 단가 (친구 우민영 저장소 lib/pricing.js VIRTUAL_CATALOG·VIRTUAL_COMPANY_PRICES 그대로 — 모두 가상) ----------
 // 친구 앱 기본 할인율 0%·추가단가 0원이라 뉴토크 기준값 = 기준단가 그대로
+// 2026-11-07 사용자 요청 "숫자는 대략적으로 채워줘": 친구 VX 8개 + 분류마다 가상 부품을 더해 30개, 기준값 모두 채움,
+// 출장지별 단가는 출장지 6곳 × 부품마다 2~5곳, 기준값의 약 −15% ~ +20% (고정 시드 난수 — 다시 실행해도 같은 값). 모두 가상
 const VIRTUAL_CATALOG: [string, string, string, string, number | null][] = [
   ["VX-01-A-00", "01 현장서비스", "가상 점검 출장", "", 300000],
   ["VX-01-B-00", "01 현장서비스", "가상 긴급 출장", "", 450000],
+  ["VX-01-C-00", "01 현장서비스", "가상 설치·결선", "", 200000],
+  ["VX-02-A-01", "02 BODY", "Body incl. Gears", "NTI-01 ~ 03", 1200000],
+  ["VX-02-A-02", "02 BODY", "Body incl. Gears", "NTI-04 ~ 05", 1650000],
+  ["VX-03-A-01", "03 CONTROL ROOM", "Cover Assembly", "NTI series", 380000],
+  [
+    "VX-03-B-01",
+    "03 CONTROL ROOM",
+    "Local Control Switch",
+    "NTI series",
+    150000,
+  ],
+  ["VX-04-A-01", "04 TERMINAL", "Terminal Block", "NTI series", 90000],
+  ["VX-04-B-01", "04 TERMINAL", "Cable Gland Set", "NTI series", 45000],
   ["VX-05-A-01", "05 MOTOR", "Motor", "NTI-01 ~ 03", 500000],
   ["VX-05-A-02", "05 MOTOR", "Motor", "NTI-04 ~ 05", 900000],
+  ["VX-05-A-03", "05 MOTOR", "Motor", "NTI-06 ~ 07", 1350000],
+  ["VX-05-B-01", "05 MOTOR", "Motor Capacitor", "NTI-01 ~ 05", 60000],
+  ["VX-06-A-01", "06 BASE", "Base Plate", "NTI-01 ~ 03", 250000],
+  ["VX-06-A-02", "06 BASE", "Base Plate", "NTI-04 ~ 07", 340000],
+  ["VX-06-B-01", "06 BASE", "Coupling", "NTI series", 180000],
   ["VX-07-A-01", "07 BOARD", "Main Board", "NTI series", 900000],
   ["VX-07-B-01", "07 BOARD", "Power Board", "NTI-01 ~ 03", 500000],
+  ["VX-07-C-01", "07 BOARD", "Modulating Board", "NTI series", 650000],
+  ["VX-07-D-01", "07 BOARD", "Display Board", "NTI series", 280000],
+  ["VX-08-A-01", "08 GEAR", "Worm Gear and Shaft", "NTI-01 ~ 03", 720000],
+  ["VX-08-A-02", "08 GEAR", "Worm Gear and Shaft", "NTI-04 ~ 07", 1100000],
+  ["VX-08-B-01", "08 GEAR", "Handwheel Gear Set", "NTI series", 210000],
+  ["VX-09-A-01", "09 ELECTRONICS", "Torque Switch", "NTI series", 190000],
   ["VX-09-B-01", "09 ELECTRONICS", "Magnetic Contactor", "NTI-01 ~ 05", 230000],
-  ["VX-10-A-01", "10 ETC", "Limit Switch", "NTI series", null],
+  [
+    "VX-09-C-01",
+    "09 ELECTRONICS",
+    "Position Transmitter",
+    "NTI series",
+    420000,
+  ],
+  ["VX-10-A-01", "10 ETC", "Limit Switch", "NTI series", 120000],
+  ["VX-10-B-01", "10 ETC", "Oil Seal Kit", "NTI series", 35000],
+  ["VX-10-C-01", "10 ETC", "Oil Package Kit", "NTI-01 ~ 05", 80000],
+  ["VX-10-D-01", "10 ETC", "Name Plate", "NTI series", 15000],
 ];
-const VIRTUAL_COMPANY_PRICES: [string, string, string, number][] = [
-  ["VX-01-A-00", "가상정수센터", "2026-03-10", 300000],
-  ["VX-01-A-00", "가상발전소", "2026-05-02", 350000],
-  ["VX-01-A-00", "가상플랜트", "2026-08-20", 320000],
-  ["VX-05-A-01", "가상정수센터", "2026-02-15", 480000],
-  ["VX-05-A-01", "가상발전소", "2026-06-01", 560000],
-  ["VX-05-A-01", "가상정수센터", "2026-09-05", 500000],
-  ["VX-07-A-01", "가상가스", "2026-04-12", 950000],
-  ["VX-07-A-01", "가상플랜트", "2026-07-07", 870000],
-  ["VX-07-B-01", "가상발전소", "2026-01-20", 520000],
-  ["VX-09-B-01", "가상정수센터", "2026-03-03", 240000],
-  ["VX-09-B-01", "가상가스", "2026-05-18", 230000],
-  ["VX-09-B-01", "가상플랜트", "2026-10-01", 260000],
+const VIRTUAL_SITES = [
+  "가상정수센터",
+  "가상발전소",
+  "가상플랜트",
+  "가상가스",
+  "가상하수처리장",
+  "가상석유화학",
 ];
+
+/** 출장지별 단가 (가상) — 부품마다 2~5곳, 출장지마다 정도(가상하수처리장은 싸게, 가상석유화학은 비싸게) × ±8% */
+function virtualCompanyPrices(): [string, string, string, number][] {
+  const random = createRandom(SEED + 1105);
+  const level: Record<string, number> = {
+    가상정수센터: 0.97,
+    가상발전소: 1.1,
+    가상플랜트: 1.03,
+    가상가스: 1.06,
+    가상하수처리장: 0.87,
+    가상석유화학: 1.15,
+  };
+  const out: [string, string, string, number][] = [];
+  for (const [partNo, , , , base] of VIRTUAL_CATALOG) {
+    if (!base) continue;
+    const count = 2 + Math.floor(random() * 4);
+    const sites = [...VIRTUAL_SITES].sort(() => random() - 0.5).slice(0, count);
+    for (const site of sites) {
+      const month = 1 + Math.floor(random() * 10);
+      const day = 1 + Math.floor(random() * 28);
+      const ratio = level[site] * (0.92 + random() * 0.16);
+      const price = Math.round((base * ratio) / 1000) * 1000;
+      const date = `2026-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      out.push([partNo, site, date, price]);
+      // 일부는 예전 단가도 한 줄 (적용 시작일이 다르면 따로 쌓임 → 흐린 줄)
+      if (random() < 0.25 && month > 2) {
+        const old =
+          Math.round((price * (0.93 + random() * 0.05)) / 1000) * 1000;
+        out.push([
+          partNo,
+          site,
+          `2025-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+          old,
+        ]);
+      }
+    }
+  }
+  return out;
+}
+const VIRTUAL_COMPANY_PRICES = virtualCompanyPrices();
 
 async function seedUnitPrices() {
   const keyOf = (no: string, name: string) =>
