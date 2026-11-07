@@ -1,6 +1,7 @@
 // 단가 업로드 저장 (서버 전용) — 한 트랜잭션(Serializable) 안에서 다시 판정하고 저장 + 변경 이력 요약 1건
 // - 새 행 저장, 바뀐 행은 모두 덮어씀(2026-11-05 피드백 "추가 업로드 시 동일 내용 덮어쓰기"), 같은 행·숨긴 행은 그대로
 // - 오류가 1건이라도 있으면 저장하지 않음, 저장할 내용이 없으면 오류
+// - 출장지별 단가에서 단가표에 없는 파트넘버(품목 있음)는 단가표에 새로 등록하고 같은 트랜잭션에서 단가를 저장 (분류·기준값은 비움)
 import "server-only";
 
 import { recordAudit } from "@/shared/audit/record";
@@ -13,6 +14,7 @@ import {
   type Judged,
   type ResolvedQuote,
 } from "./classify";
+import { itemKey } from "./compute";
 import { loadExistingItems, loadExistingQuotes } from "./load-unit-prices";
 import {
   UPLOAD_KIND_LABEL,
@@ -45,7 +47,7 @@ export async function judgeQuotes(
   rows: Rows<QuoteValues>,
   parseErrors: RowError[],
   tx: Parameters<typeof loadExistingItems>[0] = prisma,
-): Promise<Judged<ResolvedQuote>> {
+): Promise<Judged<ResolvedQuote> & { newParts: number; superseded: number }> {
   const items = await loadExistingItems(tx);
   const quotes = await loadExistingQuotes(tx);
   const j = classifyQuotes(rows, items, quotes);
@@ -127,13 +129,38 @@ export async function saveUpload(input: {
         }
       } else {
         const { created, changed } = j as Judged<ResolvedQuote>;
+        // 단가표에 없는 파트넘버 → 첫 줄의 품목·적용 모델로 1개씩 새로 등록
+        const newIds = new Map<string, string>();
+        let order =
+          (await tx.svcPriceItem.aggregate({ _max: { sortOrder: true } }))._max
+            .sortOrder ?? 0;
+        for (const { values: v } of created) {
+          if (!v.newPart || newIds.has(v.key)) continue;
+          const item = await tx.svcPriceItem.create({
+            data: {
+              partNo: v.partNo.slice(0, 100),
+              partKey: v.key,
+              itemKey: itemKey(v.partNo, v.name),
+              name: v.name,
+              appliesTo: v.appliesTo,
+              basePrice: null,
+              sortOrder: ++order,
+              createdById: user.id,
+              updatedById: user.id,
+            },
+          });
+          newIds.set(v.key, item.id);
+        }
         await tx.svcPriceQuote.createMany({
           data: created.map(({ values: v }, i) => ({
-            itemId: v.itemId,
+            itemId: v.itemId ?? newIds.get(v.key)!,
             company: v.company,
             unitPrice: BigInt(v.unitPrice),
             effectiveDate: utcDate(v.effectiveDate),
             note: v.note,
+            quoteNo: v.quoteNo,
+            project: v.project,
+            source: v.format,
             createdById: user.id,
             updatedById: user.id,
             // 같은 날짜끼리 파일 순서를 지키려고 1ms 씩
@@ -147,6 +174,10 @@ export async function saveUpload(input: {
             data: {
               unitPrice: BigInt(v.unitPrice),
               note: v.note,
+              ...(v.format === "order"
+                ? { quoteNo: v.quoteNo, project: v.project }
+                : {}),
+              source: v.format,
               updatedById: user.id,
             },
           });
@@ -170,9 +201,14 @@ export async function saveUpload(input: {
           overwritten: j.changed.length,
           unchanged: j.unchanged.length,
           hidden: j.hidden.length,
+          newParts: "newParts" in j ? j.newParts : 0,
         },
       });
-      return { created: j.created.length, overwritten: j.changed.length };
+      return {
+        created: j.created.length,
+        overwritten: j.changed.length,
+        newParts: "newParts" in j ? j.newParts : 0,
+      };
     },
     { isolationLevel: "Serializable" },
   );

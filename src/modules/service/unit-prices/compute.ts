@@ -30,6 +30,10 @@ export type QuoteInput = {
   /** "YYYY-MM-DD" */
   effectiveDate: string;
   note: string;
+  /** 수주 내역 판매번호·사업명, 올린 형식(table·order) */
+  quoteNo: string;
+  project: string;
+  source: string;
   createdAt: string;
   hidden: boolean;
 };

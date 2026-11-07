@@ -209,6 +209,7 @@ export function metaSummary(
       str(m, "kind"),
       num(m, "created") !== null && `새로 저장 ${count("created", "행")}`,
       num(m, "overwritten") !== null && `덮어씀 ${count("overwritten", "행")}`,
+      !!num(m, "newParts") && `새 부품 등록 ${count("newParts", "개")}`,
       !!num(m, "hidden") && `숨긴 행과 같음 ${count("hidden", "행")}`,
       str(m, "fileName"),
     ]);

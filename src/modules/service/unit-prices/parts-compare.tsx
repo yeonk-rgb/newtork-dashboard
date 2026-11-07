@@ -569,13 +569,15 @@ function QuoteTable({
 }) {
   return (
     <div className="mt-5 overflow-x-auto">
-      <table className="w-full min-w-[48rem] text-sm">
+      <table className="w-full min-w-[60rem] text-sm">
         <thead>
           <tr className="border-b bg-muted text-left text-xs text-muted-foreground">
             <th className="px-3 py-2 font-medium">출장지(업체)</th>
             <th className="px-3 py-2 font-medium">적용 시작일</th>
             <th className="px-3 py-2 text-right font-medium">단가</th>
             <th className="px-3 py-2 text-right font-medium">기준값 대비</th>
+            <th className="px-3 py-2 font-medium">출처</th>
+            <th className="px-3 py-2 font-medium">사업명</th>
             <th className="px-3 py-2 font-medium">비고</th>
             <th className="px-3 py-2" />
           </tr>
@@ -632,6 +634,15 @@ function QuoteTable({
                   </span>
                 )}
               </td>
+              <td className="px-3 py-2 text-xs whitespace-nowrap">
+                {q.source === "order" ? "수주 내역" : "업로드"}
+                {q.quoteNo && (
+                  <span className="ml-1 text-muted-foreground">
+                    {q.quoteNo}
+                  </span>
+                )}
+              </td>
+              <td className="px-3 py-2 text-xs">{q.project || "-"}</td>
               <td className="px-3 py-2 text-xs">{q.note || "-"}</td>
               <td className="px-3 py-2 text-right">
                 <button

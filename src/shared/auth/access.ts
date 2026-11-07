@@ -138,6 +138,11 @@ const NAV_RULES: NavRule[] = [
         action: "view",
       },
       { href: "/service/unit-prices/new", label: "부품 추가", action: "view" },
+      {
+        href: "/service/unit-prices/uploads",
+        label: "업로드 이력",
+        action: "view",
+      },
     ],
   },
   { href: "/admin", label: "관리자", adminOnly: true },

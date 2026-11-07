@@ -25,6 +25,7 @@ export type ExistingQuote = {
   key: string;
   unitPrice: number;
   note: string;
+  quoteNo: string;
   hidden: boolean;
 };
 
@@ -87,53 +88,80 @@ export function classifyItems(
 export const quoteKey = (itemId: string, company: string, date: string) =>
   `${itemId}|${company}|${date}`;
 
-export type ResolvedQuote = QuoteValues & { itemId: string };
+/** itemId = null → 단가표에 없는 파트넘버라 저장할 때 새로 등록 (newPartKey 로 묶음) */
+export type ResolvedQuote = QuoteValues & {
+  itemId: string | null;
+  newPart: boolean;
+};
 
-/** 단가 행의 부품 찾기: 파트넘버로 찾고, 같은 파트넘버가 여럿이면 품목으로 고른다 */
+/**
+ * 단가 행의 부품 찾기 (친구 우민영 저장소 catalogIndex 그대로):
+ * 그 파트넘버 부품이 1개면 그 부품(품목 표기가 달라도), 여럿이면 품목으로 고르고, 없으면 품목이 있을 때 새로 등록
+ */
 function resolveItem(
   v: QuoteValues,
   byPart: Map<string, ExistingItem[]>,
-): { ok: true; item: ExistingItem } | { ok: false; message: string } {
+): { ok: true; item: ExistingItem | null } | { ok: false; message: string } {
   const candidates = byPart.get(v.key) ?? [];
-  if (candidates.length === 0) {
-    return {
-      ok: false,
-      message: `${v.partNo}: 단가표에 없는 파트넘버입니다. 부품 단가표를 먼저 올리거나 [부품 추가]에서 등록하세요.`,
-    };
-  }
-  if (v.name) {
-    const k = itemKey(v.partNo, v.name);
-    const hit = candidates.find((c) => c.key === k);
+  if (candidates.length === 1) return { ok: true, item: candidates[0] };
+  if (candidates.length > 1) {
+    const hit = v.name
+      ? candidates.find((c) => c.key === itemKey(v.partNo, v.name))
+      : undefined;
     if (hit) return { ok: true, item: hit };
     return {
       ok: false,
-      message: `${v.partNo}: 품목 "${v.name}"이(가) 단가표와 다릅니다. 단가표 품목: ${candidates.map((c) => c.name).join(", ")}`,
+      message: `${v.partNo}: 이 파트넘버의 부품이 ${candidates.length}개입니다(${candidates.map((c) => c.name).join(", ")}). 품목 칸에 정확한 품목을 적어 주세요.`,
     };
   }
-  if (candidates.length > 1) {
-    return {
-      ok: false,
-      message: `${v.partNo}: 같은 파트넘버 부품이 ${candidates.length}개입니다(${candidates.map((c) => c.name).join(", ")}). 품목 칸을 넣어 주세요.`,
-    };
-  }
-  return { ok: true, item: candidates[0] };
+  if (v.name) return { ok: true, item: null };
+  return {
+    ok: false,
+    message: `${v.partNo}: 단가표에 없는 파트넘버입니다. 품목 칸을 적으면 새 부품으로 함께 등록합니다.`,
+  };
 }
 
 export function classifyQuotes(
   rows: { row: number; values: QuoteValues }[],
   items: Map<string, ExistingItem>,
   existing: Map<string, ExistingQuote>,
-): Judged<ResolvedQuote> {
+): Judged<ResolvedQuote> & { newParts: number; superseded: number } {
   const out = empty<ResolvedQuote>();
   const byPart = new Map<string, ExistingItem[]>();
   for (const i of items.values()) {
     byPart.set(i.partKey, [...(byPart.get(i.partKey) ?? []), i]);
   }
-  for (const r of rows) {
+  const newParts = new Set<string>();
+  // 품목 표기가 달라도 같은 부품으로 찾아지면 같은 단가 → 부품·출장지·적용 시작일이 같으면 아래 줄 기준
+  const resolvedAll = rows.map((r) => resolveItem(r.values, byPart));
+  const target = (i: number) => {
+    const f = resolvedAll[i];
+    const v = rows[i].values;
+    return f.ok
+      ? quoteKey(f.item?.id ?? `new:${v.key}`, v.company, v.effectiveDate)
+      : `err:${i}`;
+  };
+  const lastOf = new Map<string, number>();
+  rows.forEach((_, i) => lastOf.set(target(i), i));
+  let superseded = 0;
+  for (const [index, r] of rows.entries()) {
     const v = r.values;
-    const found = resolveItem(v, byPart);
+    if (lastOf.get(target(index)) !== index) {
+      superseded += 1;
+      continue;
+    }
+    const found = resolvedAll[index];
     if (!found.ok) {
       out.errors.push({ row: r.row, message: found.message });
+      continue;
+    }
+    if (!found.item) {
+      // 단가표에 없음 → 저장할 때 같은 파트넘버끼리 1개만 새로 등록 (첫 줄의 품목·적용 모델)
+      newParts.add(v.key);
+      out.created.push({
+        row: r.row,
+        values: { ...v, itemId: null, newPart: true },
+      });
       continue;
     }
     if (found.item.hidden) {
@@ -143,7 +171,10 @@ export function classifyQuotes(
       });
       continue;
     }
-    const resolved = { row: r.row, values: { ...v, itemId: found.item.id } };
+    const resolved = {
+      row: r.row,
+      values: { ...v, itemId: found.item.id, newPart: false },
+    };
     const e = existing.get(quoteKey(found.item.id, v.company, v.effectiveDate));
     if (!e) {
       out.created.push(resolved);
@@ -168,8 +199,15 @@ export function classifyQuotes(
         after: plain(v.note),
       });
     }
+    if (e.quoteNo !== v.quoteNo && v.format === "order") {
+      diffs.push({
+        label: "판매번호",
+        before: plain(e.quoteNo),
+        after: plain(v.quoteNo),
+      });
+    }
     if (diffs.length) out.changed.push({ ...resolved, id: e.id, diffs });
     else out.unchanged.push(resolved);
   }
-  return out;
+  return { ...out, newParts: newParts.size, superseded };
 }

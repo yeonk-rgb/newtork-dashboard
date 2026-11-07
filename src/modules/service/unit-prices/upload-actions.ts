@@ -45,7 +45,13 @@ export type UploadPreview = {
   fileName: string;
   sheetName: string;
   original: boolean;
+  /** 수주 내역 CSV 형식으로 읽음 */
+  orderFormat: boolean;
   summary: {
+    /** 출장지별 단가: 단가표에 없어 새로 등록할 부품 수 */
+    newParts: number;
+    /** 파일 안 같은 행 — 아래 줄 기준이라 뺀 수 */
+    superseded: number;
     created: number;
     changed: number;
     unchanged: number;
@@ -69,7 +75,9 @@ type Read =
       fileName: string;
       sheetName: string;
       original: boolean;
+      orderFormat: boolean;
       skipped: number;
+      superseded: number;
       rows: Rows<ItemValues> | Rows<QuoteValues>;
       errors: RowError[];
     }
@@ -100,7 +108,9 @@ async function readUpload(formData: FormData): Promise<Read> {
     fileName: file.name,
     sheetName: parsed.sheetName,
     original: parsed.original,
+    orderFormat: "orderFormat" in parsed ? parsed.orderFormat : false,
     skipped: parsed.skipped,
+    superseded: parsed.superseded,
     rows: parsed.rows,
     errors: parsed.errors,
   };
@@ -116,11 +126,20 @@ function line(kind: UploadKind, r: { row: number; values: unknown }) {
       price: v.basePrice,
     };
   }
-  const v = r.values as QuoteValues;
+  const v = r.values as QuoteValues & { newPart?: boolean };
   return {
     row: r.row,
     partNo: v.partNo,
-    detail: `${v.company} · ${v.effectiveDate}부터${v.note ? ` · ${v.note}` : ""}`,
+    detail: [
+      v.newPart
+        ? `새 부품 등록: ${v.name}${v.appliesTo ? ` (${v.appliesTo})` : ""}`
+        : "",
+      `${v.company} · ${v.effectiveDate}부터`,
+      v.quoteNo && `판매번호 ${v.quoteNo}`,
+      v.note,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     price: v.unitPrice,
   };
 }
@@ -136,7 +155,7 @@ export async function previewUnitPriceUpload(
   if (!(await canEdit())) return { ok: false, message: NO_EDIT_MESSAGE };
   const read = await readUpload(formData);
   if (!read.ok) return read;
-  const j: Judged<unknown> =
+  const j: Judged<unknown> & { newParts?: number; superseded?: number } =
     read.kind === "items"
       ? await judgeItems(read.rows as Rows<ItemValues>, read.errors)
       : await judgeQuotes(read.rows as Rows<QuoteValues>, read.errors);
@@ -149,7 +168,10 @@ export async function previewUnitPriceUpload(
       fileName: read.fileName,
       sheetName: read.sheetName,
       original: read.original,
+      orderFormat: read.orderFormat,
       summary: {
+        newParts: j.newParts ?? 0,
+        superseded: read.superseded + (j.superseded ?? 0),
         created: j.created.length,
         changed: j.changed.length,
         unchanged: j.unchanged.length,
@@ -186,7 +208,7 @@ export async function saveUnitPriceUpload(
     refresh();
     return {
       ok: true,
-      message: `${UPLOAD_KIND_LABEL[read.kind]}을(를) 저장했습니다: 새로 ${saved.created.toLocaleString("ko-KR")}행, 덮어씀 ${saved.overwritten.toLocaleString("ko-KR")}행`,
+      message: `${UPLOAD_KIND_LABEL[read.kind]}을(를) 저장했습니다: 새로 ${saved.created.toLocaleString("ko-KR")}행, 덮어씀 ${saved.overwritten.toLocaleString("ko-KR")}행${saved.newParts ? `, 새 부품 등록 ${saved.newParts}개(분류·기준값은 비어 있음 — 부품별 비교에서 채우세요)` : ""}`,
     };
   } catch (error) {
     if (error instanceof UploadError) {

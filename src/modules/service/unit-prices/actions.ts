@@ -19,6 +19,8 @@ export type ActionResult = {
   ok: boolean;
   message: string;
   errors?: Record<string, string>;
+  /** 부품 추가: 같은 부품이 이미 있음 — 화면이 확인창을 띄우고 overwrite: true 로 다시 보냄 */
+  confirm?: string;
 };
 
 const SCREEN = "service-unit-prices";
@@ -103,6 +105,8 @@ export async function updateBasePrice(
 }
 
 // ---------- 부품 추가 (수기 입력) ----------
+// 같은 부품(친구 앱: 같은 파트넘버)이 있으면 확인 후 덮어씀. 이 저장소는 파트넘버가 같고 품목이 다른 부품이 있을 수 있어
+// 그 파트넘버 부품이 1개면 그 부품, 여럿이면 파트넘버·품목이 같은 부품을 덮어쓸 대상으로 본다
 
 const itemSchema = z.object({
   category: z.string().trim().max(100).default(""),
@@ -112,7 +116,10 @@ const itemSchema = z.object({
   basePrice: z.string().default(""),
 });
 
-export async function createPriceItem(raw: unknown): Promise<ActionResult> {
+export async function createPriceItem(
+  raw: unknown,
+  overwrite = false,
+): Promise<ActionResult> {
   const user = await userWith("canEdit");
   if (!user) return { ok: false, message: NO_EDIT_MESSAGE };
   const parsed = itemSchema.safeParse(raw);
@@ -140,18 +147,12 @@ export async function createPriceItem(raw: unknown): Promise<ActionResult> {
   return run(() =>
     prisma.$transaction(
       async (tx) => {
-        const same = await tx.svcPriceItem.findUnique({
-          where: { itemKey: key },
+        const samePart = await tx.svcPriceItem.findMany({
+          where: { partKey: partKey(v.partNo) },
         });
-        if (same) {
-          const message = same.deletedAt
-            ? `숨긴 부품 중에 같은 파트넘버·품목(${same.partNo} ${same.name})이 있습니다. 부품별 비교의 [숨긴 부품 보기]에서 복구하세요.`
-            : `이미 있는 부품입니다: ${same.partNo} ${same.name}. 기준값은 부품별 비교에서 두 번 눌러 고치세요.`;
-          return { ok: false, message, errors: { partNo: message } };
-        }
-        const last = await tx.svcPriceItem.aggregate({
-          _max: { sortOrder: true },
-        });
+        const same =
+          samePart.find((i) => i.itemKey === key) ??
+          (samePart.length === 1 ? samePart[0] : null);
         const data = {
           partNo: v.partNo,
           category: v.category,
@@ -159,6 +160,47 @@ export async function createPriceItem(raw: unknown): Promise<ActionResult> {
           appliesTo: v.appliesTo,
           basePrice: price.value,
         };
+        if (same?.deletedAt) {
+          const message = `숨긴 부품 중에 같은 부품(${same.partNo} ${same.name})이 있습니다. 부품별 비교의 [숨긴 부품 보기]에서 복구한 뒤 고치세요.`;
+          return { ok: false, message, errors: { partNo: message } };
+        }
+        if (same && !overwrite) {
+          return {
+            ok: false,
+            message: "같은 부품이 이미 있습니다.",
+            confirm: `파트넘버 ${same.partNo}(${same.name})가 이미 있습니다. 새 내용으로 덮어쓸까요?`,
+          };
+        }
+        if (same) {
+          // 다른 부품과 파트넘버·품목이 겹치면 덮어쓰지 않음 (고유 칸)
+          if (key !== same.itemKey && samePart.some((i) => i.itemKey === key)) {
+            throw new ConflictError();
+          }
+          await tx.svcPriceItem.update({
+            where: { id: same.id },
+            data: { ...data, itemKey: key, updatedById: user.id },
+          });
+          await recordAudit(tx, {
+            occurredAt: now,
+            actor: actor(user),
+            area: "service",
+            screen: SCREEN,
+            action: "UPDATE",
+            target: {
+              type: "SvcPriceItem",
+              id: same.id,
+              label: `${v.partNo} ${v.name}`,
+            },
+            changes: diffFields(same, data, ITEM_AUDIT_FIELDS),
+          });
+          return {
+            ok: true,
+            message: `${v.partNo} ${v.name}을(를) 새 내용으로 덮어썼습니다.`,
+          };
+        }
+        const last = await tx.svcPriceItem.aggregate({
+          _max: { sortOrder: true },
+        });
         const item = await tx.svcPriceItem.create({
           data: {
             ...data,

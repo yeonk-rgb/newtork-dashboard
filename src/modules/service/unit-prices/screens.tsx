@@ -22,6 +22,7 @@ import {
 import { loadUnitPriceData, type UnitPriceData } from "./load-unit-prices";
 import { NewItemForm } from "./new-item-form";
 import { PartsCompare } from "./parts-compare";
+import { UploadHistory } from "./upload-history";
 import { UploadPanel } from "./upload-panel";
 
 type Sp = Record<string, string | string[] | undefined>;
@@ -33,6 +34,7 @@ export const UNIT_PRICE_TABS = [
   { href: "/service/unit-prices/companies", label: "출장지별 비교" },
   { href: "/service/unit-prices/upload", label: "단가 데이터 업로드" },
   { href: "/service/unit-prices/new", label: "부품 추가" },
+  { href: "/service/unit-prices/uploads", label: "업로드 이력" },
 ] as const;
 
 type Tab = (typeof UNIT_PRICE_TABS)[number]["href"];
@@ -200,4 +202,8 @@ export function NewPriceItemScreen() {
     ),
     true,
   );
+}
+
+export function UnitPriceUploadsScreen() {
+  return frame("/service/unit-prices/uploads", () => <UploadHistory />, false);
 }

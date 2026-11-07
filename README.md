@@ -108,8 +108,9 @@ npm run build        # 배포 빌드 확인 (선택)
 | 부품·가격 | 출장지 비교 분석 | `/service/prices/compare` | — | 열람 |
 | 단가 | 부품별 비교 (뉴토크 기준값 더블클릭 수정) | `/service/unit-prices` | 기준값 수정·숨김 | 열람 |
 | 단가 | 출장지별 비교 | `/service/unit-prices/companies` | — | 열람 |
-| 단가 | 단가 데이터 업로드 (CSV·엑셀 — 부품 단가표 / 출장지별 단가) | `/service/unit-prices/upload` | 업로드 | 열람 |
+| 단가 | 단가 데이터 업로드 (CSV·엑셀 — 부품 단가표 / 출장지별 단가·수주 내역 CSV) | `/service/unit-prices/upload` | 업로드 | 열람 |
 | 단가 | 부품 추가 | `/service/unit-prices/new` | 추가 | 열람 |
+| 단가 | 업로드 이력 | `/service/unit-prices/uploads` | — | 열람 |
 
 - 관리자·경영지원팀은 모든 메뉴, 생산팀은 생산만, 서비스팀은 서비스·부품·가격·단가만 (다른 팀 주소는 403 화면). 단가 규칙은 `docs/unit-prices.md`.
 - 시연용 가짜 데이터: `npm run seed:teams` (제조내역·사업구분·목표 + 출장보고서·부품·출장지·출장지별 가격 + 단가표 VX… 8개·출장지별 단가 12건, 이름·주소·가격 모두 가상) / `npm run seed:teams -- --remove` 로 가짜 데이터만 지우기 (직접 입력한 것은 그대로). **고객사 실제 데이터를 넣기 전에 지운다.**

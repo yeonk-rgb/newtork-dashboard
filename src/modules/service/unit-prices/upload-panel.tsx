@@ -28,8 +28,8 @@ const KINDS: { kind: UploadKind; label: string; hint: string }[] = [
   },
   {
     kind: "quotes",
-    label: "출장지별 단가",
-    hint: "파트넘버 · 품목(선택 — 파트넘버가 같은 부품이 여럿일 때 필요) · 출장지 · 단가(원, 부가세 제외) · 적용 시작일 · 비고(선택)",
+    label: "출장지(판매처)별 단가 · 수주 내역",
+    hint: "양식(파트넘버 · 품목 · 출장지 · 단가 · 적용 시작일 · 비고) 또는 회사 수주 내역 CSV(판매처 = 출장지, 수주일 = 적용 시작일, 제품정보-품명·단가) — 단가표에 없는 파트넘버는 품목으로 새로 등록합니다",
   },
 ];
 
@@ -188,16 +188,31 @@ export function UploadPanel({
               {" "}
               · 시트 &quot;{preview.sheetName}&quot;
               {preview.original && " (원본 [부품] 시트 형식으로 읽음)"}
+              {preview.orderFormat &&
+                " (수주 내역 형식으로 읽음 — 판매처 = 출장지, 수주일 = 적용 시작일)"}
             </span>
           </p>
           <div className="flex flex-wrap gap-2 text-xs">
             <Count label="새로 저장" n={s.created} tone="primary" />
+            {s.newParts > 0 && (
+              <Count label="새 부품 등록" n={s.newParts} tone="primary" />
+            )}
             <Count label="덮어씀" n={s.changed} tone="copper" />
             <Count label="변경 없음" n={s.unchanged} />
             {s.hidden > 0 && (
               <Count label="숨긴 행과 같음 (저장 안 함)" n={s.hidden} />
             )}
-            <Count label="건너뜀 (빈 줄·분류 제목)" n={s.skipped} />
+            <Count
+              label={
+                preview.orderFormat
+                  ? "건너뜀 (파트넘버·단가 없는 줄 — 출장수리비 등)"
+                  : "건너뜀 (빈 줄·분류 제목)"
+              }
+              n={s.skipped}
+            />
+            {s.superseded > 0 && (
+              <Count label="파일 안 같은 행 (아래 줄 기준)" n={s.superseded} />
+            )}
             <Count
               label="오류"
               n={s.errors}

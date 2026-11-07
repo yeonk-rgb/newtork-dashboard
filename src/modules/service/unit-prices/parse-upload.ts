@@ -2,7 +2,7 @@
 // ① 부품 단가표: 분류·파트넘버·품목·적용 모델·기준단가
 //    - 머리글에 "파트넘버"가 있으면 한 줄 = 한 부품 (분류 칸이 비면 바로 위 분류 제목 행을 씀)
 //    - 고객사 원본 "부품" 시트 형식도 인식: 머리글 "구분·품목·적요·기준단가", 분류는 칸 하나만 있는 제목 행("01 현장서비스")
-// ② 출장지별 단가: 파트넘버·출장지·단가·적용 시작일·비고(선택)
+// ② 출장지별 단가: 파트넘버·품목(선택)·출장지·단가·적용 시작일·비고(선택) 또는 회사 수주 내역 CSV (아래 설명)
 // 오류가 1건이라도 있으면 저장하지 않는다 (미리보기에서 보여 줌)
 import type { Cell, SheetTable } from "@/shared/upload/read-table";
 
@@ -12,7 +12,7 @@ export type UploadKind = "items" | "quotes";
 
 export const UPLOAD_KIND_LABEL: Record<UploadKind, string> = {
   items: "부품 단가표",
-  quotes: "출장지별 단가",
+  quotes: "출장지(판매처)별 단가",
 };
 
 /** 금액 한도 (원) — 실수로 큰 값을 넣었을 때 막기 */
@@ -33,12 +33,19 @@ export type QuoteValues = {
   partNo: string;
   /** 파트넘버 비교용 (partKey) */
   key: string;
-  /** 품목 (선택) — 파트넘버가 같은 부품이 여럿일 때 고르는 데 씀 */
+  /** 품목 (선택) — 파트넘버가 같은 부품이 여럿일 때 고르고, 단가표에 없으면 이 이름으로 새로 등록 */
   name: string;
+  /** 적용 모델 — 수주 내역 품명의 "for" 뒤 (새로 등록할 때만 씀) */
+  appliesTo: string;
   company: string;
   unitPrice: number;
   effectiveDate: string;
   note: string;
+  /** 수주 내역의 판매번호·사업명 */
+  quoteNo: string;
+  project: string;
+  /** table = 양식, order = 수주 내역 (같은 파트넘버 = 같은 부품, 품목 표기 무시) */
+  format: "table" | "order";
 };
 
 export type RowError = { row: number; message: string };
@@ -53,6 +60,8 @@ export type Parsed<T> =
       errors: RowError[];
       /** 빈 줄·분류 제목 줄 등 건너뛴 수 */
       skipped: number;
+      /** 파일 안 같은 행 — 아래 줄 기준이라 뺀 수 */
+      superseded: number;
     }
   | { ok: false; error: string };
 
@@ -96,15 +105,16 @@ function findColumns<K extends string>(
   return map;
 }
 
-/** 금액 칸: 숫자 또는 "1,234,000"·"1,234,000원". 빈칸 = null */
+/** 금액 칸: 숫자 또는 "1,234,000"·"1,234,000원"·"₩1,234,000"·회계 서식 0("-"). 소수점 아래가 0이면 정수. 빈칸 = null */
 export function readPrice(
   v: Cell,
 ): { ok: true; value: number | null } | { ok: false; message: string } {
   if (v === null || (typeof v === "string" && v.trim() === "")) {
     return { ok: true, value: null };
   }
-  const n =
-    typeof v === "number" ? v : Number(String(v).replace(/[,\s원]/g, ""));
+  const t = typeof v === "number" ? "" : String(v).replace(/[,\s원₩]/g, "");
+  // 엑셀 회계 서식으로 저장한 CSV 는 0을 "-"로 적는다
+  const n = typeof v === "number" ? v : t === "-" ? 0 : Number(t);
   if (!Number.isFinite(n)) {
     return { ok: false, message: `금액이 숫자가 아닙니다: "${text(v)}"` };
   }
@@ -116,7 +126,7 @@ export function readPrice(
   return { ok: true, value: n };
 }
 
-/** 날짜 칸: "2026-03-10"·"2026.3.10"·"2026/03/10"·엑셀 날짜 일련번호 → "YYYY-MM-DD" */
+/** 날짜 칸: "2026-03-10"·"2026.3.10"·"2026/03/10"·"2026년 3월 10일"·엑셀 날짜 일련번호 → "YYYY-MM-DD" */
 export function readDate(v: Cell): string | null {
   if (v === null) return null;
   if (typeof v === "number") {
@@ -124,9 +134,10 @@ export function readDate(v: Cell): string | null {
     const d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86_400_000);
     return d.toISOString().slice(0, 10);
   }
-  const m = /^(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})\.?$/.exec(
-    String(v).trim(),
-  );
+  const m =
+    /^(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})\s*[.일]?$/.exec(
+      String(v).trim(),
+    );
   if (!m) return null;
   const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
   const date = new Date(Date.UTC(y, mo - 1, d));
@@ -175,6 +186,7 @@ export function parseItemSheets(sheets: SheetTable[]): Parsed<ItemValues> {
     const errors: RowError[] = [];
     const seen = new Map<string, number>();
     let skipped = 0;
+    let superseded = 0;
     let section = "";
     const at = (row: Cell[], c: number | undefined) =>
       c === undefined ? "" : text(row[c] ?? null);
@@ -214,15 +226,14 @@ export function parseItemSheets(sheets: SheetTable[]): Parsed<ItemValues> {
         continue;
       }
       const key = itemKey(partNo, name);
+      // 파일 안에 같은 파트넘버·품목이 또 나오면 아래 줄 기준 (친구 앱과 같음)
       const dup = seen.get(key);
       if (dup !== undefined) {
-        errors.push({
-          row: rowNo,
-          message: `${partNo} ${name}: 파일 안에서 ${dup}행과 같은 파트넘버·품목입니다.`,
-        });
-        continue;
+        rows.splice(dup, 1);
+        superseded += 1;
+        for (const [k, i] of seen) if (i > dup) seen.set(k, i - 1);
       }
-      seen.set(key, rowNo);
+      seen.set(key, rows.length);
       rows.push({
         row: rowNo,
         values: {
@@ -246,6 +257,14 @@ export function parseItemSheets(sheets: SheetTable[]): Parsed<ItemValues> {
       rows,
       errors,
       skipped,
+      superseded,
+    };
+  }
+  if (isOrderExport(sheets)) {
+    return {
+      ok: false,
+      error:
+        "이 파일은 수주 내역(판매처·수주일·제품정보) 형식입니다. [출장지별 단가]를 고른 뒤 올려 주세요.",
     };
   }
   return {
@@ -256,8 +275,193 @@ export function parseItemSheets(sheets: SheetTable[]): Parsed<ItemValues> {
 }
 
 // ---------- ② 출장지별 단가 ----------
+// 형식 두 가지 (친구 우민영 저장소 lib/part-uploads.js 2026-11-05 그대로):
+//  (가) 양식: 파트넘버·품목(선택)·출장지·단가·적용 시작일·비고(선택)
+//  (나) 수주 내역 CSV(회사 판매 관리 프로그램에서 내보낸 "부품단가데이터"): 판매처 = 출장지, 수주일 = 적용 시작일,
+//      제품정보-단가 = 단가, 제품정보-품명 "MD-07-A-01 Main Board for NTI-04" → 파트넘버 / 품목 / 적용 모델("for" 뒤),
+//      판매번호·사업명은 같이 저장. 한 수주의 둘째 줄부터 비어 있는 판매처·수주일은 같은 *ID 첫 줄 값을 쓴다.
+//      파트넘버가 없는 줄(출장수리비·nego 등)과 단가가 빈 줄은 건너뜀. 같은 파트넘버 = 같은 부품(품명 표기가 달라도)
+// 파일 안에 같은 부품·출장지·적용 시작일이 또 나오면 아래 줄 기준 (친구 앱과 같음)
 
-export function parseQuoteSheets(sheets: SheetTable[]): Parsed<QuoteValues> {
+/** 수주 내역 머리글 비교: 공백·괄호·가운뎃점·밑줄·하이픈·빗금·별표 무시 */
+const orderHead = (v: Cell) =>
+  String(v ?? "")
+    .replace(/[\s()·_\-/*"]/g, "")
+    .toLowerCase();
+const ORDER_HEADERS = {
+  id: ["id"],
+  product: ["제품정보품명"],
+  unitPrice: ["제품정보단가"],
+  company: ["판매처"],
+  date: ["수주일"],
+  quoteNo: ["판매번호"],
+  project: ["사업명"],
+} as const;
+
+const PRODUCT_PART = /^([A-Z]{1,4}\d*(?:-[A-Z0-9]{1,4}){2,})\s+(.+)$/i;
+
+/** 수주 내역 품명 → 파트넘버·품목·적용 모델. 파트넘버 모양이 아니면 null (출장수리비 등) */
+export function splitProduct(
+  value: Cell,
+): { partNo: string; name: string; appliesTo: string } | null {
+  const m = PRODUCT_PART.exec(text(value).replace(/\s+/g, " "));
+  if (!m || !/\d/.test(m[1])) return null;
+  const f = /^(.*?)\s+for\s+(.+)$/i.exec(m[2]);
+  return {
+    partNo: m[1].toUpperCase(),
+    name: (f ? f[1] : m[2]).trim(),
+    appliesTo: f ? f[2].trim() : "",
+  };
+}
+
+type QuoteRows = { row: number; values: QuoteValues }[];
+
+/** 파일 안 같은 부품·출장지·적용 시작일은 아래 줄 기준 — 위 줄은 빼고 센다 */
+function keepLast(rows: QuoteRows): { rows: QuoteRows; superseded: number } {
+  const last = new Map<string, number>();
+  const keyOf = (v: QuoteValues) =>
+    `${v.key}|${v.format === "order" ? "" : v.name.replace(/\s/g, "").toUpperCase()}|${v.company}|${v.effectiveDate}`;
+  rows.forEach((r, i) => last.set(keyOf(r.values), i));
+  const kept = rows.filter((r, i) => last.get(keyOf(r.values)) === i);
+  return { rows: kept, superseded: rows.length - kept.length };
+}
+
+function parseOrderSheet(sheet: SheetTable): ParsedQuotes | null {
+  let headerRow = -1;
+  let cols: HeaderMap<keyof typeof ORDER_HEADERS> = {};
+  for (let r = 0; r < Math.min(sheet.rows.length, 20); r += 1) {
+    const c: HeaderMap<keyof typeof ORDER_HEADERS> = {};
+    sheet.rows[r].forEach((cell, i) => {
+      const h = orderHead(cell);
+      for (const k of Object.keys(
+        ORDER_HEADERS,
+      ) as (keyof typeof ORDER_HEADERS)[]) {
+        if (
+          c[k] === undefined &&
+          (ORDER_HEADERS[k] as readonly string[]).includes(h)
+        )
+          c[k] = i;
+      }
+    });
+    if (
+      c.product !== undefined &&
+      c.unitPrice !== undefined &&
+      c.company !== undefined &&
+      c.date !== undefined
+    ) {
+      headerRow = r;
+      cols = c;
+      break;
+    }
+  }
+  if (headerRow < 0) return null;
+  const get = (row: Cell[], c: number | undefined) =>
+    c === undefined ? "" : text(row[c] ?? null);
+  const raw: QuoteRows = [];
+  const errors: RowError[] = [];
+  let skipped = 0;
+  type Order = {
+    company: string;
+    date: string;
+    quoteNo: string;
+    project: string;
+  };
+  let order: Order = { company: "", date: "", quoteNo: "", project: "" };
+  const orders = new Map<string, Order>();
+  for (let r = headerRow + 1; r < sheet.rows.length; r += 1) {
+    const row = sheet.rows[r];
+    const rowNo = r + 1;
+    if (isBlankRow(row)) continue;
+    const id = get(row, cols.id).replace(/"/g, "");
+    if (get(row, cols.company) || get(row, cols.date)) {
+      order = {
+        company: get(row, cols.company),
+        date: get(row, cols.date),
+        quoteNo: get(row, cols.quoteNo),
+        project: get(row, cols.project),
+      };
+      if (id) orders.set(id, order);
+    } else if (id && orders.has(id)) {
+      order = orders.get(id)!;
+    }
+    const part = splitProduct(row[cols.product!] ?? null);
+    const priceCell = row[cols.unitPrice!] ?? null;
+    if (!part || text(priceCell) === "") {
+      skipped += 1;
+      continue;
+    }
+    const problems: string[] = [];
+    const p = readPrice(priceCell);
+    if (!p.ok) problems.push(p.message);
+    if (!order.company) problems.push("판매처가 비어 있습니다.");
+    const date = readDate(order.date || null);
+    if (!date) {
+      problems.push(
+        order.date
+          ? `수주일을 읽지 못했습니다: "${order.date}"`
+          : "수주일이 비어 있습니다.",
+      );
+    }
+    if (problems.length) {
+      errors.push({
+        row: rowNo,
+        message: `${part.partNo}: ${problems.join(" ")}`,
+      });
+      continue;
+    }
+    raw.push({
+      row: rowNo,
+      values: {
+        partNo: part.partNo,
+        key: partKey(part.partNo),
+        name: part.name.slice(0, 200),
+        appliesTo: part.appliesTo.slice(0, 200),
+        company: order.company.slice(0, 100),
+        unitPrice: (p as { value: number }).value,
+        effectiveDate: date!,
+        note: "",
+        quoteNo: order.quoteNo.slice(0, 100),
+        project: order.project.slice(0, 200),
+        format: "order",
+      },
+    });
+  }
+  const { rows, superseded } = keepLast(raw);
+  if (rows.length === 0 && errors.length === 0) {
+    return {
+      ok: false,
+      error:
+        "수주 내역에서 파트넘버(예: MD-07-A-01)와 단가가 있는 줄을 찾지 못했습니다.",
+    };
+  }
+  return {
+    ok: true,
+    sheetName: sheet.sheetName,
+    original: false,
+    orderFormat: true,
+    rows,
+    errors,
+    skipped,
+    superseded,
+  };
+}
+
+export type ParsedQuotes =
+  | (Extract<Parsed<QuoteValues>, { ok: true }> & {
+      /** 수주 내역 형식으로 읽었는지 */
+      orderFormat: boolean;
+    })
+  | { ok: false; error: string };
+
+/** 수주 내역 형식 파일인지 (부품 단가표 업로드에 잘못 올렸을 때 안내) */
+export const isOrderExport = (sheets: SheetTable[]) =>
+  sheets.some((s) => parseOrderSheet(s) !== null);
+
+export function parseQuoteSheets(sheets: SheetTable[]): ParsedQuotes {
+  for (const sheet of sheets) {
+    const order = parseOrderSheet(sheet);
+    if (order) return order;
+  }
   for (const sheet of sheets) {
     let headerRow = -1;
     let cols: HeaderMap<keyof typeof QUOTE_HEADERS> = {};
@@ -275,9 +479,8 @@ export function parseQuoteSheets(sheets: SheetTable[]): Parsed<QuoteValues> {
       }
     }
     if (headerRow < 0) continue;
-    const rows: { row: number; values: QuoteValues }[] = [];
+    const raw: QuoteRows = [];
     const errors: RowError[] = [];
-    const seen = new Map<string, number>();
     let skipped = 0;
     const at = (row: Cell[], c: number | undefined) =>
       c === undefined ? null : (row[c] ?? null);
@@ -312,31 +515,24 @@ export function parseQuoteSheets(sheets: SheetTable[]): Parsed<QuoteValues> {
         });
         continue;
       }
-      const key = partKey(partNo);
-      const name = text(at(row, cols.name));
-      const dupKey = `${key}|${name.replace(/\s/g, "").toUpperCase()}|${company}|${date}`;
-      const dup = seen.get(dupKey);
-      if (dup !== undefined) {
-        errors.push({
-          row: rowNo,
-          message: `${partNo} ${company} ${date}: 파일 안에서 ${dup}행과 같은 부품·출장지·적용 시작일입니다.`,
-        });
-        continue;
-      }
-      seen.set(dupKey, rowNo);
-      rows.push({
+      raw.push({
         row: rowNo,
         values: {
           partNo,
-          key,
-          name,
+          key: partKey(partNo),
+          name: text(at(row, cols.name)).slice(0, 200),
+          appliesTo: "",
           company: company.slice(0, 100),
           unitPrice: (p as { value: number }).value,
           effectiveDate: date!,
           note: text(at(row, cols.note)).slice(0, 300),
+          quoteNo: "",
+          project: "",
+          format: "table",
         },
       });
     }
+    const { rows, superseded } = keepLast(raw);
     if (rows.length === 0 && errors.length === 0) {
       return { ok: false, error: `"${sheet.sheetName}"에 단가 행이 없습니다.` };
     }
@@ -344,15 +540,17 @@ export function parseQuoteSheets(sheets: SheetTable[]): Parsed<QuoteValues> {
       ok: true,
       sheetName: sheet.sheetName,
       original: false,
+      orderFormat: false,
       rows,
       errors,
       skipped,
+      superseded,
     };
   }
   return {
     ok: false,
     error:
-      "출장지별 단가 머리글을 찾지 못했습니다. 첫 줄에 파트넘버·출장지·단가·적용 시작일이 있어야 합니다. ([양식 내려받기] 참고)",
+      "출장지별 단가 머리글을 찾지 못했습니다. 양식(파트넘버·출장지·단가·적용 시작일) 또는 수주 내역(판매처·수주일·제품정보-품명·제품정보-단가) 머리글이 있어야 합니다. ([양식 내려받기] 참고)",
   };
 }
 

@@ -10,6 +10,7 @@ import {
   parseQuoteSheets,
   readDate,
   readPrice,
+  splitProduct,
   TEMPLATE,
   toCsv,
 } from "./parse-upload";
@@ -54,7 +55,7 @@ describe("① 부품 단가표 — 한 줄 = 한 부품 (CSV 양식)", () => {
       },
     ]);
   });
-  it("분류 칸이 비면 바로 위 분류 제목 행, 기준단가 빈칸 = 미입력, 같은 파트넘버·품목(하이픈·공백·대소문자 무시)은 오류", () => {
+  it("분류 칸이 비면 바로 위 분류 제목 행, 기준단가 빈칸 = 미입력, 같은 파트넘버·품목(하이픈·공백·대소문자 무시)은 아래 줄 기준", () => {
     const r = parseItemSheets([
       sheet([
         ["분류", "파트넘버", "품목", "적용 모델", "기준단가"],
@@ -77,10 +78,11 @@ describe("① 부품 단가표 — 한 줄 = 한 부품 (CSV 양식)", () => {
       ]),
     ).toEqual([
       ["VX-01-A-00", "01 현장서비스", 300000],
-      ["VX-05-A-01", "05 MOTOR", null],
+      // 분류 칸이 빈 줄이라 바로 위 분류 제목("01 현장서비스")
+      ["vx05a01", "01 현장서비스", 1],
     ]);
-    expect(r.errors.map((e) => e.row)).toEqual([6, 7, 8]);
-    expect(r.errors[0].message).toContain("4행과 같은 파트넘버·품목");
+    expect(r.superseded).toBe(1);
+    expect(r.errors.map((e) => e.row)).toEqual([7, 8]);
     expect(r.skipped).toBe(2);
   });
   it("원본 [부품] 시트 형식: 구분 = 파트넘버, 적요 = 적용 모델, 분류 = 제목 행, 앞 시트(제품)는 건너뜀", () => {
@@ -162,10 +164,14 @@ describe("② 출장지별 단가", () => {
         unitPrice: 480000,
         effectiveDate: "2026-03-10",
         note: "(예시)",
+        appliesTo: "",
+        quoteNo: "",
+        project: "",
+        format: "table",
       },
     ]);
   });
-  it("빈 칸·날짜 오류·파일 안 중복은 행별 오류", () => {
+  it("빈 칸·날짜 오류는 행별 오류, 파일 안 같은 부품·출장지·날짜는 아래 줄 기준", () => {
     const r = parseQuoteSheets([
       sheet([
         ["파트넘버", "출장지(업체)", "단가(원)", "적용시작일"],
@@ -176,10 +182,13 @@ describe("② 출장지별 단가", () => {
       ]),
     ]);
     if (!r.ok) throw new Error(r.error);
-    expect(r.rows).toHaveLength(1);
-    expect(r.errors.map((e) => e.row)).toEqual([3, 4, 5]);
-    expect(r.errors[2].message).toContain("단가가 비어 있습니다");
-    expect(r.errors[2].message).toContain("적용 시작일을 읽지 못했습니다");
+    expect(r.rows.map((x) => [x.row, x.values.unitPrice])).toEqual([
+      [3, 490000],
+    ]);
+    expect(r.superseded).toBe(1);
+    expect(r.errors.map((e) => e.row)).toEqual([4, 5]);
+    expect(r.errors[1].message).toContain("단가가 비어 있습니다");
+    expect(r.errors[1].message).toContain("적용 시작일을 읽지 못했습니다");
   });
 });
 
@@ -249,7 +258,14 @@ describe("판정 — 같은 부품은 덮어씀 (피드백)", () => {
     const quotes = new Map([
       [
         quoteKey("i1", "가상정수센터", "2026-03-10"),
-        { id: "q1", key: "", unitPrice: 480000, note: "", hidden: false },
+        {
+          id: "q1",
+          key: "",
+          unitPrice: 480000,
+          note: "",
+          quoteNo: "",
+          hidden: false,
+        },
       ],
     ]);
     const q = (partNo: string, unitPrice: number, name = "") => ({
@@ -262,6 +278,10 @@ describe("판정 — 같은 부품은 덮어씀 (피드백)", () => {
         unitPrice,
         effectiveDate: "2026-03-10",
         note: "",
+        appliesTo: "",
+        quoteNo: "",
+        project: "",
+        format: "table" as const,
       },
     });
     const j = classifyQuotes(
@@ -270,6 +290,8 @@ describe("판정 — 같은 부품은 덮어씀 (피드백)", () => {
         q("VX-07-A-01", 1),
         q("VX-09-B-01", 1),
         q("NOPE", 1),
+        q("NEW-01-A", 1, "새 부품"),
+        q("NEW-01-A", 2, "새 부품"),
         q("VX-07-D-01", 1),
         q("VX-07-D-01", 1, "encoder"),
         q("VX-05-A-01", 1, "Gear"),
@@ -278,14 +300,119 @@ describe("판정 — 같은 부품은 덮어씀 (피드백)", () => {
       quotes,
     );
     expect(j.changed.map((c) => [c.id, c.diffs[0].after])).toEqual([
-      ["q1", "470,000원"],
+      ["q1", "1원"],
     ]);
-    expect(j.created.map((c) => c.values.itemId)).toEqual(["i2", "i5"]);
+    // 파트넘버 부품이 1개면 품목 표기가 달라도 그 부품 (VX-05-A-01 "Gear" → i1, 같은 출장지·날짜라 덮어씀 비교)
+    expect(j.created.map((c) => [c.values.itemId, c.values.unitPrice])).toEqual(
+      [
+        ["i2", 1],
+        [null, 2],
+        ["i5", 1],
+      ],
+    );
+    expect(j.newParts).toBe(1);
+    // VX-05-A-01 (품목 없음 / "Gear") 두 줄은 같은 단가 → 아래 줄(1원) 기준, 새 부품 NEW-01-A 두 줄도 아래 줄
+    expect(j.superseded).toBe(2);
     expect(j.errors.map((x) => x.message.split(": ")[1].slice(0, 8))).toEqual([
       "숨긴 부품입니다",
       "단가표에 없는 ",
-      "같은 파트넘버 ",
-      '품목 "Gear',
+      "이 파트넘버의 ",
     ]);
+  });
+});
+
+// 수주 내역 CSV (회사 판매 관리 프로그램에서 내보낸 "부품단가데이터") — 값은 모두 가짜, 머리글·빈 칸 모양만 흉내 냄
+describe("② 출장지별 단가 — 수주 내역 형식 (친구 우민영 저장소 규칙)", () => {
+  it("품명 → 파트넘버 / 품목 / 적용 모델", () => {
+    expect(splitProduct("MD-07-A-01 Main Board for NTI-04")).toEqual({
+      partNo: "MD-07-A-01",
+      name: "Main Board",
+      appliesTo: "NTI-04",
+    });
+    expect(splitProduct("vx-05-a-01  Motor")).toEqual({
+      partNo: "VX-05-A-01",
+      name: "Motor",
+      appliesTo: "",
+    });
+    expect(splitProduct("출장수리비")).toBeNull();
+    expect(splitProduct("NTI-SERIES 점검")).toBeNull();
+  });
+  const csv = [
+    "*ID,판매번호,판매처,수주일,사업명,제품정보-품명,제품정보-수량,제품정보-단가,제품정보-판매가",
+    '"1",SO-0001,가상정수센터,2026-03-10,가상 정수장 정비,VX-05-A-01 Motor for NTI-01,1,"480,000","480,000"',
+    '"1",,,,,VX-07-A-01 Main Board for NTI series,2,"950,000","1,900,000"',
+    '"1",,,,,출장수리비,1,"300,000","300,000"',
+    '"2",SO-0002,가상발전소,2026년 6월 1일,,VX-05-A-01 Motor,1,"560,000","560,000"',
+    '"2",,,,,VX-05-A-01 Motor (교체),1,"570,000","570,000"',
+    '"2",,,,,VX-09-B-01 MC nego,1, - ,0',
+    '"3",SO-0003,가상가스,2026-04-12,,VX-10-A-01 Limit Switch,1,,',
+  ].join("\n");
+  it("판매처·수주일 채우기(같은 *ID 첫 줄), 파트넘버·단가 없는 줄 건너뜀, 같은 부품·판매처·수주일은 아래 줄, 회계 서식 0", () => {
+    const r = parseQuoteSheets([sheet(parseCsv(csv), "CSV")]);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.orderFormat).toBe(true);
+    expect(r.errors).toEqual([]);
+    expect(r.skipped).toBe(2); // 출장수리비, 단가 빈 줄
+    expect(r.superseded).toBe(1); // 2번 수주 VX-05-A-01 두 줄 → 아래 줄
+    expect(
+      r.rows.map((x) => [
+        x.values.partNo,
+        x.values.name,
+        x.values.appliesTo,
+        x.values.company,
+        x.values.effectiveDate,
+        x.values.unitPrice,
+        x.values.quoteNo,
+        x.values.project,
+      ]),
+    ).toEqual([
+      [
+        "VX-05-A-01",
+        "Motor",
+        "NTI-01",
+        "가상정수센터",
+        "2026-03-10",
+        480000,
+        "SO-0001",
+        "가상 정수장 정비",
+      ],
+      [
+        "VX-07-A-01",
+        "Main Board",
+        "NTI series",
+        "가상정수센터",
+        "2026-03-10",
+        950000,
+        "SO-0001",
+        "가상 정수장 정비",
+      ],
+      [
+        "VX-05-A-01",
+        "Motor (교체)",
+        "",
+        "가상발전소",
+        "2026-06-01",
+        570000,
+        "SO-0002",
+        "",
+      ],
+      [
+        "VX-09-B-01",
+        "MC nego",
+        "",
+        "가상발전소",
+        "2026-06-01",
+        0,
+        "SO-0002",
+        "",
+      ],
+    ]);
+  });
+  it("부품 단가표 업로드에 수주 내역을 올리면 올바른 자료 안내", () => {
+    const r = parseItemSheets([sheet(parseCsv(csv), "CSV")]);
+    expect(r).toEqual({
+      ok: false,
+      error: expect.stringContaining("수주 내역(판매처·수주일·제품정보) 형식"),
+    });
   });
 });

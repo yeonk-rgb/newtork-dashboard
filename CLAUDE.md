@@ -159,7 +159,8 @@
   - 트랜잭션 안에서는 관계 `include`·`Promise.all` 로 동시에 읽지 않는다 (pg "client.query() when already executing" 경고)
 - **단가 화면(2026-11-05 — 친구 우민영 저장소 alsdud8290-crypto/newtalk-dashboard 의 "단가" 중 부품 단가 + 담당자 피드백)**: 정리표 `docs/unit-prices.md`. `modules/service/unit-prices/`, 사이드바 "단가"(기존 "부품·가격"은 그대로 — 합칠지는 친구들과 정한 뒤), 테이블 `svc_price_item`(같은 부품 = **파트넘버 + 품목** `itemKey` — 원본에 파트넘버 중복 줄 있음, 친구 `UNIQUE(part_no, name)`)·`svc_price_quote`(부품 + 출장지 + 적용 시작일), 권한 `serviceAbilities()`
   - 피드백: 뉴토크 기준값 = 기준단가 그대로(산식·할인율·추가단가 없음), 부품별 비교 기준값 칸 **더블클릭 수정**(`updateBasePrice`, `updatedAt` 동시 수정 확인), 파트넘버 클릭 하단의 단가표·할인 줄·"이 부품만 따로" 없음, 견적서 PDF·단가 직접 입력·제품 단가·원가 탭 없음, 요청처 지역 관리는 옮기지 않음
-  - 업로드 2종(CSV·xlsx): ① 부품 단가표(고객사 원본 [부품] 시트 형식도 인식) ② 출장지별 단가 — 같은 행은 **체크 없이 덮어씀**, 오류 1건이라도 있으면 저장 안 함, 숨긴 행과 같으면 저장 안 함, 변경 이력 요약 `service-unit-price-upload`. 계산은 `compute.ts`(최근 단가 1개/출장지, 크게 낮음 −10% `LOW_ALERT_RATE`)
+  - 업로드 2종(CSV·xlsx): ① 부품 단가표(고객사 원본 [부품] 시트 형식도 인식) ② 출장지(판매처)별 단가 — 양식 또는 **회사 수주 내역 CSV("부품단가데이터": 판매처 = 출장지, 수주일 = 적용 시작일, 제품정보-품명 → 파트넘버·품목·적용 모델, 빈 판매처·수주일은 같은 *ID 첫 줄)**. 같은 행은 **체크 없이 덮어씀**, 파일 안 같은 행은 **아래 줄 기준**, 단가표에 없는 파트넘버는 품목이 있으면 **새로 등록**, 오류 1건이라도 있으면 저장 안 함, 숨긴 행과 같으면 저장 안 함, 변경 이력 요약 `service-unit-price-upload`(= 업로드 이력 화면 `/service/unit-prices/uploads`). 부품 추가(수기)는 같은 부품이면 확인 후 덮어씀(`createPriceItem(v, true)`). 계산은 `compute.ts`(최근 단가 1개/출장지, 크게 낮음 −10% `LOW_ALERT_RATE`)
+  - 2026-11-07 친구 저장소 최신(11/05~06, 같은 피드백을 친구도 반영)과 맞춤 — 다른 점은 같은 부품 키(친구 = 파트넘버만, 본체 = 파트넘버 + 품목, `docs/unit-prices.md`)
   - 가짜 데이터 = `seed:teams`(VX… 작성자 `seed-service`). **원본 "부품 및 단가리스트.xlsx"는 대외비 — 저장소·테스트에 넣지 않는다**
 - **그 외 지출 "사용 여부" = 0원이 아닌 금액이 있는지** (월간 저장 시 0원 행도 생기므로 행 존재로 판단하지 않음): 삭제 가능 여부, 비활성 항목의 월간 입력 표시에 사용
 - **입력 화면(6단계)**: `modules/management/entry/` — 규칙은 `rules.ts`의 `entryAbilities()` 하나를 화면과 Server Action이 같이 쓴다. 저장은 Zod 검증 + `updatedAt` 동시 수정 확인(`updateMany where updatedAt`) + `refresh()`

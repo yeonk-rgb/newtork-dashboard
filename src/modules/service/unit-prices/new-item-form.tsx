@@ -79,7 +79,11 @@ export function NewItemForm({
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      const r = await createPriceItem(v);
+      let r = await createPriceItem(v);
+      // 같은 부품이 있으면 확인 후 덮어쓰기 (친구 앱과 같음)
+      if (r.confirm && window.confirm(r.confirm)) {
+        r = await createPriceItem(v, true);
+      }
       setMessage({ ok: r.ok, text: r.message });
       setErrors(r.errors ?? {});
       if (r.ok) setV({ ...EMPTY, category: v.category });

@@ -59,6 +59,7 @@ export {
   NewPriceItemScreen,
   PartsCompareScreen,
   UnitPriceUploadScreen,
+  UnitPriceUploadsScreen,
 } from "./unit-prices/screens";
 export {
   buildUnitPriceExport,

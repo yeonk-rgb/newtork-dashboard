@@ -249,6 +249,11 @@ model SvcPriceQuote {
   /// 적용 시작일 (한국 날짜)
   effectiveDate DateTime     @db.Date
   note          String       @default("")
+  /// 수주 내역 CSV 의 판매번호·사업명 (2026-11-07 — 친구 저장소 quote_no·quote_project)
+  quoteNo       String       @default("")
+  project       String       @default("")
+  /// 올린 형식: table = 양식 CSV·엑셀, order = 수주 내역 CSV
+  source        String       @default("table")
 
   /// 숨김 = 삭제 (조회 시 반드시 deletedAt: null)
   deletedAt   DateTime?

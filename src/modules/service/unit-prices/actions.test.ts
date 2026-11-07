@@ -28,6 +28,7 @@ const tx = {
       deletedAt: null,
     })),
     updateMany,
+    findMany: vi.fn(async () => [] as unknown[]),
     aggregate: async () => ({ _max: { sortOrder: 3 } }),
     create: async ({ data }: { data: Record<string, unknown> }) => {
       created.push(data);
@@ -127,15 +128,46 @@ describe("서비스팀장", () => {
     });
   });
 
-  it("부품 추가: 같은 파트넘버·품목이 있으면 거부, 없으면 맨 뒤 순서로 저장", async () => {
-    const dup = await a.createPriceItem({
+  it("부품 추가: 같은 부품이 있으면 확인 요청 → 확인하면 덮어씀(변경 이력 UPDATE), 없으면 맨 뒤 순서로 저장", async () => {
+    const existing = {
+      id: "i1",
       partNo: "VX-05-A-01",
+      partKey: "VX05A01",
+      itemKey: "VX05A01|MOTOR",
+      category: "05 MOTOR",
       name: "Motor",
+      appliesTo: "",
+      basePrice: 500000n,
+      deletedAt: null,
+    };
+    tx.svcPriceItem.findMany.mockResolvedValueOnce([existing]);
+    const ask = await a.createPriceItem({
+      partNo: "VX-05-A-01",
+      name: "Motor (신형)",
     });
-    expect(dup.ok).toBe(false);
-    expect(dup.errors?.partNo).toContain("이미 있는 부품");
+    expect(ask.ok).toBe(false);
+    expect(ask.confirm).toContain("덮어쓸까요");
 
-    tx.svcPriceItem.findUnique.mockResolvedValueOnce(null as never);
+    const update = vi.fn(async () => ({}));
+    Object.assign(tx.svcPriceItem, { update });
+    tx.svcPriceItem.findMany.mockResolvedValueOnce([existing]);
+    const over = await a.createPriceItem(
+      { partNo: "VX-05-A-01", name: "Motor (신형)", basePrice: "510,000" },
+      true,
+    );
+    expect(over.ok).toBe(true);
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "i1" },
+      data: expect.objectContaining({
+        name: "Motor (신형)",
+        itemKey: "VX05A01|MOTOR(신형)",
+        basePrice: 510000n,
+      }),
+    });
+    expect(
+      (audit.mock.calls.at(-1)![0] as { data: { action: string } }).data.action,
+    ).toBe("UPDATE");
+
     const r = await a.createPriceItem({
       category: "05 MOTOR",
       partNo: " vx-05-a-09 ",
